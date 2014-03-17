@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import           Data.Monoid (mappend)
+import           System.FilePath (takeFileName)
 import           Hakyll
 
 
@@ -29,6 +29,14 @@ main = hakyllWith hakyllConfig $ do
                 >>= loadAndApplyTemplate
                     "templates/default.html" defaultContext
                 >>= relativizeUrls
+
+    match "repo/*" $ do
+        route   $ customRoute $ takeFileName . toFilePath
+        compile   copyFileCompiler
+
+    create [".nojekyll"] $ do
+        route     idRoute
+        compile $ makeItem ("" :: String)
 
     match "templates/*" $ compile templateCompiler
 
