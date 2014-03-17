@@ -1,0 +1,6 @@
+*.swp
+*~
+_site
+_cache
+dist
+duplode-github-io
