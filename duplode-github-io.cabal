@@ -21,6 +21,8 @@ executable duplode-github-io
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7
                      , hakyll == 4.4.*
+                     , pandoc
+                     , highlighting-kate
                      , filepath
   hs-source-dirs:      src
   default-language:    Haskell2010
