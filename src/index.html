@@ -1,0 +1,14 @@
+---
+title: Recent posts
+---
+$for(post-teasers)$
+  <div class="post-teaser">
+    <h2>$title$</h2>
+
+    $if(teaser)$
+      $teaser$
+    $endif$
+
+    <p><a href=$url$>Read more</a> - $date$</p>
+  </div>
+$endfor$

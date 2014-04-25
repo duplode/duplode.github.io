@@ -5,6 +5,8 @@ license: CC-BY-SA
 ---
 *I don't know why you say goodbye, I say hello.*
 
+<div></div><!--more-->
+
 > module Main where
 >
 > main = putStrLn "Hello world!"

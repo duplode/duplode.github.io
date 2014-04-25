@@ -52,6 +52,9 @@ licenseInfoCtx = field "license-info" $ \it -> do
         Just "CC-BY-SA" -> loadBody "fragments/cc-by-sa.html"
         _               -> return ""
 
+teaserCtx :: Context String
+teaserCtx = teaserField "teaser" "content" <> postItemCtx
+
 baseCtx :: Context String
 baseCtx = licenseInfoCtx <> defaultContext
 
@@ -65,14 +68,6 @@ main = hakyllWith hakyllConfig $ do
     match "css/*" $ do
         route   idRoute
         compile compressCssCompiler
-
-    match "uc.md" $ do
-        route   $ constRoute "index.html"
-        compile $ do
-            pandocCompilerOfOurs
-                >>= loadAndApplyTemplate
-                    "templates/default.html" baseCtx
-                >>= relativizeUrls
 
     match "about.md" $ do
         route $ setExtension ".html"
@@ -92,8 +87,7 @@ main = hakyllWith hakyllConfig $ do
             posts <- recentFirst =<< loadAll allPosts
             getResourceBody
                 >>= applyAsTemplate
-                    (listField "posts" postItemCtx (return posts)
-                        <> defaultContext)
+                    (listField "posts" postItemCtx (return posts))
                 >>= loadAndApplyTemplate
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
@@ -106,6 +100,18 @@ main = hakyllWith hakyllConfig $ do
                 >>= loadAndApplyTemplate
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
+
+    match "index.html" $ do
+        route $ idRoute
+        compile $ do
+            barePosts <- recentFirst =<< loadAllSnapshots allPosts "content"
+            getResourceBody
+                >>= applyAsTemplate
+                    (listField "post-teasers" teaserCtx (return barePosts))
+                >>= loadAndApplyTemplate
+                    "templates/default.html" baseCtx
+                >>= relativizeUrls
+
 
     match "repo/*" $ do
         route   $ customRoute $ takeFileName . toFilePath
