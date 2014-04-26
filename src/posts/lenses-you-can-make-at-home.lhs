@@ -1,6 +1,6 @@
 ---
-title: Lenses You Can Make At Home
-published: 2014-04-26T11:00:00Z
+title: Lenses You Can Make at Home
+published: 2014-04-26T12:00:00Z
 license: CC-BY-SA
 ---
 
