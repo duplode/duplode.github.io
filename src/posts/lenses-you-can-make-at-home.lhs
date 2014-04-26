@@ -42,6 +42,7 @@ mucking around with record update syntax.
 Armed with a proper getter and setter pair, we can easily flip the sign
 of the `bar` inside a `Foo`.
 
+< GHCi> let x = Foo 3
 < GHCi> setBar x (negate $ bar x)
 < Foo {bar = -3}
 
