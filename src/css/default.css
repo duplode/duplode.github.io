@@ -35,8 +35,9 @@ div#footer {
     text-align: right;
 }
 
-div.license img {
-    clear: none;
+div.license {
+  padding: 0.5em;
+  background-color: ghostwhite;
 }
 
 h1 {

@@ -52,11 +52,16 @@ licenseInfoCtx = field "license-info" $ \it -> do
         Just "CC-BY-SA" -> loadBody "fragments/cc-by-sa.html"
         _               -> return ""
 
+redditCtx :: Context String
+redditCtx = field "reddit-button" $ \it -> do
+    redd <- itemIdentifier it `getMetadataField` "reddit"
+    maybe (return "") (const $ loadBody "fragments/reddit.html") redd
+
 teaserCtx :: Context String
 teaserCtx = teaserField "teaser" "content" <> postItemCtx
 
 baseCtx :: Context String
-baseCtx = licenseInfoCtx <> defaultContext
+baseCtx = licenseInfoCtx <> redditCtx <> defaultContext
 
 --------------------------------------------------------------------------------
 main :: IO ()
