@@ -45,7 +45,8 @@
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; setBar ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
 <span class="ot">&gt;</span> setBar x y <span class="fu">=</span> x { bar <span class="fu">=</span> y }</code></pre>
 <p>Armed with a proper getter and setter pair, we can easily flip the sign of the <code>bar</code> inside a <code>Foo</code>.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> setBar x (negate <span class="fu">$</span> bar x)
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">let</span> x <span class="fu">=</span> <span class="dt">Foo</span> <span class="dv">3</span>
+<span class="dt">GHCi</span><span class="fu">&gt;</span> setBar x (negate <span class="fu">$</span> bar x)
 <span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="fu">-</span><span class="dv">3</span>}</code></pre>
 <p>We can make it even easier by defining a modifier function for <code>bar</code>.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyBar ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
