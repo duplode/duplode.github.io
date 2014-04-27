@@ -142,7 +142,7 @@ off, we will use `Const`, which is a very quaint functor.
 <
 < instance Functor (Const a) where
 <     fmap _ (Const y) = Const y
-<
+
 < modifyC :: (s -> a) -> (s -> a -> s) -> (a -> Const r a) -> s -> Const r s
 
 If functors were really containers, `Const` would be an Acme product. A
@@ -170,7 +170,8 @@ us to recover the setter.  We can highlight the correspondence by
 redefining once more the recovered getters and modifiers, this time in
 terms of the functorial modifier.
 
-< modifyF :: Functor f => (s -> a) -> (s -> a -> s) -> (a -> f a) -> s -> f s
+< modifyF :: Functor f => (s -> a) -> (s -> a -> s)
+                       -> ((a -> f a) -> s -> f s)
 
 > modify'' :: ((a -> Identity a) -> s -> Identity s) -> (a -> a) -> s -> s
 > modify'' modifier k = runIdentity . modifier (Identity . k)
@@ -266,6 +267,7 @@ sans implementation details we have that:
 - The `lens` function is `modifyGenF`;
 - `modifyF` is `lens` specialised to produce simple lenses;^[`Lens' s a`
   or `Lens s s a a`, as opposed to `Lens s t a b`.]
+- `modifyBarF` is a lens with type `Lens Foo Foo Int Int`;
 - `(^.)` is flipped `get'`;
 - `set` is `setGen`;
 - `over` is `modifyGen` further generalised.^[Yes, even further; from
@@ -314,6 +316,7 @@ compose cleanly with `(.)`. That makes it possible to compose lenses
 independently of whether you intend to get, set or modify their targets.
 Here is a quick demonstration using the tuple lenses from `lens`.
 
+< GHCi> :m
 < GHCi> :m +Control.Lens
 < GHCi> ((1,2),(3,4)) ^. _1 . _2
 < GHCi> 2
@@ -322,7 +325,7 @@ Here is a quick demonstration using the tuple lenses from `lens`.
 
 A perennial topic in discussions about `lens` is the order of
 composition of lenses. They are often said to compose backwards; that
-is, backwards with respect of composition of record accessors and
+is, backwards with respect to composition of record accessors and
 similar getters. For instance, the getter corresponding to the `_1 . _2`
 lens is `snd . fst`. The claim that lenses compose backwards, or in the
 "wrong order", however, are only defensible when talking about style,
@@ -337,8 +340,8 @@ of a getter and its corresponding lens side by side.
 
 The getter takes a value of the source type and produces a value of the
 target type. The lens, however, takes a function from the target type
-and produces a function of the source type. Therefore, it is no surprise
-that the order of composition differs, and the order for lenses is
-entirely natural. That ties in closely to what we have seen while
+and produces a function from the source type. Therefore, it is no
+surprise that the order of composition differs, and the order for lenses
+is entirely natural. That ties in closely to what we have seen while
 implementing lenses. While we can squeeze lenses until they give back
 getters, it is much easier to think of them as generalised modifiers.
