@@ -262,11 +262,10 @@ Now, let's take a peek at
 
 It is the same type! We have reached our destination.^["What about the
 `forall`?" you might ask. Are we cheating? Not quite. The `forall` is
-there to control how `f` is specialised when lenses are passed to lens
-combinators. The underlying issue does not affect our reasoning here. If
-you are into type system subtleties, there were a few interesting
-comments about it in the
-[reddit
+there to control how `f` is specialised when lens combinators are used.
+The underlying issue does not affect our reasoning here. If you are into
+type system subtleties, there were a few interesting comments about it
+in the [reddit
 thread](http://www.reddit.com/r/haskell/comments/241aec/lenses_you_can_make_at_home/ch2rbgp)
 for this post.]
 A lens is what we might have called a generalised functorial modifier;
@@ -279,8 +278,9 @@ furthermore, sans implementation details we have that:
 - `(^.)` is flipped `get'`;
 - `set` is `setGen`;
 - `over` is `modifyGen` further generalised.^[Yes, even further; from
-  taking modifying functions to taking modifying profunctors. The
-  difference need not worry us now.]
+  taking modifying functions to taking modifying
+  [profunctors](https://www.fpcomplete.com/user/liyang/profunctors).
+  The difference need not worry us now.]
 
 `lens` uses type synonyms liberally, so those correspondences are not
 immediately obvious form the signatures in the documentation. Digging a
