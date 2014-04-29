@@ -1,33 +1,16 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <title>duplode.github.io - Lenses You Can Make at Home</title>
-        <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.4.2/pure-min.css">
-        <link rel="stylesheet" type="text/css" href="../css/skin.css" />
-        <link rel="stylesheet" type="text/css" href="../css/default.css" />
-        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
-    </head>
-    <body class="pure-skin-duplode">
-      <div class="pure-g-r">
-        <div class="pure-u-1-5">
-          <div id="navigation">
-            <div class="pure-menu pure-menu-open">
-              <a class="pure-menu-heading">duplode</a>
-              <ul>
-                <li><a href="../index.html">Home</a></li>
-                <li><a href="../posts.html">Posts</a></li>
-                <li><a href="../about.html">About</a></li>
-                <li><a href="../rss.xml">RSS</a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div class="pure-u-4-5">
-          <div id="content">
-            <h1>Lenses You Can Make at Home</h1>
-
-            <p>The most striking traits of the <code>lens</code> library are its astonishing breadth and generality. And yet, the whole edifice is built around van Laarhoven lenses, which are a simple and elegant concept. In this hands-on exposition, I will show how the <code>Lens</code> type can be understood without prerequisites other than a passing acquaintance with Haskell functors. Encouraging sound intuition in an accessible manner can go a long way towards making <code>lens</code> and lenses less intimidating.</p>
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>duplode.github.io</title>
+        <link>http://duplode.github.io</link>
+        <description><![CDATA[Haskell amusements]]></description>
+        <atom:link href="http://duplode.github.io/rss.xml" rel="self"
+                   type="application/rss+xml" />
+        <lastBuildDate>Sat, 26 Apr 2014 12:00:00 UT</lastBuildDate>
+        <item>
+    <title>Lenses You Can Make at Home</title>
+    <link>http://duplode.github.io/posts/lenses-you-can-make-at-home.html</link>
+    <description><![CDATA[<p>The most striking traits of the <code>lens</code> library are its astonishing breadth and generality. And yet, the whole edifice is built around van Laarhoven lenses, which are a simple and elegant concept. In this hands-on exposition, I will show how the <code>Lens</code> type can be understood without prerequisites other than a passing acquaintance with Haskell functors. Encouraging sound intuition in an accessible manner can go a long way towards making <code>lens</code> and lenses less intimidating.</p>
 <div>
 
 </div>
@@ -56,14 +39,14 @@
 <span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="fu">-</span><span class="dv">3</span>}</code></pre>
 <p><code>setBar</code> can be recovered from <code>modifyBar</code> recovered from it by using <code>const</code> to discard the original value and put the new one in its place.</p>
 <pre class="sourceCode haskell"><code class="sourceCode haskell">const y <span class="fu">=</span> \_ <span class="ot">-&gt;</span> y</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; setBar' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> setBar' x y <span class="fu">=</span> modifyBar (const y) x</code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; setBar&#39; ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
+<span class="ot">&gt;</span> setBar&#39; x y <span class="fu">=</span> modifyBar (const y) x</code></pre>
 <p>If our data type had several fields, defining a modifier for each of them would amount to quite a lot of boilerplate. We could minimise it by, starting from our <code>modifyBar</code> definition, abstracting from the specific getter and setter for <code>bar</code>. Here, things begin to pick up steam. I will define a general <code>modify</code> function, which, given an appropriate getter-setter pair, can deal with any field of any data type.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
 <span class="ot">&gt;</span> modify getter setter k x <span class="fu">=</span> setter x <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</code></pre>
 <p>It is trivial to recover <code>modifyBar</code>; when we do so, <code>s</code> becomes <code>Foo</code> and <code>a</code> becomes <code>Int</code>.</p>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyBar' ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> modifyBar' <span class="fu">=</span> modify bar setBar</code></pre>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyBar&#39; ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
+<span class="ot">&gt;</span> modifyBar&#39; <span class="fu">=</span> modify bar setBar</code></pre>
 <h2 id="functors-galore">Functors Galore</h2>
 <p>The next step of generalisation is the one leap of faith I will ask of you in the way towards lenses. I will introduce a variant of <code>modify</code> in which the modifying function, rather than being a plain <code>a -&gt; a</code> function, returns a functorial value. Defining it only takes an extra <code>fmap</code>.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s
@@ -83,8 +66,8 @@
 <span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Identity</span> <span class="kw">where</span>
     fmap f (<span class="dt">Identity</span> x) <span class="fu">=</span> <span class="dt">Identity</span> (f x)</code></pre>
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">modifyI ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s</code></pre>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify' ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-<span class="ot">&gt;</span> modify' getter setter k <span class="fu">=</span>
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify&#39; ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
+<span class="ot">&gt;</span> modify&#39; getter setter k <span class="fu">=</span>
 <span class="ot">&gt;</span>     runIdentity <span class="fu">.</span> modifyF getter setter (<span class="dt">Identity</span> <span class="fu">.</span> k)</code></pre>
 <p>We wrap the field value with <code>Identity</code> value after applying <code>k</code> and unwrap the final result after applying the setter. Since <code>Identity</code> does nothing interesting to the wrapped values, the overall result boils down to our original <code>modify</code>. If you have found this definition confusing, I suggest that you, as an exercise, rewrite it in pointful style and substitute the definition of <code>modifyF</code>.</p>
 <p>We managed to get <code>modify</code> back with little trouble, which is rather interesting. However, what is truly surprising is that we can reconstruct not only the modifier but also the getter! To pull that off, we will use <code>Const</code>, which is a very quaint functor.</p>
@@ -102,23 +85,23 @@
 <h2 id="the-grand-unification">The Grand Unification</h2>
 <p>Given a getter and a setter, <code>modifyF</code> gets us a corresponding functorial modifier. From it, by choosing the appropriate functors, we can recover the getter and a plain modifier; the latter, in turn, allows us to recover the setter. We can highlight the correspondence by redefining once more the recovered getters and modifiers, this time in terms of the functorial modifier.</p>
 <p>&lt; modifyF :: Functor f =&gt; (s -&gt; a) -&gt; (s -&gt; a -&gt; s) -&gt; ((a -&gt; f a) -&gt; s -&gt; f s)</p>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify'' ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-<span class="ot">&gt;</span> modify'' modifier k <span class="fu">=</span> runIdentity <span class="fu">.</span> modifier (<span class="dt">Identity</span> <span class="fu">.</span> k)
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify&#39;&#39; ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
+<span class="ot">&gt;</span> modify&#39;&#39; modifier k <span class="fu">=</span> runIdentity <span class="fu">.</span> modifier (<span class="dt">Identity</span> <span class="fu">.</span> k)
 <span class="ot">&gt;</span> 
-<span class="ot">&gt; modifyBar'' ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> modifyBar'' <span class="fu">=</span> modify'' modifyBarF
+<span class="ot">&gt; modifyBar&#39;&#39; ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
+<span class="ot">&gt;</span> modifyBar&#39;&#39; <span class="fu">=</span> modify&#39;&#39; modifyBarF
 <span class="ot">&gt;</span> 
 <span class="ot">&gt; set ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s
-<span class="ot">&gt;</span> set modifier x y <span class="fu">=</span> modify'' modifier (const y) x
+<span class="ot">&gt;</span> set modifier x y <span class="fu">=</span> modify&#39;&#39; modifier (const y) x
 <span class="ot">&gt;</span> 
-<span class="ot">&gt; setBar'' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> setBar'' <span class="fu">=</span> set modifyBarF
+<span class="ot">&gt; setBar&#39;&#39; ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
+<span class="ot">&gt;</span> setBar&#39;&#39; <span class="fu">=</span> set modifyBarF
 <span class="ot">&gt;</span> 
-<span class="ot">&gt; get' ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Const</span> a a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> a s) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a)
-<span class="ot">&gt;</span> get' modifier <span class="fu">=</span> getConst <span class="fu">.</span> modifier <span class="dt">Const</span>
+<span class="ot">&gt; get&#39; ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Const</span> a a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> a s) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a)
+<span class="ot">&gt;</span> get&#39; modifier <span class="fu">=</span> getConst <span class="fu">.</span> modifier <span class="dt">Const</span>
 <span class="ot">&gt;</span> 
-<span class="ot">&gt; getBar' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-<span class="ot">&gt;</span> getBar' <span class="fu">=</span> get' modifyBarF</code></pre>
+<span class="ot">&gt; getBar&#39; ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> getBar&#39; <span class="fu">=</span> get&#39; modifyBarF</code></pre>
 <p>The bottom line is that given <code>modifyBarF</code> we can get by without <code>modifyBar</code>, <code>setBar</code> and <code>bar</code>, as <code>modify''</code>, <code>set</code> and <code>get'</code> allow us to reconstruct them whenever necessary. While our first version of <code>get</code> was, in effect, just a specialised <code>const</code> with a wacky implementation, <code>get'</code> is genuinely useful because it cuts the number of separate field manipulation functions we have to deal with by a third.</p>
 <h2 id="expanding-horizons">Expanding Horizons</h2>
 <p>Even after all of the work so far we can still generalise further! Let’s have a second look at <code>modifyF</code>.</p>
@@ -169,17 +152,17 @@ modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class=
 <p>A perennial topic in discussions about <code>lens</code> is the order of composition of lenses. They are often said to compose backwards; that is, backwards with respect to composition of record accessors and similar getters. For instance, the getter corresponding to the <code>_1 . _2</code> lens is <code>snd . fst</code>. The claim that lenses compose backwards, or in the “wrong order”, however, are only defensible when talking about style, and not about semantics. That becomes clear after placing the signatures of a getter and its corresponding lens side by side.</p>
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t fst
 fst<span class="ot"> ::</span> (a, b) <span class="ot">-&gt;</span> a
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t _1<span class="ot"> ::</span> <span class="dt">Lens'</span> (a, b) a
-_1<span class="ot"> ::</span> <span class="dt">Lens'</span> (a, b) a
+<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t _1<span class="ot"> ::</span> <span class="dt">Lens&#39;</span> (a, b) a
+_1<span class="ot"> ::</span> <span class="dt">Lens&#39;</span> (a, b) a
 <span class="ot"> ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> (a, b) <span class="ot">-&gt;</span> f (a, b)</code></pre>
 <p>The getter takes a value of the source type and produces a value of the target type. The lens, however, takes a function from the target type and produces a function from the source type. Therefore, it is no surprise that the order of composition differs, and the order for lenses is entirely natural. That ties in closely to what we have seen while implementing lenses. While we can squeeze lenses until they give back getters, it is much easier to think of them as generalised modifiers.</p>
 <section class="footnotes">
 <hr />
 <ol>
 <li id="fn1"><p>We are not quite as free when it comes to pairing getters and setters. Beyond the obvious need for getter and setter to start from values of the same type, they should behave sanely when composed. In particular, the following should hold:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell">get' modifier (setGen modifier y x) ≡ y
+<pre class="sourceCode haskell"><code class="sourceCode haskell">get&#39; modifier (setGen modifier y x) ≡ y
 
-setGen modifier (get' modifier x) x ≡ x
+setGen modifier (get&#39; modifier x) x ≡ x
 
 setGen modifier z (setGen modifier y x) ≡ setGen modifier z x</code></pre>
 <a href="#fnref1">↩</a></li>
@@ -188,26 +171,10 @@ setGen modifier z (setGen modifier y x) ≡ setGen modifier z x</code></pre>
 <li id="fn4"><p>Yes, even further; from taking modifying functions to taking modifying <a href="https://www.fpcomplete.com/user/liyang/profunctors">profunctors</a>. The difference need not worry us now.<a href="#fnref4">↩</a></p></li>
 <li id="fn5"><p>And in some cases of profunctors to replace the function type constructor.<a href="#fnref5">↩</a></p></li>
 </ol>
-</section>
+</section>]]></description>
+    <pubDate>Sat, 26 Apr 2014 12:00:00 UT</pubDate>
+    <guid>http://duplode.github.io/posts/lenses-you-can-make-at-home.html</guid>
+</item>
 
-            <div class="reddit-button">
-<script type="text/javascript" src="http://www.reddit.com/static/button/button1.js">
-  reddit_target='haskell';
-  reddit_newwindow=1;
-</script>
-</div>
-
-
-            <div class="license">
-  <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a><br />Post licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
-</div>
-
-
-          </div>
-          <div id="footer">
-            <p>Powered by <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
-          </div>
-        </div>
-      </div>
-    </body>
-</html>
+    </channel> 
+</rss>
