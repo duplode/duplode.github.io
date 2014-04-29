@@ -41,6 +41,15 @@ pandocCompilerOfOurs' withToc =
     pandocCompilerWith defaultHakyllReaderOptions $
         if withToc then tocPandocWriterOptions else ourPandocWriterOptions
 
+rssConfig :: FeedConfiguration
+rssConfig = FeedConfiguration
+    { feedTitle = "duplode.github.io"
+    , feedDescription = "Haskell amusements"
+    , feedAuthorName = "Daniel Mlot"
+    , feedAuthorEmail = "" -- Not used by RSS.
+    , feedRoot = "http://duplode.github.io"
+    }
+
 --------------------------------------------------------------------------------
 postItemCtx :: Context String
 postItemCtx = dateField "date" "%B %e, %Y" <> defaultContext
@@ -109,7 +118,8 @@ main = hakyllWith hakyllConfig $ do
     match "index.html" $ do
         route $ idRoute
         compile $ do
-            barePosts <- recentFirst =<< loadAllSnapshots allPosts "content"
+            barePosts <- fmap (take 6) . recentFirst
+                =<< loadAllSnapshots allPosts "content"
             getResourceBody
                 >>= applyAsTemplate
                     (listField "post-teasers" teaserCtx (return barePosts))
@@ -129,6 +139,14 @@ main = hakyllWith hakyllConfig $ do
     create ["css/syntax.css"] $ do
         route   $ idRoute
         compile $ makeItem (compressCss . styleToCss $ tango)
+
+    create ["rss.xml"] $ do
+        route idRoute
+        compile $ do
+            let feedCtx = baseCtx <> bodyField "description"
+            barePosts <- fmap (take 12) . recentFirst
+                =<< loadAllSnapshots allPosts "content"
+            renderRss rssConfig feedCtx barePosts
 
     match "templates/*" $ compile templateCompiler
 
