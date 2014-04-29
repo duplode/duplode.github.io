@@ -90,9 +90,8 @@
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Const</span> a b <span class="fu">=</span> <span class="dt">Const</span> {<span class="ot"> getConst ::</span> a }
 
 <span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Const</span> a) <span class="kw">where</span>
-    fmap _ (<span class="dt">Const</span> y) <span class="fu">=</span> <span class="dt">Const</span> y
-
-<span class="ot">modifyC ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Const</span> r a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> r s</code></pre>
+    fmap _ (<span class="dt">Const</span> y) <span class="fu">=</span> <span class="dt">Const</span> y</code></pre>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">modifyC ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Const</span> r a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> r s</code></pre>
 <p>If functors were really containers, <code>Const</code> would be an Acme product. A <code>Const a b</code> value does not contain anything of type <code>b</code>; what it does contain is an <code>a</code> value that we cannot even modify, given that <code>fmap f</code> is <code>id</code> regardless of what <code>f</code> is. As a consequence, if, given a field of type <code>a</code>, we pick <code>Const a a</code> as the functor to use with <code>modifyF</code>, if our chosen modifying function wraps the field value with <code>Const</code> then it will not be affected by the setter, and we will be able to recover it later. That suffices for recovering the getter.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; get ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a
 <span class="ot">&gt;</span> get getter setter <span class="fu">=</span> getConst <span class="fu">.</span> modifyF getter setter <span class="dt">Const</span>
@@ -101,7 +100,7 @@
 <span class="ot">&gt;</span> getBar <span class="fu">=</span> get bar setBar</code></pre>
 <h2 id="the-grand-unification">The Grand Unification</h2>
 <p>Given a getter and a setter, <code>modifyF</code> gets us a corresponding functorial modifier. From it, by choosing the appropriate functors, we can recover the getter and a plain modifier; the latter, in turn, allows us to recover the setter. We can highlight the correspondence by redefining once more the recovered getters and modifiers, this time in terms of the functorial modifier.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s</code></pre>
+<p>&lt; modifyF :: Functor f =&gt; (s -&gt; a) -&gt; (s -&gt; a -&gt; s) -&gt; ((a -&gt; f a) -&gt; s -&gt; f s)</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify'' ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
 <span class="ot">&gt;</span> modify'' modifier k <span class="fu">=</span> runIdentity <span class="fu">.</span> modifier (<span class="dt">Identity</span> <span class="fu">.</span> k)
 <span class="ot">&gt;</span> 
@@ -139,13 +138,14 @@ modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class=
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</code></pre>
 <p>Now, let’s take a peek at <a href="http://hackage.haskell.org/package/lens-4.1.2/docs/Control-Lens-Lens.html#t:Lens">Control.Lens.Lens</a>:</p>
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Lens</span> s t a b <span class="fu">=</span> forall f<span class="fu">.</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</code></pre>
-<p>It is the same type! We have reached our destination. A lens is what we might have called a generalised functorial modifier; furthermore, sans implementation details we have that:</p>
+<p>It is the same type! We have reached our destination.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> A lens is what we might have called a generalised functorial modifier; furthermore, sans implementation details we have that:</p>
 <ul>
 <li>The <code>lens</code> function is <code>modifyGenF</code>;</li>
-<li><code>modifyF</code> is <code>lens</code> specialised to produce simple lenses;<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></li>
+<li><code>modifyF</code> is <code>lens</code> specialised to produce simple lenses;<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></li>
+<li><code>modifyBarF</code> is a lens with type <code>Lens Foo Foo Int Int</code>;</li>
 <li><code>(^.)</code> is flipped <code>get'</code>;</li>
 <li><code>set</code> is <code>setGen</code>;</li>
-<li><code>over</code> is <code>modifyGen</code> further generalised.<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></li>
+<li><code>over</code> is <code>modifyGen</code> further generalised.<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a></li>
 </ul>
 <p><code>lens</code> uses type synonyms liberally, so those correspondences are not immediately obvious form the signatures in the documentation. Digging a little deeper, however, shows that in</p>
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">set ::</span> <span class="dt">ASetter</span> s t a b <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> t</code></pre>
@@ -155,22 +155,23 @@ modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class=
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(^.) ::</span> s <span class="ot">-&gt;</span> <span class="dt">Getting</span> a s a <span class="ot">-&gt;</span> a
 
 <span class="kw">type</span> <span class="dt">Getting</span> r s a <span class="fu">=</span> (a <span class="ot">-&gt;</span> <span class="dt">Const</span> r a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> r s</code></pre>
-<p>Behind the plethora of type synonyms - <code>ASetter</code>, <code>Getting</code>, <code>Fold</code>, <code>Traversal</code>, <code>Prism</code>, <code>Iso</code> and so forth - there are different choices of functors,<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a> which make it possible to capture many different concepts as variations on lenses. The variations may be more general or less general than lenses; occasionally they are neither, as the overlap is just partial. The fact that we can express so much through parametrization of functors is key to the extraordinary breadth of <code>lens</code>.</p>
+<p>Behind the plethora of type synonyms - <code>ASetter</code>, <code>Getting</code>, <code>Fold</code>, <code>Traversal</code>, <code>Prism</code>, <code>Iso</code> and so forth - there are different choices of functors,<a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a> which make it possible to capture many different concepts as variations on lenses. The variations may be more general or less general than lenses; occasionally they are neither, as the overlap is just partial. The fact that we can express so much through parametrization of functors is key to the extraordinary breadth of <code>lens</code>.</p>
 <h2 id="going-forward">Going Forward</h2>
 <p>This exposition is primarily concerned with building lenses, and so very little was said about how to use them. In any case, we have seen enough to understand why lenses are also known as functional references. By unifying getters and setters, lenses provide a completely general vocabulary to point at parts of a whole.</p>
 <p>Finally, a few words about composition of lenses are unavoidable. One of the great things about lenses is that they are just functions; even better, they are functions with signatures tidy enough for them to compose cleanly with <code>(.)</code>. That makes it possible to compose lenses independently of whether you intend to get, set or modify their targets. Here is a quick demonstration using the tuple lenses from <code>lens</code>.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>m <span class="fu">+</span><span class="dt">Control.Lens</span>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>m
+<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>m <span class="fu">+</span><span class="dt">Control.Lens</span>
 <span class="dt">GHCi</span><span class="fu">&gt;</span> ((<span class="dv">1</span>,<span class="dv">2</span>),(<span class="dv">3</span>,<span class="dv">4</span>)) <span class="fu">^.</span> _1 <span class="fu">.</span> _2
 <span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="dv">2</span>
 <span class="dt">GHCi</span><span class="fu">&gt;</span> set (_1 <span class="fu">.</span> _2) <span class="dv">0</span> ((<span class="dv">1</span>,<span class="dv">2</span>),(<span class="dv">3</span>,<span class="dv">4</span>))
 <span class="dt">GHCi</span><span class="fu">&gt;</span> ((<span class="dv">1</span>,<span class="dv">0</span>),(<span class="dv">3</span>,<span class="dv">4</span>))</code></pre>
-<p>A perennial topic in discussions about <code>lens</code> is the order of composition of lenses. They are often said to compose backwards; that is, backwards with respect of composition of record accessors and similar getters. For instance, the getter corresponding to the <code>_1 . _2</code> lens is <code>snd . fst</code>. The claim that lenses compose backwards, or in the “wrong order”, however, are only defensible when talking about style, and not about semantics. That becomes clear after placing the signatures of a getter and its corresponding lens side by side.</p>
+<p>A perennial topic in discussions about <code>lens</code> is the order of composition of lenses. They are often said to compose backwards; that is, backwards with respect to composition of record accessors and similar getters. For instance, the getter corresponding to the <code>_1 . _2</code> lens is <code>snd . fst</code>. The claim that lenses compose backwards, or in the “wrong order”, however, are only defensible when talking about style, and not about semantics. That becomes clear after placing the signatures of a getter and its corresponding lens side by side.</p>
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t fst
 fst<span class="ot"> ::</span> (a, b) <span class="ot">-&gt;</span> a
 <span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t _1<span class="ot"> ::</span> <span class="dt">Lens'</span> (a, b) a
 _1<span class="ot"> ::</span> <span class="dt">Lens'</span> (a, b) a
 <span class="ot"> ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> (a, b) <span class="ot">-&gt;</span> f (a, b)</code></pre>
-<p>The getter takes a value of the source type and produces a value of the target type. The lens, however, takes a function from the target type and produces a function of the source type. Therefore, it is no surprise that the order of composition differs, and the order for lenses is entirely natural. That ties in closely to what we have seen while implementing lenses. While we can squeeze lenses until they give back getters, it is much easier to think of them as generalised modifiers.</p>
+<p>The getter takes a value of the source type and produces a value of the target type. The lens, however, takes a function from the target type and produces a function from the source type. Therefore, it is no surprise that the order of composition differs, and the order for lenses is entirely natural. That ties in closely to what we have seen while implementing lenses. While we can squeeze lenses until they give back getters, it is much easier to think of them as generalised modifiers.</p>
 <section class="footnotes">
 <hr />
 <ol>
@@ -181,9 +182,10 @@ setGen modifier (get' modifier x) x ≡ x
 
 setGen modifier z (setGen modifier y x) ≡ setGen modifier z x</code></pre>
 <a href="#fnref1">↩</a></li>
-<li id="fn2"><p><code>Lens' s a</code> or <code>Lens s s a a</code>, as opposed to <code>Lens s t a b</code>.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>Yes, even further; from taking modifying functions to taking modifying profunctors. The difference need not worry us now.<a href="#fnref3">↩</a></p></li>
-<li id="fn4"><p>And in some cases of profunctors to replace the function type constructor.<a href="#fnref4">↩</a></p></li>
+<li id="fn2"><p>“What about the <code>forall</code>?” you might ask. Are we cheating? Not quite. The <code>forall</code> is there to control how <code>f</code> is specialised when lenses are passed to lens combinators. The underlying issue does not affect our reasoning here. If you are into type system subtleties, there were a few interesting comments about it in the <a href="http://www.reddit.com/r/haskell/comments/241aec/lenses_you_can_make_at_home/ch2rbgp">reddit thread</a> for this post.<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p><code>Lens' s a</code> or <code>Lens s s a a</code>, as opposed to <code>Lens s t a b</code>.<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>Yes, even further; from taking modifying functions to taking modifying profunctors. The difference need not worry us now.<a href="#fnref4">↩</a></p></li>
+<li id="fn5"><p>And in some cases of profunctors to replace the function type constructor.<a href="#fnref5">↩</a></p></li>
 </ol>
 </section>
 
