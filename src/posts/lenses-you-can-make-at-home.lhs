@@ -260,9 +260,17 @@ Now, let's take a peek at
 
 < type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 
-It is the same type! We have reached our destination. A lens is what
-we might have called a generalised functorial modifier; furthermore,
-sans implementation details we have that:
+It is the same type! We have reached our destination.^["What about the
+`forall`?" you might ask. Are we cheating? Not quite. The `forall` is
+there to control how `f` is specialised when lenses are passed to lens
+combinators. The underlying issue does not affect our reasoning here. If
+you are into type system subtleties, there were a few interesting
+comments about it in the
+[reddit
+thread](http://www.reddit.com/r/haskell/comments/241aec/lenses_you_can_make_at_home/ch2rbgp)
+for this post.]
+A lens is what we might have called a generalised functorial modifier;
+furthermore, sans implementation details we have that:
 
 - The `lens` function is `modifyGenF`;
 - `modifyF` is `lens` specialised to produce simple lenses;^[`Lens' s a`
