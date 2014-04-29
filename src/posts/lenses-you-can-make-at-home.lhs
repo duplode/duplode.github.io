@@ -260,27 +260,31 @@ Now, let's take a peek at
 
 < type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 
-It is the same type! We have reached our destination.^["What about the
-`forall`?" you might ask. Are we cheating? Not quite. The `forall` is
-there to control how `f` is specialised when lens combinators are used.
-The underlying issue does not affect our reasoning here. If you are into
-type system subtleties, there were a few interesting comments about it
-in the [reddit
-thread](http://www.reddit.com/r/haskell/comments/241aec/lenses_you_can_make_at_home/ch2rbgp)
-for this post.]
+It is the same type! We have reached our destination.[^forall]
 A lens is what we might have called a generalised functorial modifier;
 furthermore, sans implementation details we have that:
 
 - The `lens` function is `modifyGenF`;
-- `modifyF` is `lens` specialised to produce simple lenses;^[`Lens' s a`
-  or `Lens s s a a`, as opposed to `Lens s t a b`.]
+- `modifyF` is `lens` specialised to produce simple lenses;[^simple]
 - `modifyBarF` is a lens with type `Lens Foo Foo Int Int`;
 - `(^.)` is flipped `get'`;
 - `set` is `setGen`;
-- `over` is `modifyGen` further generalised.^[Yes, even further; from
-  taking modifying functions to taking modifying
-  [profunctors](https://www.fpcomplete.com/user/liyang/profunctors).
-  The difference need not worry us now.]
+- `over` is `modifyGen` further generalised.[^profunctors]
+
+[^forall]: "What about the `forall`?" you might ask. Are we cheating?
+Not quite. The `forall` is there to control how `f` is specialised when
+lens combinators are used.  The underlying issue does not affect our
+reasoning here. If you are into type system subtleties, there were a few
+interesting comments about it in the [reddit
+thread](http://www.reddit.com/r/haskell/comments/241aec/lenses_you_can_make_at_home/ch2rbgp)
+for this post.
+
+[^simple]: `Lens' s a` or `Lens s s a a`, as opposed to `Lens s t a b`.
+
+[^profunctors]: Yes, even further; from taking modifying functions to
+taking modifying
+[profunctors](https://www.fpcomplete.com/user/liyang/profunctors). The
+difference need not worry us now.
 
 `lens` uses type synonyms liberally, so those correspondences are not
 immediately obvious form the signatures in the documentation. Digging a
@@ -300,13 +304,15 @@ Analogously, we have
 
 Behind the plethora of type synonyms - `ASetter`, `Getting`, `Fold`,
 `Traversal`, `Prism`, `Iso` and so forth - there are different choices
-of functors,^[And in some cases of profunctors to replace the function
-type constructor.] which make it possible to capture many different
-concepts as variations on lenses. The variations may be more general or
-less general than lenses; occasionally they are neither, as the overlap
-is just partial. The fact that we can express so much through
-parametrization of functors is key to the extraordinary breadth of
-`lens`.
+of functors,[^profunctors2] which make it possible to capture many
+different concepts as variations on lenses. The variations may be more
+general or less general than lenses; occasionally they are neither, as
+the overlap is just partial. The fact that we can express so much
+through parametrization of functors is key to the extraordinary breadth
+of `lens`.
+
+[^profunctors2]: And in some cases of profunctors to replace the
+function type constructor.
 
 Going Forward
 -------------
