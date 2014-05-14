@@ -25,6 +25,18 @@ div#navigation a {
     font-size: 16px;
     font-weight: bold;
     text-decoration: none;
+    text-transform: none;
+}
+
+div#navigation .menu-title {
+    font-size: 18px;
+    font-family: monospace;
+}
+
+div#navigation span.menu-subtitle {
+    font-size: 16px;
+    font-weight: normal;
+    font-style: italic;
 }
 
 div#footer {

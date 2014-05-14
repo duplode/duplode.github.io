@@ -43,7 +43,7 @@ pandocCompilerOfOurs' withToc =
 
 rssConfig :: FeedConfiguration
 rssConfig = FeedConfiguration
-    { feedTitle = "duplode.github.io"
+    { feedTitle = "The Life Monadic"
     , feedDescription = "Haskell amusements"
     , feedAuthorName = "Daniel Mlot"
     , feedAuthorEmail = "" -- Not used by RSS.
