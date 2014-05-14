@@ -6,3 +6,6 @@ dist
 duplode-github-io
 
 posts/testbench
+
+.cabal-sandbox
+cabal.sandbox.config

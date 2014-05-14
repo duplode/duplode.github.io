@@ -19,8 +19,8 @@ executable duplode-github-io
   main-is:             site.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.6 && <4.7
-                     , hakyll == 4.4.*
+  build-depends:       base >= 4.6 && < 5
+                     , hakyll >= 4.4 && < 4.6
                      , pandoc
                      , highlighting-kate
                      , filepath
