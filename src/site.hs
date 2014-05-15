@@ -69,8 +69,11 @@ redditCtx = field "reddit-button" $ \it -> do
 teaserCtx :: Context String
 teaserCtx = teaserField "teaser" "content" <> postItemCtx
 
+postCtx :: Context String
+postCtx = licenseInfoCtx <> redditCtx <> baseCtx
+
 baseCtx :: Context String
-baseCtx = licenseInfoCtx <> redditCtx <> defaultContext
+baseCtx = defaultContext
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -112,6 +115,8 @@ main = hakyllWith hakyllConfig $ do
             pandocCompilerOfOurs
                 >>= saveSnapshot "content"
                 >>= loadAndApplyTemplate
+                    "templates/post.html" postCtx
+                >>= loadAndApplyTemplate
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
 
@@ -143,7 +148,7 @@ main = hakyllWith hakyllConfig $ do
     create ["rss.xml"] $ do
         route idRoute
         compile $ do
-            let feedCtx = baseCtx <> bodyField "description"
+            let feedCtx = bodyField "description" <> postCtx
             barePosts <- fmap (take 12) . recentFirst
                 =<< loadAllSnapshots allPosts "content"
             renderRss rssConfig feedCtx barePosts
