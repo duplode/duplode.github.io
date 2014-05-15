@@ -51,8 +51,11 @@ rssConfig = FeedConfiguration
     }
 
 --------------------------------------------------------------------------------
+postDateCtx :: Context String
+postDateCtx = dateField "date" "%B %e, %Y"
+
 postItemCtx :: Context String
-postItemCtx = dateField "date" "%B %e, %Y" <> defaultContext
+postItemCtx = postDateCtx <> defaultContext
 
 licenseInfoCtx :: Context String
 licenseInfoCtx = field "license-info" $ \it -> do
@@ -70,7 +73,7 @@ teaserCtx :: Context String
 teaserCtx = teaserField "teaser" "content" <> postItemCtx
 
 postCtx :: Context String
-postCtx = licenseInfoCtx <> redditCtx <> baseCtx
+postCtx = postDateCtx <> licenseInfoCtx <> redditCtx <> baseCtx
 
 baseCtx :: Context String
 baseCtx = defaultContext
