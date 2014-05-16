@@ -4,6 +4,7 @@ module Main where
 
 import System.FilePath (takeFileName)
 import Data.Monoid ((<>))
+import Data.Maybe (fromMaybe)
 import Hakyll
 import Text.Highlighting.Kate (styleToCss, tango)
 import Text.Pandoc.Options
@@ -69,11 +70,25 @@ redditCtx = field "reddit-button" $ \it -> do
     redd <- itemIdentifier it `getMetadataField` "reddit"
     maybe (return "") (const $ loadBody "fragments/reddit.html") redd
 
+ghCommentsCtx :: Context String
+ghCommentsCtx = field "gh-comments-button" $ \it -> do
+    mGhi <- itemIdentifier it `getMetadataField` "gh-issue"
+    maybe (return "") commentFragment mGhi
+    where
+    issueBasePath = "https://github.com/duplode/duplode.github.io/issues/"
+    commentFragment ghi = fmap itemBody $
+        load "fragments/gh-comments.html"
+        >>= applyAsTemplate (issueLinkCtx ghi)
+    issueLink ghi = issueBasePath ++ ghi
+    issueLinkCtx ghi = constField "gh-issue-link" $ issueLink ghi
+
 teaserCtx :: Context String
 teaserCtx = teaserField "teaser" "content" <> postItemCtx
 
 postCtx :: Context String
-postCtx = postDateCtx <> licenseInfoCtx <> redditCtx <> baseCtx
+postCtx = postDateCtx
+    <> ghCommentsCtx <> licenseInfoCtx <> redditCtx
+    <> baseCtx
 
 baseCtx :: Context String
 baseCtx = defaultContext
@@ -123,11 +138,23 @@ main = hakyllWith hakyllConfig $ do
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
 
+    match allPosts $ version "toRss" $ do
+        compile $ do
+            idBase <- fmap (setVersion Nothing) getUnderlying
+            baseRoute <- getRoute idBase
+            let toRssCtx = constField "reddit-alt" (fromMaybe "" baseRoute)
+                    <> postCtx
+            loadSnapshotBody idBase "content"
+                >>= makeItem
+                >>= loadAndApplyTemplate
+                    "templates/post.html" toRssCtx
+                >>= relativizeUrls
+
     match "index.html" $ do
         route $ idRoute
         compile $ do
             barePosts <- fmap (take 6) . recentFirst
-                =<< loadAllSnapshots allPosts "content"
+                =<< loadAllSnapshots (allPosts .&&. hasNoVersion) "content"
             getResourceBody
                 >>= applyAsTemplate
                     (listField "post-teasers" teaserCtx (return barePosts))
@@ -151,9 +178,10 @@ main = hakyllWith hakyllConfig $ do
     create ["rss.xml"] $ do
         route idRoute
         compile $ do
-            let feedCtx = bodyField "description" <> postCtx
+            let feedCtx = bodyField "description"
+                    <> baseCtx
             barePosts <- fmap (take 12) . recentFirst
-                =<< loadAllSnapshots allPosts "content"
+                =<< loadAll (allPosts .&&. hasVersion "toRss")
             renderRss rssConfig feedCtx barePosts
 
     match "templates/*" $ compile templateCompiler

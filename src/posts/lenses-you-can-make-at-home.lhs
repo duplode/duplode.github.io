@@ -3,6 +3,7 @@ title: Lenses You Can Make at Home
 published: 2014-04-26T12:00:00Z
 license: CC-BY-SA
 reddit: true
+gh-issue: 1
 ---
 
 The most striking traits of the `lens` library are its astonishing

@@ -49,8 +49,28 @@ div#footer {
 }
 
 div.license {
-  padding: 0.5em;
-  background-color: ghostwhite;
+    background-color: ghostwhite;
+    font-size: small;
+}
+
+span.inline-centered {
+    display: block;
+    text-align: center;
+}
+
+
+div.reddit-button {
+    padding-top: 0.2em;
+    margin-right: 1em;
+    vertical-align: middle;
+}
+
+a#gh-comments-button {
+    color: white;
+    background-color: #6cc644;
+    border-radius: 4px;
+    font-size: x-small;
+    font-weight: bold;
 }
 
 h1 {

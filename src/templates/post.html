@@ -2,6 +2,23 @@
 
 $body$
 
-$reddit-button$
+<div id="comment-nav" class="pure-g-r">
+  <div class="pure-u-1-5">
+    $if(reddit-alt)$
+    $else$
+      $reddit-button$
+    $endif$
+  </div>
+  <div class="pure-u-1-5">
+    $gh-comments-button$
+    $if(reddit)$
+      $if(reddit-alt)$
+        (see <a href="$reddit-alt$#comment-nav">the full post</a> for a reddit link)
+      $endif$
+    $endif$
+  </div>
+  <div class="pure-u-3-5">
+  </div>
+</div>
 
-$license-info$
+<div>$license-info$</div>
