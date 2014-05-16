@@ -56,7 +56,7 @@ postDateCtx :: Context String
 postDateCtx = dateField "date" "%B %e, %Y"
 
 postItemCtx :: Context String
-postItemCtx = postDateCtx <> defaultContext
+postItemCtx = postDateCtx <> baseCtx
 
 licenseInfoCtx :: Context String
 licenseInfoCtx = field "license-info" $ \it -> do
@@ -134,6 +134,8 @@ main = hakyllWith hakyllConfig $ do
                 >>= saveSnapshot "content"
                 >>= loadAndApplyTemplate
                     "templates/post.html" postCtx
+                >>= loadAndApplyTemplate
+                    "templates/post-wrapper.html" postItemCtx
                 >>= loadAndApplyTemplate
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
