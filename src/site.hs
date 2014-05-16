@@ -140,23 +140,11 @@ main = hakyllWith hakyllConfig $ do
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
 
-    match allPosts $ version "toRss" $ do
-        compile $ do
-            idBase <- fmap (setVersion Nothing) getUnderlying
-            baseRoute <- getRoute idBase
-            let toRssCtx = constField "reddit-alt" (fromMaybe "" baseRoute)
-                    <> postCtx
-            loadSnapshotBody idBase "content"
-                >>= makeItem
-                >>= loadAndApplyTemplate
-                    "templates/post.html" toRssCtx
-                >>= relativizeUrls
-
     match "index.html" $ do
         route $ idRoute
         compile $ do
             barePosts <- fmap (take 6) . recentFirst
-                =<< loadAllSnapshots (allPosts .&&. hasNoVersion) "content"
+                =<< loadAllSnapshots allPosts "content"
             getResourceBody
                 >>= applyAsTemplate
                     (listField "post-teasers" teaserCtx (return barePosts))
@@ -182,8 +170,22 @@ main = hakyllWith hakyllConfig $ do
         compile $ do
             let feedCtx = bodyField "description"
                     <> baseCtx
-            barePosts <- fmap (take 12) . recentFirst
-                =<< loadAll (allPosts .&&. hasVersion "toRss")
+
+                processRssItem :: Item String -> Compiler (Item String)
+                processRssItem it = do
+                    let id' = itemIdentifier it
+                    baseRoute <- getRoute id'
+                    let toRssCtx = constField "reddit-alt"
+                                (fromMaybe "" baseRoute)
+                            <> postCtx
+                    return it
+                        >>= loadAndApplyTemplate
+                            "templates/post.html" toRssCtx
+                        >>= relativizeUrls
+
+            barePosts <- mapM processRssItem
+                =<< fmap (take 12) . recentFirst
+                =<< loadAllSnapshots allPosts "content"
             renderRss rssConfig feedCtx barePosts
 
     match "templates/*" $ compile templateCompiler
