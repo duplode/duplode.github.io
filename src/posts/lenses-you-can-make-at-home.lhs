@@ -55,8 +55,8 @@ We can make it even easier by defining a modifier function for `bar`.
 < GHCi> modifyBar negate x
 < Foo {bar = -3}
 
-`setBar` can be recovered from `modifyBar` recovered from it by using
-`const` to discard the original value and put the new one in its place.
+`setBar` can be recovered from `modifyBar` by using `const` to discard
+the original value and put the new one in its place.
 
 < const y = \_ -> y
 
@@ -89,7 +89,8 @@ in which the modifying function, rather than being a plain `a -> a`
 function, returns a functorial value. Defining it only takes an extra
 `fmap`.
 
-> modifyF :: Functor f => (s -> a) -> (s -> a -> s) -> (a -> f a) -> s -> f s
+> modifyF :: Functor f => (s -> a) -> (s -> a -> s)
+>                      -> (a -> f a) -> s -> f s
 > modifyF getter setter k x = fmap (setter x) . k . getter $ x
 
 And here is its specialisation for `bar`.
