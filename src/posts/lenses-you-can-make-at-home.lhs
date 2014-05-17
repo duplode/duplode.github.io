@@ -172,7 +172,7 @@ redefining once more the recovered getters and modifiers, this time in
 terms of the functorial modifier.
 
 < modifyF :: Functor f => (s -> a) -> (s -> a -> s)
-                       -> ((a -> f a) -> s -> f s)
+<                      -> ((a -> f a) -> s -> f s)
 
 > modify'' :: ((a -> Identity a) -> s -> Identity s) -> (a -> a) -> s -> s
 > modify'' modifier k = runIdentity . modifier (Identity . k)
@@ -205,7 +205,8 @@ Expanding Horizons
 Even after all of the work so far we can still generalise further!
 Let's have a second look at `modifyF`.
 
-< modifyF :: Functor f => (s -> a) -> (s -> a -> s) -> (a -> f a) -> s -> f s
+< modifyF :: Functor f => (s -> a) -> (s -> a -> s)
+<                      -> (a -> f a) -> s -> f s
 < modifyF getter setter k x = fmap (setter x) . k . getter $ x
 
 The type of `setter` is `(s -> a -> s)`; however, nothing in the
@@ -214,7 +215,8 @@ type. Furthermore, with a different signature `k` could have a more
 general type, `(a -> f b)`, as long as the type of `setter` was adjusted
 accordingly. We can thus give `modifyF` a more general type.
 
-> modifyGenF :: Functor f => (s -> a) -> (s -> b -> t) -> (a -> f b) -> s -> f t
+> modifyGenF :: Functor f => (s -> a) -> (s -> b -> t)
+>                         -> (a -> f b) -> s -> f t
 > modifyGenF getter setter k x = fmap (setter x) . k . getter $ x
 
 For the sake of completeness, here are the generalised recovery
