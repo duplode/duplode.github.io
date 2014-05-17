@@ -114,7 +114,9 @@ main = hakyllWith hakyllConfig $ do
 
     let plainPosts = "posts/*.md"
         literatePosts = "posts/*.lhs"
-        allPosts = plainPosts .||. literatePosts
+        hiddenPosts = "posts/_*"
+        allPosts = (plainPosts .||. literatePosts)
+            .&&. complement hiddenPosts
 
     match "posts.html" $ do
         route $ idRoute
