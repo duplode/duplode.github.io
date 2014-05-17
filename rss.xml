@@ -37,7 +37,7 @@
 <span class="ot">&gt;</span> modifyBar k x <span class="fu">=</span> setBar x <span class="fu">.</span> k <span class="fu">.</span> bar <span class="fu">$</span> x</code></pre>
 <pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> modifyBar negate x
 <span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="fu">-</span><span class="dv">3</span>}</code></pre>
-<p><code>setBar</code> can be recovered from <code>modifyBar</code> recovered from it by using <code>const</code> to discard the original value and put the new one in its place.</p>
+<p><code>setBar</code> can be recovered from <code>modifyBar</code> by using <code>const</code> to discard the original value and put the new one in its place.</p>
 <pre class="sourceCode haskell"><code class="sourceCode haskell">const y <span class="fu">=</span> \_ <span class="ot">-&gt;</span> y</code></pre>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; setBar' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
 <span class="ot">&gt;</span> setBar' x y <span class="fu">=</span> modifyBar (const y) x</code></pre>
@@ -49,7 +49,8 @@
 <span class="ot">&gt;</span> modifyBar' <span class="fu">=</span> modify bar setBar</code></pre>
 <h2 id="functors-galore">Functors Galore</h2>
 <p>The next step of generalisation is the one leap of faith I will ask of you in the way towards lenses. I will introduce a variant of <code>modify</code> in which the modifying function, rather than being a plain <code>a -&gt; a</code> function, returns a functorial value. Defining it only takes an extra <code>fmap</code>.</p>
-<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s
+<pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s)
+<span class="ot">&gt;</span>                      <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s
 <span class="ot">&gt;</span> modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</code></pre>
 <p>And here is its specialisation for <code>bar</code>.</p>
 <pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyBarF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> f <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> f <span class="dt">Foo</span>
