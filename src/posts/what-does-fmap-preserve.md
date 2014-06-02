@@ -179,7 +179,7 @@ Your Freedom Comes Naturally
 ----------------------------
 
 By identifying the `Functor` context with polymorphic functions, we can
-also state the conext-preserving trait of `fmap` through commutativity
+also state the context-preserving trait of `fmap` through commutativity
 equations like those shown in the above examples. For an arbitrary
 context-probing function `r`, the equation is:
 
