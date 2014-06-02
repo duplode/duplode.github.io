@@ -6,8 +6,142 @@
         <description><![CDATA[Haskell amusements]]></description>
         <atom:link href="http://duplode.github.io/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Sat, 26 Apr 2014 12:00:00 UT</lastBuildDate>
+        <lastBuildDate>Mon, 02 Jun 2014 06:00:00 UT</lastBuildDate>
         <item>
+    <title>What Does fmap Preserve?</title>
+    <link>http://duplode.github.io/posts/what-does-fmap-preserve.html</link>
+    <description><![CDATA[<p>A common way of introducing <code>fmap</code> is saying that it only changes the values in a container, and not its structure. Leaving behind the the functors-as-containers metaphor, we can convey the same idea by saying that <code>fmap</code> leaves the context of the values in a <code>Functor</code> unchanged. But what, exactly, is the “context” or “structure” being preserved? “It depends on the functor”, though correct, is not an entirely satisfactory answer. The functor laws, after all, are highly abstract, and make no mention of anything a programmer would be inclined to call “structure” (say, the skeleton of a list); and yet the preservation we alluded to follows from them. After struggling a bit with this question, I realised that the incompatibility is only apparent. This post shows how the tension can be resolved through the mediation of <em>parametricity</em> and <em>naturality</em>, two concepts from different domains that are intertwined in Haskell.</p>
+<div>
+
+</div>
+<!--more-->
+
+<h2 id="categorical-cautionary-comment">Categorical Cautionary Comment</h2>
+<p>A correct, if rather cruel, answer to “Why does <code>fmap</code> preserve structure?” would be “By definition, you silly!” To see what would be meant by that, let’s have a look at the functor laws.</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">fmap id <span class="fu">=</span> id                   <span class="co">-- 1st functor law</span>
+fmap (g <span class="fu">.</span> f) <span class="fu">=</span> fmap g <span class="fu">.</span> fmap f <span class="co">-- 2nd functor law</span></code></pre>
+<p><code>fmap</code> is a mapping of functions that takes identity to identity, and composed functions to the corresponding composed functions. Identity and composition make up the structure, in the mathematical sense, of a category. In category theory, a functor is a mapping between categories that preserves category structure. Therefore, the functor laws ensure that Haskell <code>Functor</code>s are indeed functors; more precisely, functors from <strong>Hask</strong> to <strong>Hask</strong>, <strong>Hask</strong> being the category with Haskell types as objects and Haskell functions as arrows.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></p>
+<p>That functors preserve category structure is evident. However, our question is not directly about “structure” in the mathematical sense, but with the looser acception it has in programmer parlance. In what follows, our goal will be clarifying this casual meaning.</p>
+<h2 id="what-can-you-do-with-a-function">What Can You Do With a Function?</h2>
+<p>As an intial, fuzzy characterisation, we can say that, given a functorial value, the <code>Functor</code> context is everything in it other than the wrapped values. Staring from that, a straightforward way of showing why <code>fmap</code> preserves context involves <em>parametric polymorphism</em>; more specifically, the preservation is ensured by the wild generality of the types in the signature of <code>fmap</code>.</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">fmap<span class="ot"> ::</span> (<span class="dt">Functor</span> t) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (t a <span class="ot">-&gt;</span> t b)</code></pre>
+<p>We will look at <code>fmap</code> as a function of one argument which converts a plain <code>a -&gt; b</code> function into a function which operates on functorial values. The key fact is that there is very little we can do with the <code>a -&gt; b</code> function when defining <code>fmap</code>. Composition is not an option, as choosing a function other than <code>id</code> to compose it with would require knowledge about the <code>a</code> and <code>b</code> types. The only thing that can be done is applying the function to any <code>a</code> values we can retrieve from the <code>t a</code> functorial value. Since the context of a <code>t a</code> value, whatever it is, does not include the <code>a</code> values, it follows that changes to the context cannot depend on the <code>a -&gt; b</code> function. Given that <code>fmap</code> takes no other arguments, any changes in the context must happen for any <code>a -&gt; b</code> arguments uniformly. The first functor law, however, says that <code>fmap id = id</code>, and so there is one argument, <code>id</code>, which leads to no changes in the context. Therefore, <code>fmap</code> never changes the context.</p>
+<p>The informal argument above can be made precise through a proper type theory treatment of parametricity. Philip Wadler’s <em><a href="http://homepages.inf.ed.ac.uk/wadler/topics/parametricity.html#free">Theorems for free!</a></em> is a well-known example of such work. However, a type theory approach, while entirely appropriate, would have us taking concrete Haksell types for granted and only incidentally concluding they are functors; in contrast, our problem begins with functors. For that reason, we will follow a different path and look at the issue from a primarily categorical point of view.</p>
+<h2 id="what-is-a-context-after-all">What Is a Context, After All?</h2>
+<p>In the spirit of category theory, we will now focus not on the types but on the functions between them. After all, given functional purity any interesting properties of a Haskell value can be verified with suitable functions. Let’s start with a few concrete examples of how the context of a <code>Functor</code> can be probed with functions.</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">length<span class="ot"> ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Int</span></code></pre>
+<p>The length of a list is perhaps the most obvious example of a structural property. It depends only on the list skeleton, and not all on the values in it. The type of <code>length</code>, with a fully polymorphic element type which is not mentioned by the result type, reflects such an independence. An obvious consequence is that <code>fmap</code>, which only affects the list elements, cannot change the length of a list. We can state this fact like this:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">length xs <span class="fu">=</span> length (fmap f xs)</code></pre>
+<p>Or, in a more categorical fashion:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">length <span class="fu">=</span> length <span class="fu">.</span> fmap f</code></pre>
+<p>Our second example of a structure-probing function will be <code>reverse</code>:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">reverse<span class="ot"> ::</span> [a] <span class="ot">-&gt;</span> [a]</code></pre>
+<p>While the result value of <code>reverse</code> obviously depends on the list elements, <code>reverse</code> cannot actually modify the elements, given that the function is fully polymorphic on the element type. <code>fmap</code> applied to a list after reversing it will thus affect the same element values there were before the reversal; they will only have been rearranged. In other words, <code>fmap</code> <em>commutes</em> with <code>reverse</code>:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">fmap f <span class="fu">.</span> reverse <span class="fu">=</span> reverse <span class="fu">.</span> fmap f</code></pre>
+<p>Our final example will be <code>listToMaybe</code> from <code>Data.Maybe</code>:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">listToMaybe ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</code></pre>
+<p>Operationally, <code>listToMaybe</code> is a safe version of <code>head</code>, which returns <code>Nothing</code> when given an empty list. Again, the function is fully polymorphic in the element type, and so the value of the first element cannot be affected by it. The scenario is very similar to what we have seen for <code>reverse</code>, and an analogous property holds, with the only difference being that <code>fmap</code> is instantiated at a different <code>Functor</code> at each side of the equation:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Maybe-fmap on the left, []-fmap on the right.</span>
+fmap f <span class="fu">.</span> listToMaybe <span class="fu">=</span> listToMaybe <span class="fu">.</span> fmap f</code></pre>
+<p>Earlier we said that the <code>Functor</code> context consists of everything but the wrapped values. Our examples illustrate how parametric polymorphism makes it possible to keep that general idea while putting functions rather than values under the spotlight. The context is all that can be probed with functions fully polymorphic on the type parameter of the <code>Functor</code>; or, taking the abstraction further, the context <em>is</em> the collection of functions fully polymorphic on the type parameter of the <code>Functor</code>. We now have done away with the fuzziness of our preliminary, valure-centric definition. The next step is clarifying how that definition relates to <code>fmap</code>.</p>
+<h2 id="your-freedom-comes-naturally">Your Freedom Comes Naturally</h2>
+<p>By identifying the <code>Functor</code> context with polymorphic functions, we can also state the conext-preserving trait of <code>fmap</code> through commutativity equations like those shown in the above examples. For an arbitrary context-probing function <code>r</code>, the equation is:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- f is arbitrary, and so are the involved functors.</span>
+fmap f <span class="fu">.</span> r <span class="fu">=</span> r <span class="fu">.</span> fmap f</code></pre>
+<p>The equations for <code>reverse</code> and <code>listToMaybe</code> clearly have that shape. <code>length</code> does not seem to fit at first sight, but that can be easily solved by lifting it to a constant functor such as the one provided by <code>Control.Applicative</code>.</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">lengthC ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Const</span> <span class="dt">Int</span> a
+lengthC <span class="fu">=</span> <span class="dt">Const</span> <span class="fu">.</span> length
+<span class="co">-- length = getConst . lengthC</span>
+
+<span class="co">-- For constant functors, fmap f = id regardless of f.</span>
+fmap f <span class="fu">.</span> lengthC <span class="fu">=</span> lengthC <span class="fu">.</span> fmap f</code></pre>
+<p>A similar trick can be done with the <code>Identity</code> functor to make functions in which the type parameter of the <code>Functor</code> appears bare, such as <code>Just :: a -&gt; Maybe a</code>, fit our scheme.</p>
+<p>It turns out that there is a category theory concept that captures the commutativity property we are interested in. A <em>natural transformation</em> is a translation between functors which preserves arrows being mapped through them. For Haskell <code>Functor</code>s, that amounts to preserving functions being mapped via <code>fmap</code>. We can display the relation through a diagram:</p>
+<figure>
+<img src="../images/posts/what-does-fmap-preserve/naturality-diagram.png" alt="Naturality for Haskell Functors. Example instantation: T = []; U = Maybe; r = listToMaybe." /><figcaption><em>Naturality for Haskell <code>Functor</code>s. Example instantation: <code>T = []; U = Maybe; r = listToMaybe</code>.</em></figcaption>
+</figure>
+<p>The naturality condition matches our commuativity property. Indeed, <em>polymorphic functions are natural transformations between Haskell <code>Functors</code></em>. The proof of this appealing result is not trivial, and requires some theoretical work, just like in the case of the closely related results about parametricity we alluded to earlier. In any case, all it takes to go from “natural transformations preserve <code>fmap</code>” to “<code>fmap</code> preserves natural transformations” is tilting our heads while looking at the diagram above!</p>
+<p>Given how we identified <code>Functor</code> contexts, polymorphic functions and natural transformations, we can finally give a precise answer to our question. The context consists of natural transformations between functors, and therefore <code>fmap</code> preserves it.</p>
+<h2 id="structures-and-structures">Structures and Structures</h2>
+<p>Earlier on, we have said that we would not be directly concerned with structure in the sense mathematicians use the word, but only with the fuzzy Haskell concept that sometimes goes by the same name. To wrap things up, we will now illustrate the fact that both acceptions are not worlds apart. Let’s have another look at the second functor law, which states that <code>fmap</code> preserves composition:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">fmap (g <span class="fu">.</span> f) <span class="fu">=</span> fmap g <span class="fu">.</span> fmap f</code></pre>
+<p>Structure, in the mathematical sense, refers to some collection of interesting operations and distinguished elements. In this example, the relevant operation is function composition, which is part of the structure of the <em>Hask</em> category. Besides that, however, we are now able to note the uncanny resemblance between the shapes of the law, which says that it does not matter whether we compose <code>f</code> and <code>g</code> before applying <code>fmap</code>, and of the commutativity properties we used to characterise functorial contexts. The upshot is that by identifying context and structure of a <code>Functor</code> with polymorphic functions, we retain much of the spirit of the mathematical usage of structure. The interesting operations, in our case, are the polymorphic functions with which the context is probed. Perhaps it even makes sense to keep talking of structure of a <code>Functor</code> even after dropping the container metaphor.</p>
+<h2 id="fmap-preserves-fmap">fmap Preserves fmap</h2>
+<p>Speaking of the second law, we will, just for kicks, use it to show how to turn things around and look at <code>fmap</code> as a natural transformation between <code>Functor</code>s. In order to do so, we have to recall that <code>(.)</code> is <code>fmap</code> for the function functor:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">fmap (g <span class="fu">.</span> f) <span class="fu">=</span> fmap g <span class="fu">.</span> fmap f
+fmap (((<span class="fu">.</span>) g) f) <span class="fu">=</span> (<span class="fu">.</span>) (fmap g) (fmap f)
+fmap <span class="fu">.</span> (<span class="fu">.</span>) g <span class="fu">=</span> ((<span class="fu">.</span>) <span class="fu">.</span> fmap) g <span class="fu">.</span> fmap
+
+<span class="co">-- A rephrasing to point out the involved functors:</span>
+
+<span class="co">-- By fixing t and a, we get Functors parametrised over b in both sides</span>
+<span class="co">-- of the function arrow below.</span>
+<span class="ot">fmap_t ::</span> (<span class="dt">Functor</span> t) <span class="ot">=&gt;</span> (<span class="ot">-&gt;</span>) a b <span class="ot">-&gt;</span> (<span class="ot">-&gt;</span>) (t a) (t b)
+fmap_t <span class="fu">=</span> fmap
+
+<span class="ot">fmap_fun ::</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> ((<span class="ot">-&gt;</span>) a b <span class="ot">-&gt;</span> (<span class="ot">-&gt;</span>) a c)
+fmap_fun <span class="fu">=</span> (<span class="fu">.</span>)
+
+<span class="ot">fmap_fun_t ::</span> (<span class="dt">Functor</span> t)
+           <span class="ot">=&gt;</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> ((<span class="ot">-&gt;</span>) (t a) (t b) <span class="ot">-&gt;</span> (<span class="ot">-&gt;</span>) (t a) (t c))
+fmap_fun_t <span class="fu">=</span> fmap_fun <span class="fu">.</span> fmap_t
+
+fmap_t <span class="fu">.</span> fmap_fun g <span class="fu">=</span> fmap_fun_t g <span class="fu">.</span> fmap_t
+
+<span class="co">-- Or simply:</span>
+fmap <span class="fu">.</span> fmap g <span class="fu">=</span> fmap g <span class="fu">.</span> fmap</code></pre>
+<h2 id="further-reading">Further Reading</h2>
+<ul>
+<li><p>In <em><a href="http://existentialtype.wordpress.com/2011/03/27/the-holy-trinity/">The Holy Trinity</a></em>, Robert Harper comments on the deep connection between logic, type theory and category theory that allows us to shift seamlessly between the categorical and the type theoretical perspectives, as we have done here.</p></li>
+<li><p><em><a href="http://blog.sigfpe.com/2008/05/you-could-have-defined-natural.html">You Could Have Defined Natural Transformations</a></em> by Dan Piponi is a very clear introduction to natural transformations in a Haskell context.</p></li>
+<li><p>We have already mentioned Philip Wadler’s <em><a href="http://homepages.inf.ed.ac.uk/wadler/topics/parametricity.html#free">Theorems for free!</a></em>, which is a reasonably accessible introduction to the <em>free theorems</em>. <em>Free theorems</em> are results about functions that, thanks to parametric polymorphism, can be deduced from the type of the function alone. Given suitable generalisations, free theorems and naturality conditions provide two parallel ways of reaching the same results about Haskell functions.</p></li>
+<li><p><em><a href="http://www.iai.uni-bonn.de/~jv/Voi09b.html">Free Theorems Involving Type Constructor Classes</a></em>, a functional pearl by Janis Voigtländer illustrates how free theorem generation can be generalised to types parametric on type constructors and type classes.</p></li>
+<li><p>For an explicitly categorical perspective on parametricity, a good place to start if you are willing to dig into theory is the section on parametricity in <em><a href="https://www.site.uottawa.ca/~phil/papers/">Some Aspects of Categories in Computer Science</a></em> by Philip J. Scott.</p></li>
+</ul>
+<section class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>A category theory primer would be too big a detour for this post. If the category theory concepts I just mentioned are new to you, I suggest the following gentle introductions for Haskellers, which have very different approaches: <a href="https://en.wikibooks.org/wiki/Haskell/Category_theory">Haskell Wikibook chapter on category theory</a>, and Gabriel Gonzalez’s posts <a href="http://www.haskellforall.com/2012/08/the-category-design-pattern.html">The category design pattern</a> and <a href="http://www.haskellforall.com/2012/09/the-functor-design-pattern.html">The functor design pattern</a>.<a href="#fnref1">↩</a></p></li>
+</ol>
+</section>
+
+<div id="comment-nav" class="pure-g-r">
+  <div class="pure-u-1-5">
+    
+    
+  </div>
+  <div class="pure-u-1-5">
+    <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/2">Comment on GitHub</a>
+
+    
+      
+        (see <a href="posts/what-does-fmap-preserve.html#comment-nav">the full post</a> for a reddit link)
+      
+    
+  </div>
+  <div class="pure-u-3-5">
+  </div>
+</div>
+
+<div><div class="license">
+  <p>
+    <span class="inline-centered">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+    </span>
+    <span class="inline-centered">
+      Post licensed under a
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+    </span>
+  </p>
+</div>
+
+</div>
+]]></description>
+    <pubDate>Mon, 02 Jun 2014 06:00:00 UT</pubDate>
+    <guid>http://duplode.github.io/posts/what-does-fmap-preserve.html</guid>
+</item>
+<item>
     <title>Lenses You Can Make at Home</title>
     <link>http://duplode.github.io/posts/lenses-you-can-make-at-home.html</link>
     <description><![CDATA[<p>The most striking traits of the <code>lens</code> library are its astonishing breadth and generality. And yet, the whole edifice is built around van Laarhoven lenses, which are a simple and elegant concept. In this hands-on exposition, I will show how the <code>Lens</code> type can be understood without prerequisites other than a passing acquaintance with Haskell functors. Encouraging sound intuition in an accessible manner can go a long way towards making <code>lens</code> and lenses less intimidating.</p>
