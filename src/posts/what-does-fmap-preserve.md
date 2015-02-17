@@ -63,7 +63,7 @@ What Can You Do With a Function?
 
 As an intial, fuzzy characterisation, we can say that, given a
 functorial value, the `Functor` context is everything in it other than
-the wrapped values. Staring from that, a straightforward way of showing
+the wrapped values. Starting from that, a straightforward way of showing
 why `fmap` preserves context involves *parametric polymorphism*; more
 specifically, the preservation is ensured by the wild generality of the
 types in the signature of `fmap`.
