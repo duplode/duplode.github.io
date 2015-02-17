@@ -111,12 +111,12 @@ length :: [a] -> Int
 ```
 
 The length of a list is perhaps the most obvious example of a structural
-property. It depends only on the list skeleton, and not all on the
+property. It depends only on the list skeleton, and not at all on the
 values in it. The type of `length`, with a fully polymorphic element
 type which is not mentioned by the result type, reflects such an
 independence. An obvious consequence is that `fmap`, which only affects
-the list elements, cannot change the length of a list. We can state this
-fact like this:
+the list elements, cannot change the length of a list. We can state that
+like this:
 
 ``` haskell
 length xs = length (fmap f xs)
