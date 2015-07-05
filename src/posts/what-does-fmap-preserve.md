@@ -269,29 +269,36 @@ between `Functor`s. In order to do so, we have to recall that `(.)` is
 `fmap` for the function functor:
 
 ``` haskell
+-- First, we rewrite the second law in a more suggstive form:
 fmap (g . f) = fmap g . fmap f
 fmap (((.) g) f) = (.) (fmap g) (fmap f)
 fmap . (.) g = ((.) . fmap) g . fmap
 
--- A rephrasing to point out the involved functors:
+-- Next, some synonyms to indicate the Functors fmap leads to.
 
--- By fixing t and a, we get Functors parametrised over b in both sides
--- of the function arrow below.
+-- fmap from identity to t
 fmap_t :: (Functor t) => (->) a b -> (->) (t a) (t b)
 fmap_t = fmap
 
+-- fmap from identity to ((->) a)
 fmap_fun :: (b -> c) -> ((->) a b -> (->) a c)
 fmap_fun = (.)
 
+-- fmap from identity to the composite functor ((->) a) . t
 fmap_fun_t :: (Functor t)
            => (b -> c) -> ((->) (t a) (t b) -> (->) (t a) (t c))
 fmap_fun_t = fmap_fun . fmap_t
 
+-- The second law then becomes:
 fmap_t . fmap_fun g = fmap_fun_t g . fmap_t
 
--- Or simply:
+-- That, however, shows fmap_t is a natural transformation:
 fmap . fmap g = fmap g . fmap
 ```
+By fixing `t` and `a` in the signature of `fmap_t` above, we get one
+functor on either side of the outer function arrow: `((->) a)` on the
+left and `((->) a) . t` on the right. `fmap` is a natural transformation
+between these two functors.
 
 Further Reading
 ---------------
