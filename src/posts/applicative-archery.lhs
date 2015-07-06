@@ -3,7 +3,7 @@ title: Applicative Archery
 published: 2015-07-06T17:00:00-03:00
 license: CC-BY-SA
 reddit: true
-gh-issue: 3
+gh-issue: 5
 ---
 
 It is widely agreed that the laws of the `Applicative` class are not
