@@ -31,7 +31,7 @@ processWithPandoc = processWithPandoc' False
 
 processWithPandoc' :: Bool -> Item String -> Compiler (Item String)
 processWithPandoc' withToc =
-    return . renderPandocWith defaultHakyllReaderOptions
+    renderPandocWith defaultHakyllReaderOptions
         (if withToc then tocPandocWriterOptions else ourPandocWriterOptions)
 
 pandocCompilerOfOurs :: Compiler (Item String)

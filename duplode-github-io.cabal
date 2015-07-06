@@ -20,7 +20,7 @@ executable duplode-github-io
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >= 4.6 && < 5
-                     , hakyll >= 4.4 && < 4.7
+                     , hakyll >= 4.4 && < 4.8
                      , pandoc
                      , highlighting-kate
                      , filepath
