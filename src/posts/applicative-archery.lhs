@@ -1,6 +1,6 @@
 ---
 title: Applicative Archery
-published: 2015-07-06T09:00:00Z
+published: 2015-07-06T17:00:00-03:00
 license: CC-BY-SA
 reddit: true
 gh-issue: 3
