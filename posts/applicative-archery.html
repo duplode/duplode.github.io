@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Applicative Archery - The Life Monadic</title>
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/pure/0.4.2/pure-min.css" />
+        <link rel="stylesheet" type="text/css" href="../css/skin.css" />
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body class="pure-skin-duplode">
+      <div class="pure-g-r">
+        <div class="pure-u-1-5">
+          <div id="navigation">
+            <div class="pure-menu pure-menu-open">
+              <a class="pure-menu-heading menu-title">
+                The Life<br>
+                Monadic<br>
+                <span class="menu-subtitle">by duplode</span>
+              </a>
+              <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../posts.html">Posts</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../rss.xml">RSS</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="pure-u-4-5">
+          <div id="content">
+            <h1>Applicative Archery</h1>
+
+            <p><em>July  6, 2015</em></p>
+
+<p>It is widely agreed that the laws of the <code>Applicative</code> class are not pretty to look at.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">pure id <span class="fu">&lt;*&gt;</span> v <span class="fu">=</span> v                            <span class="co">-- identity</span>
+pure f <span class="fu">&lt;*&gt;</span> pure x <span class="fu">=</span> pure (f x)               <span class="co">-- homomorphism</span>
+u <span class="fu">&lt;*&gt;</span> pure y <span class="fu">=</span> pure (<span class="fu">$</span> y) <span class="fu">&lt;*&gt;</span> u              <span class="co">-- interchange</span>
+pure (<span class="fu">.</span>) <span class="fu">&lt;*&gt;</span> u <span class="fu">&lt;*&gt;</span> v <span class="fu">&lt;*&gt;</span> w <span class="fu">=</span> u <span class="fu">&lt;*&gt;</span> (v <span class="fu">&lt;*&gt;</span> w) <span class="co">-- composition</span></code></pre></div>
+<p>Monad laws, in comparison, not only look less odd to begin with but can also be stated in a much more elegant way in terms of Kleisli composition <code>(&lt;=&lt;)</code>. Shouldn’t there be an analogous nice presentation for <code>Applicative</code> as well? That became a static question in my mind while I was studying applicative functors many moons ago. After finding surprisingly little commentary on this issue, I decided to try figuring it out by myself. <!--more--> <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></p>
+<p>Let’s cast our eye over <code>Applicative</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Functor</span> t <span class="ot">=&gt;</span> <span class="dt">Applicative</span> t <span class="kw">where</span>
+<span class="ot">    pure  ::</span> a <span class="ot">-&gt;</span> t a
+<span class="ot">    (&lt;*&gt;) ::</span> t (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> t b</code></pre></div>
+<p>If our inspiration for reformulating <code>Applicative</code> is Kleisli composition, the only sensible plan is to look for a category in which the <code>t (a -&gt; b)</code> functions-in-a-context from the type of <code>(&lt;*&gt;)</code> are the arrows, just like <code>a -&gt; t b</code> functions are arrows in a Kleisli category. Here is one way to state that plan in Haskell terms:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">class</span> <span class="dt">Applicative</span> t <span class="ot">=&gt;</span> <span class="dt">Starry</span> t <span class="kw">where</span>
+<span class="ot">&gt;     idA  ::</span> t (a <span class="ot">-&gt;</span> a)
+<span class="ot">&gt;     (.*) ::</span> t (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> t (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t (a <span class="ot">-&gt;</span> c)
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span>     <span class="kw">infixl</span> <span class="dv">4</span> <span class="fu">.*</span>
+<span class="ot">&gt;</span> <span class="co">-- The Applicative constraint is wishful thinking:</span>
+<span class="ot">&gt;</span> <span class="co">-- When you wish upon a star...</span></code></pre></div>
+<p>The laws of <code>Starry</code> are the category laws for the <code>t (a -&gt; b)</code> arrows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">idA <span class="fu">.*</span> v <span class="fu">=</span> v                <span class="co">-- left identity</span>
+u <span class="fu">.*</span> idA <span class="fu">=</span> u                <span class="co">-- right identity</span>
+u <span class="fu">.*</span> v <span class="fu">.*</span> w <span class="fu">=</span> u <span class="fu">.*</span> (v <span class="fu">.*</span> w) <span class="co">-- associativity</span></code></pre></div>
+<p>The question, then, is whether it is possible to reconstruct <code>Applicative</code> and its laws from <code>Starry</code>. The answer is a resounding yes! The proof is in <a href="../extras/applicative-archery-manuscript.pdf">this manuscript</a>, which I have not transcribed here as it is a little too long for a leisurely post like this one <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>. The argument is set in motion by establishing that <code>pure</code> is an arrow mapping from <strong>Hask</strong> to a <code>Starry</code> category, and that both <code>(&lt;*&gt;)</code> and <code>(.*)</code> are arrow mappings in the opposite direction. That leads to several naturality properties of those functors, from which the <code>Applicative</code> laws can be obtained. Along the way, we also get definitions for the <code>Starry</code> methods in terms of the <code>Applicative</code> ones…</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>     idA <span class="fu">=</span> pure id
+<span class="ot">&gt;</span>     u <span class="fu">.*</span> v <span class="fu">=</span> fmap (<span class="fu">.</span>) u <span class="fu">&lt;*&gt;</span> v</code></pre></div>
+<p>… and vice-versa:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">pure x <span class="fu">=</span> fmap (const x) idA
+u <span class="fu">&lt;*&gt;</span> v <span class="fu">=</span> fmap (<span class="fu">$</span> ()) (u <span class="fu">.*</span> fmap const v)</code></pre></div>
+<p>Also interesting is how the property relating <code>fmap</code> and <code>(&lt;*&gt;)</code>…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">fmap f u <span class="fu">=</span> pure f <span class="fu">&lt;*&gt;</span> u</code></pre></div>
+<p>… now tells us that a <code>Functor</code> is the result of composing the <code>pure</code> functor with the <code>(&lt;*&gt;)</code> functor. That becomes more transparent if we write it point-free:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">fmap <span class="fu">=</span> (<span class="fu">&lt;*&gt;</span>) <span class="fu">.</span> pure</code></pre></div>
+<p>In order to ensure <code>Starry</code> is equivalent to <code>Applicative</code> we still need to prove the converse, that is, obtain the <code>Starry</code> laws from the <code>Applicative</code> ones and the definitions of <code>idA</code> and <code>(.*)</code> just above. That is not difficult; all it takes is substituting the definitions in the <code>Starry</code> laws and:</p>
+<ul>
+<li><p>For left identity, noticing that <code>(id .) = id</code>.</p></li>
+<li><p>For right identity, applying the interchange law and noticing that <code>($ id) . (.)</code> is <code>id</code> in a better disguise.</p></li>
+<li><p>For associativity, using the laws to move all <code>(.)</code> to the left of the <code>(&lt;*&gt;)</code> and then verifying that the resulting messes of dots in both sides are equivalent.</p></li>
+</ul>
+<p>As a tiny example, here is the <code>Starry</code> instance of <code>Maybe</code>…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Starry</span> <span class="dt">Maybe</span> <span class="kw">where</span>
+    idA              <span class="fu">=</span> <span class="dt">Just</span> id
+    <span class="dt">Just</span> g <span class="fu">.*</span> <span class="dt">Just</span> f <span class="fu">=</span> <span class="dt">Just</span> (g <span class="fu">.</span> f)
+    _      <span class="fu">.*</span> _      <span class="fu">=</span> <span class="dt">Nothing</span></code></pre></div>
+<p>… and the verification of the laws for it:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Left identity:</span>
+idA <span class="fu">.*</span> u <span class="fu">=</span> u
+<span class="dt">Just</span> id <span class="fu">.*</span> u <span class="fu">=</span> u
+<span class="co">-- u = Nothing</span>
+<span class="dt">Just</span> id <span class="fu">.*</span> <span class="dt">Nothing</span> <span class="fu">=</span> <span class="dt">Nothing</span>
+<span class="dt">Nothing</span> <span class="fu">=</span> <span class="dt">Nothing</span>
+<span class="co">-- u = Just f</span>
+<span class="dt">Just</span> id <span class="fu">.*</span> <span class="dt">Just</span> f <span class="fu">=</span> <span class="dt">Just</span> f
+<span class="dt">Just</span> (id <span class="fu">.</span> f) <span class="fu">=</span> <span class="dt">Just</span> f
+<span class="dt">Just</span> f <span class="fu">=</span> <span class="dt">Just</span> f
+
+<span class="co">-- Right identity:</span>
+u <span class="fu">.*</span> idA <span class="fu">=</span> u
+u <span class="fu">.*</span> <span class="dt">Just</span> id <span class="fu">=</span> u
+<span class="co">-- u = Nothing</span>
+<span class="dt">Nothing</span> <span class="fu">.*</span> <span class="dt">Just</span> id <span class="fu">=</span> <span class="dt">Nothing</span>
+<span class="dt">Nothing</span> <span class="fu">=</span> <span class="dt">Nothing</span>
+<span class="co">-- u = Just g</span>
+<span class="dt">Just</span> g <span class="fu">.*</span> <span class="dt">Just</span> id <span class="fu">=</span> <span class="dt">Just</span> g
+<span class="dt">Just</span> (g <span class="fu">.*</span> id) <span class="fu">=</span> <span class="dt">Just</span> g
+<span class="dt">Just</span> g <span class="fu">=</span> <span class="dt">Just</span> g
+
+<span class="co">-- Associativity:</span>
+u <span class="fu">.*</span> v <span class="fu">.*</span> w <span class="fu">=</span> u <span class="fu">.*</span> (v <span class="fu">.*</span> w)
+<span class="co">-- If any of u, v and w are Nothing, both sides will be Nothing.</span>
+<span class="dt">Just</span> h <span class="fu">.*</span> <span class="dt">Just</span> g <span class="fu">.*</span> <span class="dt">Just</span> f <span class="fu">=</span> <span class="dt">Just</span> h <span class="fu">.*</span> (<span class="dt">Just</span> g <span class="fu">.*</span> <span class="dt">Just</span> f)
+<span class="dt">Just</span> (h <span class="fu">.</span> g) <span class="fu">.*</span> <span class="dt">Just</span> f <span class="fu">=</span> <span class="dt">Just</span> h <span class="fu">.*</span> (<span class="dt">Just</span> (g <span class="fu">.</span> f))
+<span class="dt">Just</span> (h <span class="fu">.</span> g <span class="fu">.</span> f) <span class="fu">=</span> <span class="dt">Just</span> (h <span class="fu">.</span> (g <span class="fu">.</span> f))
+<span class="dt">Just</span> (h <span class="fu">.</span> g <span class="fu">.</span> f) <span class="fu">=</span> <span class="dt">Just</span> (h <span class="fu">.</span> g <span class="fu">.</span> f)</code></pre></div>
+<p>It works just as intended:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="dt">Just</span> (<span class="dv">2</span><span class="fu">*</span>) <span class="fu">.*</span> <span class="dt">Just</span> (subtract <span class="dv">3</span>) <span class="fu">.*</span> <span class="dt">Just</span> (<span class="fu">*</span><span class="dv">4</span>) <span class="fu">&lt;*&gt;</span> <span class="dt">Just</span> <span class="dv">5</span>
+<span class="dt">Just</span> <span class="dv">34</span>
+<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="dt">Just</span> (<span class="dv">2</span><span class="fu">*</span>) <span class="fu">.*</span> <span class="dt">Nothing</span> <span class="fu">.*</span> <span class="dt">Just</span> (<span class="fu">*</span><span class="dv">4</span>) <span class="fu">&lt;*&gt;</span> <span class="dt">Just</span> <span class="dv">5</span>
+<span class="dt">Nothing</span></code></pre></div>
+<p>I do not think there will be many opportunities to use the <code>Starry</code> methods in practice. We are comfortable enough with applicative style, through which we see most <code>t (a -&gt; b)</code> arrows as intermediates generated on demand, rather than truly meaningful values. Furthermore, the <code>Starry</code> laws are not truly easier to prove (though they are certainly easier to remember!). Still, it was an interesting exercise to do, and it eases my mind to know that there is a neat presentation of the <code>Applicative</code> laws that I can relate to.</p>
+<p>This post is Literate Haskell, in case you wish to play with <code>Starry</code> in GHCi (here is <a href="https://raw.githubusercontent.com/duplode/duplode.github.io/sources/src/posts/applicative-archery.lhs">the raw .lhs file</a> ).</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Starry</span> <span class="dt">Maybe</span> <span class="kw">where</span>
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Starry</span> [] <span class="kw">where</span>
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Starry</span> ((<span class="ot">-&gt;</span>) a) <span class="kw">where</span>
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Starry</span> <span class="dt">IO</span> <span class="kw">where</span></code></pre></div>
+<p>As for proper implementations in libraries, the closest I found was <a href="https://hackage.haskell.org/package/semigroupoids-5.0.0.2/docs/Data-Semigroupoid-Static.html"><code>Data.Semigroupoid.Static</code></a>, which lives in Edward Kmett’s <a href="https://hackage.haskell.org/package/semigroupoids-5.0.0.2"><code>semigroupoids</code></a> package. <em>“Static arrows”</em> is the actual technical term for the <code>t (a -&gt; b)</code> arrows. The module provides…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Static</span> f a b <span class="fu">=</span> <span class="dt">Static</span> {<span class="ot"> runStatic ::</span> f (a <span class="ot">-&gt;</span> b) }</code></pre></div>
+<p>… which uses the definitions shown here for <code>idA</code> and <code>(.*)</code> as <code>id</code> and <code>(.)</code> of its <code>Category</code> instance.</p>
+<section class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>There is a reasonably well-known alternative formulation of <code>Applicative</code>: the <code>Monoidal</code> class as featured in <a href="http://blog.ezyang.com/2012/08/applicative-functors">this post by Edward Z. Yang</a>. While the laws in this formulation are much easier to grasp, <code>Monoidal</code> feels a little alien from the perspective of a Haskeller, as it shifts the focus from function shuffling to tuple shuffling.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>Please excuse some oddities in the manuscript, such as off-kilter terminology and weird conventions (e.g. consistently naming arguments in applicative style as <code>w &lt;*&gt; v &lt;*&gt; u</code> rather than <code>u &lt;*&gt; v &lt;*&gt; w</code> in applicative style). The most baffling choice was using <code>id</code> rather than <code>()</code> as the throwaway argument to <code>const</code>. I guess I did that because <code>($ ())</code> looks bad in handwriting.<a href="#fnref2">↩</a></p></li>
+</ol>
+</section>
+
+<div id="comment-nav" class="pure-g-r">
+  <div class="pure-u-1-5">
+    
+      <div class="reddit-button">
+<script type="text/javascript" src="//www.reddit.com/static/button/button1.js">
+  reddit_target='haskell';
+  reddit_newwindow=1;
+</script>
+</div>
+
+    
+  </div>
+  <div class="pure-u-1-5">
+    <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/3">Comment on GitHub</a>
+
+    
+      
+    
+  </div>
+  <div class="pure-u-3-5">
+  </div>
+</div>
+
+<div><div class="license">
+  <p>
+    <span class="inline-centered">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <img alt="Creative Commons License" style="border-width:0" src="//i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+    </span>
+    <span class="inline-centered">
+      Post licensed under a
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+    </span>
+  </p>
+</div>
+
+</div>
+
+
+
+          </div>
+          <div id="footer">
+            <p>Powered by <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
+          </div>
+        </div>
+      </div>
+    </body>
+</html>

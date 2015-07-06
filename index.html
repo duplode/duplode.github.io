@@ -33,6 +33,21 @@
 
             
   <div class="post-teaser">
+    <h2>Applicative Archery</h2>
+
+    
+      <p>It is widely agreed that the laws of the <code>Applicative</code> class are not pretty to look at.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">pure id <span class="fu">&lt;*&gt;</span> v <span class="fu">=</span> v                            <span class="co">-- identity</span>
+pure f <span class="fu">&lt;*&gt;</span> pure x <span class="fu">=</span> pure (f x)               <span class="co">-- homomorphism</span>
+u <span class="fu">&lt;*&gt;</span> pure y <span class="fu">=</span> pure (<span class="fu">$</span> y) <span class="fu">&lt;*&gt;</span> u              <span class="co">-- interchange</span>
+pure (<span class="fu">.</span>) <span class="fu">&lt;*&gt;</span> u <span class="fu">&lt;*&gt;</span> v <span class="fu">&lt;*&gt;</span> w <span class="fu">=</span> u <span class="fu">&lt;*&gt;</span> (v <span class="fu">&lt;*&gt;</span> w) <span class="co">-- composition</span></code></pre></div>
+<p>Monad laws, in comparison, not only look less odd to begin with but can also be stated in a much more elegant way in terms of Kleisli composition <code>(&lt;=&lt;)</code>. Shouldn’t there be an analogous nice presentation for <code>Applicative</code> as well? That became a static question in my mind while I was studying applicative functors many moons ago. After finding surprisingly little commentary on this issue, I decided to try figuring it out by myself. 
+    
+
+    <p><a href="./posts/applicative-archery.html">Read more</a> - July  6, 2015</p>
+  </div>
+
+  <div class="post-teaser">
     <h2>What Does fmap Preserve?</h2>
 
     
