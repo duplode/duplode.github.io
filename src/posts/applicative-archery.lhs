@@ -61,12 +61,13 @@ yes! The proof is in
 [this manuscript](/extras/applicative-archery-manuscript.pdf),
 which I have not transcribed here as it is a little too long for a
 leisurely post like this one [^manuscript]. The argument is set in
-motion by establishing that `pure` is an arrow mapping from **Hask** to
-a `Starry` category, and that both `(<*>)` and `(.*)` are arrow mappings
-in the opposite direction. That leads to several naturality properties
-of those functors, from which the `Applicative` laws can be obtained.
-Along the way, we also get definitions for the `Starry` methods in terms
-of the `Applicative` ones...
+motion by establishing that `pure` is an arrow mapping of a functor from
+**Hask** to a `Starry` category, and that both `(<*>)` and `(.*)` are
+arrow mappings of functors in the opposite direction. That leads to
+several naturality properties of those functors, from which the
+`Applicative` laws can be obtained.  Along the way, we also get
+definitions for the `Starry` methods in terms of the `Applicative`
+ones...
 
 [^manuscript]: Please excuse some oddities in the manuscript, such as
 off-kilter terminology and weird conventions (e.g. consistently naming
@@ -87,7 +88,7 @@ Also interesting is how the property relating `fmap` and `(<*>)`...
 
 < fmap f u = pure f <*> u
 
-... now tells us that a `Functor` is the result of composing the `pure`
+... now tells us that a `Functor` results from composing the `pure`
 functor with the `(<*>)` functor. That becomes more transparent if we
 write it point-free:
 
@@ -95,7 +96,7 @@ write it point-free:
 
 In order to ensure `Starry` is equivalent to `Applicative` we still need
 to prove the converse, that is, obtain the `Starry` laws from the
-`Applicative` ones and the definitions of `idA` and `(.*)` just above.
+`Applicative` laws plus the definitions of `idA` and `(.*)` just above.
 That is not difficult; all it takes is substituting the definitions in
 the `Starry` laws and:
 
@@ -158,7 +159,7 @@ I do not think there will be many opportunities to use the `Starry`
 methods in practice. We are comfortable enough with applicative style,
 through which we see most `t (a -> b)` arrows as intermediates generated
 on demand, rather than truly meaningful values. Furthermore, the
-`Starry` laws are not truly easier to prove (though they are
+`Starry` laws are not really easier to prove (though they are
 certainly easier to remember!). Still, it was an interesting exercise to
 do, and it eases my mind to know that there is a neat presentation of
 the `Applicative` laws that I can relate to.
