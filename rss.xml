@@ -41,14 +41,14 @@ Spec.hs</code></pre>
 <span class="kw">-</span> <span class="st">'.'</span>
 <span class="fu">extra-deps:</span> <span class="kw">[]</span>
 <span class="fu">resolver:</span> nightly-2015-07-19</code></pre></div>
-<p>As for the default <code>new-template.cabal</code> file, you can use its <code>build-depends</code> section to keep track of what you are installing. That will make <code>stack build</code> (the command which builds the current project without installing it) to download and install any dependencies you add to the cabal file automatically. Besides that, having the installed packages noted down may prove useful in case you need to reproduce your configuration elsewhere <a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>. Alternatively, you can just leave the cabal file and the default project structure sitting pretty, just in case your experiments become a real project, and install packages with <code>stack install</code> as if you were using cabal-install. You can also have the best of both worlds (that is, having a single environment with both a real project and a list of extra dependencies for experiments managed by stack) by supplying a second cabal file in a subdirectory:</p>
+<p>As for the default <code>new-template.cabal</code> file, you can use its <code>build-depends</code> section to keep track of what you are installing. That will make <code>stack build</code> (the command which builds the current project without installing it) to download and install any dependencies you add to the cabal file automatically. Besides that, having the installed packages noted down may prove useful in case you need to reproduce your configuration elsewhere <a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>. If your experiments become a real project, you can clean up the <code>build-depends</code> without losing track of the packages you installed for testing purposes by moving their entries to a second cabal file, kept in a subdirectory:</p>
 <pre><code>$ mkdir xp
 $ cp new-template.cabal xp/xp.cabal
 $ cp LICENSE xp # Too lazy to delete the lines from the cabal file.
 $ cd xp
 $ vi Dummy.hs # module Dummy where &lt;END OF FILE&gt;
 $ vi xp.cabal # Adjust accordingly, and list your extra deps.</code></pre>
-<p>You also need to tell stack about the fake project. All it takes is adding an entry for the subdirectory in <code>stack.yaml</code>:</p>
+<p>You also need to tell stack about this fake subproject. All it takes is adding an entry for the subdirectory in <code>stack.yaml</code>:</p>
 <div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">packages:</span>
 <span class="kw">-</span> <span class="st">'.'</span> <span class="co"># The default entry.</span>
 <span class="kw">-</span> <span class="st">'xp'</span></code></pre></div>
