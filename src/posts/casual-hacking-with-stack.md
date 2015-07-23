@@ -98,13 +98,10 @@ will make `stack build` (the command which builds the current project
 without installing it) to download and install any dependencies you add
 to the cabal file automatically. Besides that, having the installed
 packages noted down may prove useful in case you need to reproduce your
-configuration elsewhere [^ghc-pkg]. Alternatively, you can just leave
-the cabal file and the default project structure sitting pretty, just in
-case your experiments become a real project, and install packages with
-`stack install` as if you were using cabal-install. You can also have
-the best of both worlds (that is, having a single environment with both
-a real project and a list of extra dependencies for experiments managed
-by stack) by supplying a second cabal file in a subdirectory:
+configuration elsewhere [^ghc-pkg]. If your experiments become a real
+project, you can clean up the `build-depends` without losing track of
+the packages you installed for testing purposes by moving their entries
+to a second cabal file, kept in a subdirectory:
 
 [^ghc-pkg]: In any case, you can also use `stack exec -- ghc-pkg list`
 to see all packages installed from the snapshot you are currently using.
@@ -120,7 +117,7 @@ $ vi Dummy.hs # module Dummy where <END OF FILE>
 $ vi xp.cabal # Adjust accordingly, and list your extra deps.
 ```
 
-You also need to tell stack about the fake project. All it takes is
+You also need to tell stack about this fake project. All it takes is
 adding an entry for the subdirectory in `stack.yaml`:
 
 ``` yaml
