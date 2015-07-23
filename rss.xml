@@ -7,8 +7,153 @@
         <description><![CDATA[Haskell amusements]]></description>
         <atom:link href="http://duplode.github.io/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Mon, 06 Jul 2015 20:00:00 UT</lastBuildDate>
+        <lastBuildDate>Thu, 23 Jul 2015 02:30:00 UT</lastBuildDate>
         <item>
+    <title>Casual Hacking With stack</title>
+    <link>http://duplode.github.io/posts/casual-hacking-with-stack.html</link>
+    <description><![CDATA[<p>Sandboxes are exceptionally helpful not just for working in long-term Haskell projects, but also for casual experiments. While playing around, we tend to install all sorts of packages in a carefree way, which increases a lot the risk of entering cabal hell. While vanilla cabal-install sandboxes prevent such a disaster, using them systematically for experiments mean that, unless you are meticulous, you will end up either with dozens of .hs files in a single sandbox or with dozens of copies of the libraries strewn across your home directory. And no one likes to be meticulous while playing around. In that context, stack, the recently released alternative to cabal-install, can prevent trouble with installing packages in a way more manageable than through ad-hoc sandboxes. In this post, I will suggest a few ways of using stack that may be convenient for experiments. I have been using stack for only a few days, therefore suggestions are most welcome!</p>
+<div>
+
+</div>
+<!--more-->
+<p>I won’t dwell on the motivation and philosophy behind stack <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>. Suffice it to say that, at least in the less exotic workflows, there is a centralised package database somewhere in <code>~/.stack</code> with packages pulled from a <a href="https://www.stackage.org/">Stackage</a> snapshot (and therefore known to be compatible with each other), which is supplemented by a per-project database (that is, just like cabal sandboxes) for packages not in Stackage (from Hackage or anywhere else). As that sounds like a great way to avoid headaches, we will stick to this arrangement, with only minor adjustments.</p>
+<p>Once you have installed stack <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>, you can create a new environment for experiments with <code>stack new</code>:</p>
+<pre><code>$ mkdir -p Development/haskell/playground
+$ cd Development/haskell/playground
+$ stack new --prefer-nightly</code></pre>
+<p>The <code>--prefer-nightly</code> option makes stack use a nightly snapshot of Stackage, as opposed to a long term support one. As we are just playing around, it makes sense to pick as recent as possible packages from the nightly instead of the LTS. (Moreover, I use Arch Linux, which already has GHC 7.10 and <code>base</code> 4.8, while the current LTS snapshot assumes <code>base</code> 4.7.) If this is the first time you use stack, it will pick the latest nightly; otherwise it will default to whatever nightly you already have in <code>~/.stack</code>.</p>
+<p><code>stack new</code> creates a neat default project structure for you <a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:</p>
+<pre><code>$ ls -R
+.:
+app  LICENSE  new-template.cabal  Setup.hs  src  stack.yaml  test
+
+./app:
+Main.hs
+
+./src:
+Lib.hs
+
+./test:
+Spec.hs</code></pre>
+<p>Of particular interest is the <code>stack.yaml</code> file, which holds the settings for the local stack environment. We will talk more about it soon.</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">flags:</span> <span class="kw">{}</span>
+<span class="fu">packages:</span>
+<span class="kw">-</span> <span class="st">'.'</span>
+<span class="fu">extra-deps:</span> <span class="kw">[]</span>
+<span class="fu">resolver:</span> nightly-2015-07-19</code></pre></div>
+<p>As for the default <code>new-template.cabal</code> file, you can use its <code>build-depends</code> section to keep track of what you are installing. That will make <code>stack build</code> (the command which builds the current project without installing it) to download and install any dependencies you add to the cabal file automatically. Besides that, having the installed packages noted down may prove useful in case you need to reproduce your configuration elsewhere <a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>. Alternatively, you can just leave the cabal file and the default project structure sitting pretty, just in case your experiments become a real project, and install packages with <code>stack install</code> as if you were using cabal-install. You can also have the best of both worlds (that is, having a single environment with both a real project and a list of extra dependencies for experiments managed by stack) by supplying a second cabal file in a subdirectory:</p>
+<pre><code>$ mkdir xp
+$ cp new-template.cabal xp/xp.cabal
+$ cp LICENSE xp # Too lazy to delete the lines from the cabal file.
+$ cd xp
+$ vi Dummy.hs # module Dummy where &lt;END OF FILE&gt;
+$ vi xp.cabal # Adjust accordingly, and list your extra deps.</code></pre>
+<p>You also need to tell stack about the fake project. All it takes is adding an entry for the subdirectory in <code>stack.yaml</code>:</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">packages:</span>
+<span class="kw">-</span> <span class="st">'.'</span> <span class="co"># The default entry.</span>
+<span class="kw">-</span> <span class="st">'xp'</span></code></pre></div>
+<p>With the initial setup done, we use <code>stack build</code> to compile the projects:</p>
+<pre><code>$ stack build
+new-template-0.1.0.0: configure
+new-template-0.1.0.0: build
+fmlist-0.9: download
+fmlist-0.9: configure
+fmlist-0.9: build
+new-template-0.1.0.0: install
+fmlist-0.9: install
+xp-0.1.0.0: configure
+xp-0.1.0.0: build
+xp-0.1.0.0: install
+Completed all 3 actions.</code></pre>
+<p>In this test run, I added <code>fmlist</code> as a dependency of the fake package <code>xp</code>, and so it was automatically installed by stack. The output of <code>stack build</code> goes to a <code>.stack-work</code> subdirectory.</p>
+<p>With the packages built, we can use GHCi in the stack environment with <code>stack ghci</code>. It loads the library source files of the current project by default:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">$</span> stack ghci
+<span class="dt">Configuring</span> <span class="dt">GHCi</span> with the following packages<span class="fu">:</span> new<span class="fu">-</span>template, xp
+<span class="dt">GHCi</span>, version <span class="fl">7.10</span><span class="fu">.</span><span class="dv">1</span><span class="fu">:</span> http<span class="fu">://</span>www<span class="fu">.</span>haskell<span class="fu">.</span>org<span class="fu">/</span>ghc<span class="fu">/</span>  <span class="fu">:?</span> for help
+[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (
+<span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>src<span class="fu">/</span>Lib.hs, interpreted )
+[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Dummy</span>            (
+<span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>xp<span class="fu">/</span>Dummy.hs, interpreted )
+<span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Dummy</span>, <span class="dt">Lib</span><span class="fu">.</span>
+<span class="fu">*</span><span class="dt">Lib</span><span class="fu">&gt;</span> <span class="kw">import qualified</span> <span class="dt">Data.FMList</span> <span class="kw">as</span> <span class="dt">F</span> <span class="co">-- Which we have just installed.</span>
+<span class="fu">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="fu">&gt;</span> <span class="co">-- We can also load executables specified in the cabal file.</span>
+<span class="fu">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="fu">&gt;</span> <span class="fu">:</span>l <span class="dt">Main</span>
+[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (
+<span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>src<span class="fu">/</span>Lib.hs, interpreted )
+[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Main</span>             (
+<span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>app<span class="fu">/</span>Main.hs, interpreted )
+<span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Lib</span>, <span class="dt">Main</span><span class="fu">.</span>
+<span class="fu">*</span><span class="dt">Main</span> <span class="dt">F</span><span class="fu">&gt;</span></code></pre></div>
+<p>Dependencies not in Stackage have to be specified in <code>stack.yaml</code> as well as in the cabal files, so that stack can manage them too. Alternative sources of packages include source trees in subdirectories of the project, Hackage and remote Git repositories <a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a>:</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">flags:</span> <span class="kw">{}</span>
+<span class="fu">packages:</span>
+<span class="kw">-</span> <span class="st">'.'</span>
+<span class="kw">-</span> <span class="st">'xp'</span>
+<span class="kw">-</span> <span class="fu">location:</span> deps/acme-missiles-0.3 <span class="co"># Sources in a subdirectory.</span>
+  <span class="fu">extra-dep:</span> true <span class="co"># Mark as dep, i.e. not part of the project proper.</span>
+<span class="fu">extra-deps:</span>
+<span class="kw">-</span> acme-safe-0.1.0.0 <span class="co"># From Hackage.</span>
+<span class="kw">-</span> acme-dont-1.1 <span class="co"># Also from Hackage, dependency of acme-safe.</span>
+<span class="fu">resolver:</span> nightly-2015-07-19</code></pre></div>
+<p><code>stack build</code> will then install the extra dependencies to <code>.stack-work/install</code>. You can use <code>stack solver</code> to chase the indirect dependencies introduced by them. For instance, this is its output after commenting the <code>acme-dont</code> line in the <code>stack.yaml</code> just above:</p>
+<pre><code>$ stack solver --no-modify-stack-yaml
+This command is not guaranteed to give you a perfect build plan
+It's possible that even with the changes generated below, you will still
+need to do some manual tweaking
+Asking cabal to calculate a build plan, please wait
+extra-deps:
+- acme-dont-1.1</code></pre>
+<p>To conclude this tour, once you get bored of the initial Stackage snapshot all it takes to switch it is changing the <code>resolver</code> field in <code>stack.yaml</code> (with nightlies, that amounts to changing the date at the end of the snapshot name). That will cause all dependencies to be downloaded and built from the chosen snapshot when <code>stack build</code> is next ran. As of now, the previous snapshot will remain in <code>~/.stack</code> unless you go there and delete it manually; however, a command for removing unused snapshots <a href="https://github.com/commercialhaskell/stack/issues/133">is in the plans</a>.</p>
+<p>I have not tested the sketch of a workflow presented here extensively, yet what I have seen was enough to convince me stack can provide a pleasant experience for casual experiments as well as full-fledged projects. Happy hacking!</p>
+<section class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>For that, see <a href="https://www.fpcomplete.com/blog/2015/06/why-is-stack-not-cabal">Why is stack not cabal?</a>, written by a member of its development team.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>For installation guidance, see the <a href="https://github.com/commercialhaskell/stack/wiki/Downloads">GitHub project wiki</a>. Installing stack is easy, and there are many ways to do it (I simply got it from Hackage with <code>cabal install stack</code>).<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>To create an environment for an existing project, with its own structure and cabal file, you would use <code>stack init</code> instead.<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>In any case, you can also use <code>stack exec -- ghc-pkg list</code> to see all packages installed from the snapshot you are currently using. That, however, will be far messier than the <code>build-depends</code> list, as it will include indirect dependencies as well.<a href="#fnref4">↩</a></p></li>
+<li id="fn5"><p>For the latter, see <a href="https://github.com/commercialhaskell/stack/wiki/Nonstandard-project-initialization">the project wiki</a>.<a href="#fnref5">↩</a></p></li>
+</ol>
+</section>
+
+<div id="comment-nav" class="pure-g-r">
+  <div class="pure-u-1-5">
+    
+    
+  </div>
+  <div class="pure-u-1-5">
+    <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/6">Comment on GitHub</a>
+
+    
+      
+        (see <a href="posts/casual-hacking-with-stack.html#comment-nav">the full post</a> for a reddit link)
+      
+    
+  </div>
+  <div class="pure-u-3-5">
+  </div>
+</div>
+
+<div><div class="license">
+  <p>
+    <span class="inline-centered">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <img alt="Creative Commons License" style="border-width:0" src="//i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+    </span>
+    <span class="inline-centered">
+      Post licensed under a
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+    </span>
+  </p>
+</div>
+
+</div>
+]]></description>
+    <pubDate>Thu, 23 Jul 2015 02:30:00 UT</pubDate>
+    <guid>http://duplode.github.io/posts/casual-hacking-with-stack.html</guid>
+    <dc:creator>Daniel Mlot</dc:creator>
+</item>
+<item>
     <title>Applicative Archery</title>
     <link>http://duplode.github.io/posts/applicative-archery.html</link>
     <description><![CDATA[<p>It is widely agreed that the laws of the <code>Applicative</code> class are not pretty to look at.</p>
