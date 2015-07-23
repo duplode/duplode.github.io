@@ -1,26 +1,27 @@
 ---
 title: Casual Hacking With stack
-published: 2015-07-22T22:00:00-03:00
+published: 2015-07-22T23:30:00-03:00
 license: CC-BY-SA
 reddit: true
 gh-issue: 6
 ---
 
-Sandboxes for cabal packages are exceptionally helpful not just for
-long-term projects, but also for casual experiments. While playing
-around, we tend to install all sorts of packages in a carefree way,
-which increases a lot the risk of entering cabal hell. While vanilla
+Sandboxes are exceptionally helpful not just for working in long-term
+Haskell projects, but also for casual experiments. While playing around,
+we tend to install all sorts of packages in a carefree way, which
+increases a lot the risk of entering cabal hell. While vanilla
 cabal-install sandboxes prevent such a disaster, using them
-systematically for experiments mean that, unless you are meticulous,
-you will end up with either dozens of .hs files in a single sandbox or
-with dozens of copies of the libraries strewn across your home
-directory. And no one likes to be meticulous while playing around. In
-that context, stack, the recently released alternative to cabal-install,
-can prevent trouble with installing packages in a way more manageable
-than through ad-hoc sandboxes. In this post, I will suggest a few ways
-of using stack that may be convenient for experiments. I have been using
-stack for only a few days, therefore suggestions are most welcome!
-<!-- more -->
+systematically for experiments mean that, unless you are meticulous, you
+will end up either with dozens of .hs files in a single sandbox or with
+dozens of copies of the libraries strewn across your home directory.
+And no one likes to be meticulous while playing around. In that context,
+stack, the recently released alternative to cabal-install, can prevent
+trouble with installing packages in a way more manageable than through
+ad-hoc sandboxes. In this post, I will suggest a few ways of using stack
+that may be convenient for experiments. I have been using stack for only
+a few days, therefore suggestions are most welcome!
+
+<div></div><!--more-->
 
 I won't dwell on the motivation and philosophy behind stack [^why].
 Suffice it to say that, at least in the less exotic workflows, there is
@@ -33,18 +34,18 @@ like a great way to avoid headaches, we will stick to this arrangement,
 with only minor adjustments.
 
 [^why]: For that, see
-[Why is stack not cabal?](https://www.fpcomplete.com/blog/2015/06/why-is-stack-not-cabal)
-, written by a member of its development team.
+[Why is stack not cabal?](https://www.fpcomplete.com/blog/2015/06/why-is-stack-not-cabal),
+written by a member of its development team.
 
 Once you have installed stack [^install], you can create a new
 environment for experiments with `stack new`:
 
 [^install]: For installation guidance, see the
-[GitHub project wiki](https://github.com/commercialhaskell/stack/wiki/Downloads)
-. Installing stack is easy, and there are many ways to do it (I simply
+[GitHub project wiki](https://github.com/commercialhaskell/stack/wiki/Downloads).
+Installing stack is easy, and there are many ways to do it (I simply
 got it from Hackage with `cabal install stack`).
 
-``` bash
+```
 $ mkdir -p Development/haskell/playground
 $ cd Development/haskell/playground
 $ stack new --prefer-nightly
@@ -59,9 +60,12 @@ has GHC 7.10 and `base` 4.8, while the current LTS snapshot assumes
 latest nightly; otherwise it will default to whatever nightly you
 already have in `~/.stack`.
 
-`stack init` creates a neat default project structure for you:
+`stack new` creates a neat default project structure for you [^init]:
 
-``` bash
+[^init]: To create an environment for an existing project, with its own
+structure and cabal file, you would use `stack init` instead.
+
+```
 $ ls -R
 .:
 app  LICENSE  new-template.cabal  Setup.hs  src  stack.yaml  test
@@ -107,7 +111,7 @@ to see all packages installed from the snapshot you are currently using.
 That, however, will be far messier than the `build-depends` list, as it
 will include indirect dependencies as well.
 
-``` bash
+```
 $ mkdir xp
 $ cp new-template.cabal xp/xp.cabal
 $ cp LICENSE xp # Too lazy to delete the lines from the cabal file.
@@ -128,7 +132,7 @@ packages:
 With the initial setup done, we use `stack build` to compile the
 projects:
 
-``` bash
+```
 $ stack build
 new-template-0.1.0.0: configure
 new-template-0.1.0.0: build
@@ -151,7 +155,7 @@ With the packages built, we can use GHCi in the stack environment with
 `stack ghci`. It loads the library source files of the current project
 by default:
 
-```
+``` haskell
 $ stack ghci
 Configuring GHCi with the following packages: new-template, xp
 GHCi, version 7.10.1: http://www.haskell.org/ghc/  :? for help
@@ -172,13 +176,12 @@ Ok, modules loaded: Lib, Main.
 ```
 
 Dependencies not in Stackage have to be specified in `stack.yaml` as
-well as in the cabal files, so that stack can manage them as well.
+well as in the cabal files, so that stack can manage them too.
 Alternative sources of packages include source trees in subdirectories
 of the project, Hackage and remote Git repositories [^git]:
 
 [^git]: For the latter, see
-[the project wiki](https://github.com/commercialhaskell/stack/wiki/Nonstandard-project-initialization)
-.
+[the project wiki](https://github.com/commercialhaskell/stack/wiki/Nonstandard-project-initialization).
 
 ``` yaml
 flags: {}
@@ -198,7 +201,7 @@ resolver: nightly-2015-07-19
 dependencies introduced by them. For instance, this is its output after
 commenting the `acme-dont` line in the `stack.yaml` just above:
 
-``` bash
+```
 $ stack solver --no-modify-stack-yaml
 This command is not guaranteed to give you a perfect build plan
 It's possible that even with the changes generated below, you will still
@@ -216,8 +219,7 @@ downloaded and built from the chosen snapshot when `stack build` is next
 ran. As of now, the previous snapshot will remain in `~/.stack` unless
 you go there and delete it manually; however, a command for removing
 unused snapshots
-[is in the plans](https://github.com/commercialhaskell/stack/issues/133)
-.
+[is in the plans](https://github.com/commercialhaskell/stack/issues/133).
 
 I have not tested the sketch of a workflow presented here extensively,
 yet what I have seen was enough to convince me stack can provide a
