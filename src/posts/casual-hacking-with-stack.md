@@ -117,7 +117,7 @@ $ vi Dummy.hs # module Dummy where <END OF FILE>
 $ vi xp.cabal # Adjust accordingly, and list your extra deps.
 ```
 
-You also need to tell stack about this fake project. All it takes is
+You also need to tell stack about this fake subproject. All it takes is
 adding an entry for the subdirectory in `stack.yaml`:
 
 ``` yaml
