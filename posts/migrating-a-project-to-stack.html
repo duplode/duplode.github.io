@@ -41,7 +41,7 @@
 <div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">-</span> <span class="fu">location:</span>
     <span class="fu">git:</span> https://github.com/duplode/zip-conduit
     <span class="fu">commit:</span> 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d
-    <span class="fu">extra-dep:</span> true</code></pre></div>
+  <span class="fu">extra-dep:</span> true</code></pre></div>
 <p>Keeping customised dependencies in public remote repositories is an excellent solution. It enables users to build the package without further intervention without requiring developers to clumsily bundle bundle the source tree of the dependencies with the project, or waiting for a pull request to be accepted upstream and reach Hackage.</p>
 <p>With the two tricky extra dependencies being offloaded to Git repositories, the next step was using <code>stack solver</code> to figure out the rest of them:</p>
 <pre><code>$ stack solver --modify-stack-yaml
@@ -62,11 +62,11 @@ Updated /home/duplode/Development/stunts/diagrams/stack.yaml</code></pre>
 <span class="kw">-</span> <span class="fu">location:</span>
     <span class="fu">git:</span> https://github.com/duplode/zip-conduit
     <span class="fu">commit:</span> 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d
-    <span class="fu">extra-dep:</span> true
+  <span class="fu">extra-dep:</span> true
 <span class="kw">-</span> <span class="fu">location:</span>
     <span class="fu">git:</span> https://github.com/duplode/threepenny-gui
     <span class="fu">commit:</span> 2dd88e893f09e8e31378f542a9cd253cc009a2c5
-    <span class="fu">extra-dep:</span> true
+  <span class="fu">extra-dep:</span> true
 <span class="fu">extra-deps:</span>
 <span class="kw">-</span> parsec-permutation-0.1.2.0
 <span class="kw">-</span> websockets-snap-0.9.2.0
