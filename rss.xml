@@ -7,8 +7,146 @@
         <description><![CDATA[Haskell amusements]]></description>
         <atom:link href="http://duplode.github.io/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Thu, 23 Jul 2015 02:30:00 UT</lastBuildDate>
+        <lastBuildDate>Mon, 27 Jul 2015 06:00:00 UT</lastBuildDate>
         <item>
+    <title>Migrating a Project to stack</title>
+    <link>http://duplode.github.io/posts/migrating-a-project-to-stack.html</link>
+    <description><![CDATA[<p>This post consists of notes on which steps I took to convert convert one of my Haskell projects to stack. It provides a small illustration of how flexible stack can be in accomodating project organisation quirks on the way towards predictable builds.<!--more--> If you want to see the complete results, here are links to the <a href="https://bitbucket.org/duplode/stunts-cartography">Bitbucket repository</a> of Stunts Cartography, the example project I am using, and specifically to the <a href="https://bitbucket.org/duplode/stunts-cartography/src/3eb07c44f6e2eed19591f765b14fc5fbe2b8f946">source tree immediately after the migration</a>.</p>
+<p>The first decision to make when migrating a project is which Stackage snapshot to pick. It had been a while since I last updated my project, and building it with the latest versions of all its dependencies would require a few adjustments. That being so, I chose to migrate to stack before any further patches. Since one of the main dependencies was <code>diagrams</code> 1.2, I went for <a href="https://www.stackage.org/lts-2.19"><code>lts-2.19</code></a>, the most recent LTS snapshot with that version of <code>diagrams</code> <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>.</p>
+<pre><code>$ stack init --resolver lts-2.19</code></pre>
+<p><code>cabal init</code> creates a <code>stack.yaml</code> file based on an existing cabal file in the current directory. The <code>--resolver</code> option can be used to pick a specific snapshot.</p>
+<p>One complicating factor in the conversion to stack was that two of the extra dependencies, <code>threepenny-gui-0.5.0.0</code> (one major version behind the current one) and <code>zip-conduit</code> wouldn’t build with the LTS snapshot plus current Hackage without version bumps in their cabal files. Fortunately, stack deals very well with situations like this, in which minor changes to some dependency are needed. I simply forked the dependencies on GitHub, pushed the version bumps to my forks and referenced the commits in the <em>remote</em> GitHub repository in <code>stack.yaml</code>. A typical entry for a Git commit in the <code>packages</code> section looks like this:</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span> https://github.com/duplode/zip-conduit
+    <span class="fu">commit:</span> 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d
+    <span class="fu">extra-dep:</span> true</code></pre></div>
+<p>Keeping customised dependencies in public remote repositories is an excellent solution. It enables users to build the package without further intervention without requiring developers to clumsily bundle bundle the source tree of the dependencies with the project, or waiting for a pull request to be accepted upstream and reach Hackage.</p>
+<p>With the two tricky extra dependencies being offloaded to Git repositories, the next step was using <code>stack solver</code> to figure out the rest of them:</p>
+<pre><code>$ stack solver --modify-stack-yaml
+This command is not guaranteed to give you a perfect build plan
+It's possible that even with the changes generated below, you will still
+need to do some manual tweaking
+Asking cabal to calculate a build plan, please wait
+extra-deps:
+- parsec-permutation-0.1.2.0
+- websockets-snap-0.9.2.0
+Updated /home/duplode/Development/stunts/diagrams/stack.yaml</code></pre>
+<p>Here is the final <code>stack.yaml</code>:</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">flags:</span>
+  <span class="fu">stunts-cartography:</span>
+    <span class="fu">repldump2carto:</span> true
+<span class="fu">packages:</span>
+<span class="kw">-</span> <span class="st">'.'</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span> https://github.com/duplode/zip-conduit
+    <span class="fu">commit:</span> 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d
+    <span class="fu">extra-dep:</span> true
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span> https://github.com/duplode/threepenny-gui
+    <span class="fu">commit:</span> 2dd88e893f09e8e31378f542a9cd253cc009a2c5
+    <span class="fu">extra-dep:</span> true
+<span class="fu">extra-deps:</span>
+<span class="kw">-</span> parsec-permutation-0.1.2.0
+<span class="kw">-</span> websockets-snap-0.9.2.0
+<span class="fu">resolver:</span> lts-2.19</code></pre></div>
+<p><code>repldump2carto</code> is a flag defined in the cabal file. It is used to build a secondary executable. Beyond demonstrating how the <code>flags</code> section of <code>stack.yaml</code> works, I added it because <code>stack ghci</code> expects all possible build targets to have been built <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>.</p>
+<p>As I have GHC 7.10.1 from my Linux distribution and the LTS 2.19 snapshot is made for GHC 7.8.4, I needed <code>stack setup</code> as an additional step. That command locally installs (in <code>~/.stack</code>) the GHC version required by the chosen snapshot.</p>
+<p>That pretty much concludes the migration. All that is left is demonstrating: <code>stack build</code> to compile the project…</p>
+<pre><code>$ stack build
+JuicyPixels-3.2.5.2: configure
+Boolean-0.2.3: download
+# etc. (Note how deps from Git are handled seamlessly.)
+threepenny-gui-0.5.0.0: configure
+threepenny-gui-0.5.0.0: build
+threepenny-gui-0.5.0.0: install
+zip-conduit-0.2.2.2: configure
+zip-conduit-0.2.2.2: build
+zip-conduit-0.2.2.2: install
+# etc.
+stunts-cartography-0.4.0.3: configure
+stunts-cartography-0.4.0.3: build
+stunts-cartography-0.4.0.3: install
+Completed all 64 actions.</code></pre>
+<p>… <code>stack ghci</code> to play with it in GHCi…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">$</span> stack ghci
+<span class="dt">Configuring</span> <span class="dt">GHCi</span> with the following packages<span class="fu">:</span> stunts<span class="fu">-</span>cartography
+<span class="dt">GHCi</span>, version <span class="fl">7.8</span><span class="fu">.</span><span class="dv">4</span><span class="fu">:</span> http<span class="fu">://</span>www<span class="fu">.</span>haskell<span class="fu">.</span>org<span class="fu">/</span>ghc<span class="fu">/</span>  <span class="fu">:?</span> for help
+<span class="dt">Loading</span> package ghc<span class="fu">-</span>prim <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span>
+<span class="dt">Loading</span> package integer<span class="fu">-</span>gmp <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span>
+<span class="dt">Loading</span> package base <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span>
+<span class="co">-- etc.</span>
+<span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">GameState</span>, <span class="dt">Annotation</span>, <span class="dt">Types.Diagrams</span>, <span class="dt">Pics</span>,
+<span class="dt">Pics.MM</span>, <span class="dt">Annotation.Flipbook</span>, <span class="dt">Annotation.LapTrace</span>,
+<span class="dt">Annotation.LapTrace.Vec</span>, <span class="dt">Annotation.LapTrace.Parser.Simple</span>,
+<span class="dt">Annotation.Parser</span>, <span class="dt">Types.CartoM</span>, <span class="dt">Parameters</span>, <span class="dt">Composition</span>, <span class="dt">Track</span>,
+<span class="dt">Util.Misc</span>, <span class="dt">Pics.Palette</span>, <span class="dt">Output</span>, <span class="dt">Util.ByteString</span>, <span class="dt">Util.ZipConduit</span>,
+<span class="dt">Replay</span>, <span class="dt">Paths</span>, <span class="dt">Util.Reactive.Threepenny</span>, <span class="dt">Util.Threepenny.Alertify</span>,
+<span class="dt">Widgets.BoundedInput</span><span class="fu">.</span>
+<span class="fu">*</span><span class="dt">GameState</span><span class="fu">&gt;</span> <span class="fu">:</span>l src<span class="fu">/</span>Viewer.hs <span class="co">-- The Main module.</span>
+<span class="co">-- etc.</span>
+<span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> <span class="fu">:</span>main
+<span class="dt">Welcome</span> to <span class="dt">Stunts</span> <span class="dt">Cartography</span><span class="fu">.</span>
+<span class="dt">Open</span> your web browser and navigate to localhost<span class="fu">:</span><span class="dv">10000</span> to begin<span class="fu">.</span>
+
+<span class="dt">Listening</span> on http<span class="fu">://</span><span class="fl">127.0</span><span class="fu">.</span><span class="fl">0.1</span><span class="fu">:</span><span class="dv">10000</span><span class="fu">/</span>
+[<span class="dv">27</span><span class="fu">/</span><span class="dt">Jul</span><span class="fu">/</span><span class="dv">2015</span><span class="fu">:</span><span class="dv">00</span><span class="fu">:</span><span class="dv">55</span><span class="fu">:</span><span class="dv">11</span> <span class="fu">-</span><span class="dv">0300</span>] Server.httpServe<span class="fu">:</span> <span class="dt">START</span>, binding to
+[http<span class="fu">://</span><span class="fl">127.0</span><span class="fu">.</span><span class="fl">0.1</span><span class="fu">:</span><span class="dv">10000</span><span class="fu">/</span>]</code></pre></div>
+<p>… and looking at the build output in the depths of <code>.stack-work</code>:</p>
+<pre><code>$ .stack-work/dist/x86_64-linux/Cabal-1.18.1.5/build/sc-trk-viewer/sc-trk-viewer
+Welcome to Stunts Cartography 0.4.0.3.
+Open your web browser and navigate to localhost:10000 to begin.
+
+Listening on http://127.0.0.1:10000/
+[26/Jul/2015:20:02:54 -0300] Server.httpServe: START, binding to
+[http://127.0.0.1:10000/]</code></pre>
+<p>With the upcoming stack 0.2 it will be possible to use <code>stack build --copy-bins --local-bin-path &lt;path&gt;</code> to copy any executables built as part of the project to a path. If the <code>--local-bin-path</code> option is omitted, the default is <code>~/.local/bin</code>. (In fact, you can already copy executables to <code>~/.local/bin</code> with stack 0.1.2 through <code>stack install</code>. However, I don’t want to overemphasise that command, as <code>stack install</code> not being equivalent to <code>cabal install</code> can cause some confusion.)</p>
+<p>Hopefully this report will give you an idea of what to expect when migrating your projects to stack. Some details may appear a little strange, given how familiar cabal-install workflows are, and some features are still being shaped. All in all, however, stack works very well already: it definitely makes setting up reliable builds easier. The <a href="https://github.com/commercialhaskell/stack">stack repository at GitHub</a>, and specially <a href="https://github.com/commercialhaskell/stack/wiki">the wiki therein</a>, offers lots of helpful information, in case you need further details and usage tips.</p>
+<section class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>As a broader point, it just seems polite to, when possible, pick a LTS snapshot over than a nightly for a public project. It is more likely that those interested in building your project already have a specific LTS rather than an arbitrary nightly.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>That being so, a more natural arrangement would be treating <code>repldump2carto</code> as a full-blown subproject by giving it its own cabal file and adding it to the <code>packages</code> section. I would then be able to load only the main project in GHCi with <code>stack ghci stunts-cartography</code>.<a href="#fnref2">↩</a></p></li>
+</ol>
+</section>
+
+<div id="comment-nav" class="pure-g-r">
+  <div class="pure-u-1-5">
+    
+    
+  </div>
+  <div class="pure-u-1-5">
+    <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/7">Comment on GitHub</a>
+
+    
+      
+        (see <a href="posts/migrating-a-project-to-stack.html#comment-nav">the full post</a> for a reddit link)
+      
+    
+  </div>
+  <div class="pure-u-3-5">
+  </div>
+</div>
+
+<div><div class="license">
+  <p>
+    <span class="inline-centered">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <img alt="Creative Commons License" style="border-width:0" src="//i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+    </span>
+    <span class="inline-centered">
+      Post licensed under a
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+    </span>
+  </p>
+</div>
+
+</div>
+]]></description>
+    <pubDate>Mon, 27 Jul 2015 06:00:00 UT</pubDate>
+    <guid>http://duplode.github.io/posts/migrating-a-project-to-stack.html</guid>
+    <dc:creator>Daniel Mlot</dc:creator>
+</item>
+<item>
     <title>Casual Hacking With stack</title>
     <link>http://duplode.github.io/posts/casual-hacking-with-stack.html</link>
     <description><![CDATA[<p>Sandboxes are exceptionally helpful not just for working in long-term Haskell projects, but also for casual experiments. While playing around, we tend to install all sorts of packages in a carefree way, which increases a lot the risk of entering cabal hell. While vanilla cabal-install sandboxes prevent such a disaster, using them systematically for experiments mean that, unless you are meticulous, you will end up either with dozens of .hs files in a single sandbox or with dozens of copies of the libraries strewn across your home directory. And no one likes to be meticulous while playing around. In that context, stack, the recently released alternative to cabal-install, can prevent trouble with installing packages in a way more manageable than through ad-hoc sandboxes. In this post, I will suggest a few ways of using stack that may be convenient for experiments. I have been using stack for only a few days, therefore suggestions are most welcome!</p>
@@ -105,6 +243,7 @@ extra-deps:
 - acme-dont-1.1</code></pre>
 <p>To conclude this tour, once you get bored of the initial Stackage snapshot all it takes to switch it is changing the <code>resolver</code> field in <code>stack.yaml</code> (with nightlies, that amounts to changing the date at the end of the snapshot name). That will cause all dependencies to be downloaded and built from the chosen snapshot when <code>stack build</code> is next ran. As of now, the previous snapshot will remain in <code>~/.stack</code> unless you go there and delete it manually; however, a command for removing unused snapshots <a href="https://github.com/commercialhaskell/stack/issues/133">is in the plans</a>.</p>
 <p>I have not tested the sketch of a workflow presented here extensively, yet what I have seen was enough to convince me stack can provide a pleasant experience for casual experiments as well as full-fledged projects. Happy hacking!</p>
+<p><strong>Update:</strong> There is now a follow-up post about the other side of the coin, <a href="../posts/migrating-a-project-to-stack.html">Migrating a Project to stack</a>.</p>
 <section class="footnotes">
 <hr />
 <ol>

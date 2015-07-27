@@ -127,6 +127,7 @@ extra-deps:
 - acme-dont-1.1</code></pre>
 <p>To conclude this tour, once you get bored of the initial Stackage snapshot all it takes to switch it is changing the <code>resolver</code> field in <code>stack.yaml</code> (with nightlies, that amounts to changing the date at the end of the snapshot name). That will cause all dependencies to be downloaded and built from the chosen snapshot when <code>stack build</code> is next ran. As of now, the previous snapshot will remain in <code>~/.stack</code> unless you go there and delete it manually; however, a command for removing unused snapshots <a href="https://github.com/commercialhaskell/stack/issues/133">is in the plans</a>.</p>
 <p>I have not tested the sketch of a workflow presented here extensively, yet what I have seen was enough to convince me stack can provide a pleasant experience for casual experiments as well as full-fledged projects. Happy hacking!</p>
+<p><strong>Update:</strong> There is now a follow-up post about the other side of the coin, <a href="../posts/migrating-a-project-to-stack.html">Migrating a Project to stack</a>.</p>
 <section class="footnotes">
 <hr />
 <ol>
