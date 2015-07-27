@@ -54,7 +54,7 @@ looks like this:
 - location:
     git: https://github.com/duplode/zip-conduit
     commit: 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d
-    extra-dep: true
+  extra-dep: true
 ```
 
 Keeping customised dependencies in public remote repositories is an
@@ -90,11 +90,11 @@ packages:
 - location:
     git: https://github.com/duplode/zip-conduit
     commit: 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d
-    extra-dep: true
+  extra-dep: true
 - location:
     git: https://github.com/duplode/threepenny-gui
     commit: 2dd88e893f09e8e31378f542a9cd253cc009a2c5
-    extra-dep: true
+  extra-dep: true
 extra-deps:
 - parsec-permutation-0.1.2.0
 - websockets-snap-0.9.2.0
