@@ -222,3 +222,7 @@ I have not tested the sketch of a workflow presented here extensively,
 yet what I have seen was enough to convince me stack can provide a
 pleasant experience for casual experiments as well as full-fledged
 projects. Happy hacking!
+
+**Update:** There is now a follow-up post about the other side of the
+coin,
+[Migrating a Project to stack](/posts/migrating-a-project-to-stack.html).
