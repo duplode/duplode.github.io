@@ -6,11 +6,11 @@ reddit: true
 gh-issue: 7
 ---
 
-This post consists of notes on which steps I took to convert convert one
-of my Haskell projects to stack. It provides a small illustration of how
-flexible stack can be in accomodating project organisation quirks on the
-way towards predictable builds.<!--more--> If you want to see the
-complete results, here are links to the
+This post consists of notes on how I converted one of my Haskell
+projects to stack. It provides a small illustration of how flexible
+stack can be in accomodating project organisation quirks on the way
+towards predictable builds.<!--more--> If you want to see the complete
+results, here are links to the
 [Bitbucket repository](https://bitbucket.org/duplode/stunts-cartography)
 of Stunts Cartography, the example project I am using, and specifically
 to the
@@ -35,13 +35,13 @@ a specific LTS rather than an arbitrary nightly.
 $ stack init --resolver lts-2.19
 ```
 
-`cabal init` creates a `stack.yaml` file based on an existing cabal file
+`stack init` creates a `stack.yaml` file based on an existing cabal file
 in the current directory. The `--resolver` option can be used to pick a
 specific snapshot.
 
 One complicating factor in the conversion to stack was that two of the
 extra dependencies, `threepenny-gui-0.5.0.0` (one major version behind
-the current one) and `zip-conduit` wouldn't build with the LTS snapshot
+the current one) and `zip-conduit`, wouldn't build with the LTS snapshot
 plus current Hackage without version bumps in their cabal files.
 Fortunately, stack deals very well with situations like this, in which
 minor changes to some dependency are needed. I simply forked the
@@ -59,9 +59,9 @@ looks like this:
 
 Keeping customised dependencies in public remote repositories is an
 excellent solution. It enables users to build the package without
-further intervention without requiring developers to clumsily bundle
-bundle the source tree of the dependencies with the project, or waiting
-for a pull request to be accepted upstream and reach Hackage.
+further intervention without requiring developers to clumsily bundle the
+source tree of the dependencies with the project, or waiting for a pull
+request to be accepted upstream and reach Hackage.
 
 With the two tricky extra dependencies being offloaded to Git
 repositories, the next step was using `stack solver` to figure out the
