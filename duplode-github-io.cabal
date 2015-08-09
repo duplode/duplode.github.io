@@ -17,12 +17,14 @@ cabal-version:       >=1.10
 
 executable duplode-github-io
   main-is:             site.hs
-  -- other-modules:       
+  other-modules:       Scripts
   -- other-extensions:    
   build-depends:       base >= 4.6 && < 5
-                     , hakyll >= 4.4 && < 4.8
+                     , hakyll >= 4.6.9 && < 4.8
                      , pandoc
                      , highlighting-kate
                      , filepath
+                     , turtle >= 1.2 && < 1.3
+                     , managed
   hs-source-dirs:      src
   default-language:    Haskell2010

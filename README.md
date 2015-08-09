@@ -38,6 +38,12 @@ directory):
     # Afterwards, you should commit the updates at the master clone.
     ./synchronise.sh
 
+    # Rebuilds the site, transfers it to the master root, commits the changes
+    # there and publishes to GitHub.
+    # Uses a [`turtle`](https://hackage.haskell.org/package/turtle) script
+    # defined in `Scripts.hs`.
+    ./duplode.github.io deploy
+
 Repository layout
 -----------------
 

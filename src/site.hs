@@ -9,11 +9,13 @@ import Hakyll
 import Text.Highlighting.Kate (styleToCss, tango)
 import Text.Pandoc.Options
 
+import Scripts (deploy)
 
 --------------------------------------------------------------------------------
 hakyllConfig :: Configuration
 hakyllConfig = defaultConfiguration
     { providerDirectory = "src"
+    , deploySite = deploy theSite
     }
 
 ourPandocWriterOptions :: WriterOptions
@@ -95,7 +97,10 @@ baseCtx = defaultContext
 
 --------------------------------------------------------------------------------
 main :: IO ()
-main = hakyllWith hakyllConfig $ do
+main = hakyllWith hakyllConfig theSite
+
+theSite :: Rules ()
+theSite = do
     match "images/**" $ do
         route   idRoute
         compile copyFileCompiler
