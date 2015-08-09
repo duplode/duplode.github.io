@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Scripts
     ( deploy
+    , SiteBuilders(..)
     ) where
 
 import qualified Hakyll as H
@@ -9,10 +10,11 @@ import System.Environment (withArgs)
 import Control.Monad.Managed (with)
 import Turtle
 
-deploy :: H.Rules a -> H.Configuration -> IO ExitCode
-deploy theSite conf =
+deploy :: SiteBuilders -> H.Configuration -> IO ExitCode
+deploy builders conf =
     echoOK "Rebuilding and deploying site...\n"
-    .&&. withArgs ["rebuild"] (H.hakyllWithExitCode conf theSite)
+    .&&. withArgs ["rebuild"]
+        (theSiteRules builders & H.hakyllWithExitCode conf)
     .&&. shell "rsync -avc --delete --exclude '.git' _site/ ../master/" ""
     .&&. cd "../master"
         *> shell "git rev-parse --git-dir > /dev/null" ""
@@ -28,3 +30,8 @@ deploy theSite conf =
 
 echoOK :: MonadIO io => Text -> io ExitCode
 echoOK txt = echo txt *> pure ExitSuccess
+
+data SiteBuilders = SiteBuilders
+    { theSiteRules :: H.Rules ()
+    , ghIssuesRules :: H.Rules ()
+    }

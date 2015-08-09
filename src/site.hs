@@ -9,14 +9,19 @@ import Hakyll
 import Text.Highlighting.Kate (styleToCss, tango)
 import Text.Pandoc.Options
 
-import Scripts (deploy)
+import Scripts (deploy, SiteBuilders(..))
 
 --------------------------------------------------------------------------------
 hakyllConfig :: Configuration
 hakyllConfig = defaultConfiguration
     { providerDirectory = "src"
-    , deploySite = deploy theSite
+    , deploySite = deploy siteBuilders
     }
+    where
+    siteBuilders = SiteBuilders
+        { theSiteRules = theSite
+        , ghIssuesRules = return ()
+        }
 
 ourPandocWriterOptions :: WriterOptions
 ourPandocWriterOptions = defaultHakyllWriterOptions{ writerHtml5 = True }
