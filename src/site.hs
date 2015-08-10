@@ -2,25 +2,36 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import System.FilePath (takeFileName)
+import System.FilePath (takeFileName, (-<.>), (</>))
 import Data.Monoid ((<>))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
+import qualified Control.Monad.State as St
+import Data.Either (either)
+import Data.List (sortBy)
+import Data.Function ((&))
+import Data.Ord (comparing)
+import System.IO
+import Control.Exception
+import Data.String (fromString)
+import Text.Read (readMaybe)
 import Hakyll
 import Text.Highlighting.Kate (styleToCss, tango)
 import Text.Pandoc.Options
+import qualified Github.Issues as G
+import qualified Github.Auth as G
 
-import Scripts (deploy, SiteBuilders(..))
+import qualified Scripts as Scr
 
 --------------------------------------------------------------------------------
 hakyllConfig :: Configuration
 hakyllConfig = defaultConfiguration
     { providerDirectory = "src"
-    , deploySite = deploy siteBuilders
+    , deploySite = Scr.deploy siteBuilders
     }
     where
-    siteBuilders = SiteBuilders
-        { theSiteRules = theSite
-        , ghIssuesRules = return ()
+    siteBuilders = Scr.SiteBuilders
+        { Scr.theSiteRules = theSite
+        , Scr.ghIssuesRules = ghIssues
         }
 
 ourPandocWriterOptions :: WriterOptions
@@ -101,6 +112,14 @@ baseCtx :: Context String
 baseCtx = defaultContext
 
 --------------------------------------------------------------------------------
+plainPosts, literatePosts, hiddenPosts, allPosts :: Pattern
+plainPosts = "posts/*.md"
+literatePosts = "posts/*.lhs"
+hiddenPosts = "posts/_*"
+allPosts = (plainPosts .||. literatePosts)
+    .&&. complement hiddenPosts
+
+--------------------------------------------------------------------------------
 main :: IO ()
 main = hakyllWith hakyllConfig theSite
 
@@ -125,12 +144,6 @@ theSite = do
                 >>= loadAndApplyTemplate
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
-
-    let plainPosts = "posts/*.md"
-        literatePosts = "posts/*.lhs"
-        hiddenPosts = "posts/_*"
-        allPosts = (plainPosts .||. literatePosts)
-            .&&. complement hiddenPosts
 
     match "posts.html" $ do
         route $ idRoute
@@ -208,5 +221,118 @@ theSite = do
 
     match "fragments/*" $ compile getResourceBody
 
+-- TODO: Make these rules less ugly.
+ghIssues :: Rules ()
+ghIssues = do
+    -- For testing purposes, switch to plainPosts .||. literatePosts
+    let withIssues = allPosts
 
+    match withIssues . version "gh-issue" $
+        compile $ do
+            ident <- getUnderlying
+            let postPath = toFilePath ident
+            title <- ident `getMetadataField'` "title"
+            mIssue <- ident `getMetadataField` "gh-issue"
+            case mIssue of
+                Nothing -> makeItem ()
+                Just issue -> case readMaybe issue :: Maybe Int of
+                    Nothing -> error $ "ghIssues: Malformed issue for "
+                        ++ postPath -- TODO: bail out more gracefully.
+                    Just nIssue
+                        | nIssue < 1 -> error $ "ghIssues: Issue < 1 for "
+                            ++ postPath
+                        | otherwise -> do
+                            potIss <- makeItem $
+                                Scr.PotentialIssue
+                                    { Scr.potentialIssueNumber = nIssue
+                                    , Scr.potentialIssueTitle = title
+                                    , Scr.potentialIssuePath = postPath
+                                    }
+                            saveSnapshot "potential-issue" potIss
+                            makeItem ()
+
+    create ["virtual/gh-issues"] $
+        compile $ do
+            potIssues <- sortBy (comparing $
+                    Scr.potentialIssueNumber . itemBody)
+                <$> loadAllSnapshots withIssues "potential-issue"
+            emLastIssue <- fmap (fmap listToMaybe) . unsafeCompiler $
+                G.issuesForRepo "duplode" "duplode.github.io" [G.PerPage 1]
+            unsafeCompiler $ emLastIssue & either
+                (error . ("ghIssues: Last issue request failed: " ++) . show)
+                (\mLastIssue -> do
+                    let nLastIssue = fromMaybe 0 $
+                            G.issueNumber <$> mLastIssue
+                    auth <- G.GithubBasicAuth
+                        <$> (putStrLn "GitHub username:"
+                            *> fmap fromString getLine)
+                        <*> fmap fromString getPassword
+                    -- Creates GitHub issues for each potIss, but only if the
+                    -- issue numbers are sensible (that is, they increase by
+                    -- one, starting from the last existing issue number).
+                    flip St.evalStateT nLastIssue $
+                        St.forM_ potIssues $ \(Item ident potIss) -> do
+                            curN <- St.get
+                            let potN = Scr.potentialIssueNumber potIss
+                                nextN = curN + 1
+                                title = Scr.potentialIssueTitle potIss
+                            eOldIssue <- St.liftIO $ G.issue
+                                "duplode" "duplode.github.io" potN
+                            eOldIssue & flip either
+                                (St.liftIO . putStrLn
+                                . (("Issue " ++ show potN ++ " for "
+                                    ++ toFilePath ident ++ " already taken "
+                                    ++ "by: ") ++)
+                                . G.issueTitle)
+                                (const $ do -- TODO: Analyse the error.
+                                    St.unless (potN == nextN) $
+                                        error ("ghIssues: Requested issue number for "
+                                            ++ toFilePath ident ++ " is " ++ show potN
+                                            ++ ", expected " ++ show nextN)
+                                    eNewIss <- St.liftIO $ G.createIssue auth
+                                        "duplode" "duplode.github.io"
+                                        (G.newIssue title)
+                                            -- TODO: Duplicates the post route.
+                                            { G.newIssueBody = Just $
+                                                "Comment thread for ["
+                                                ++ title ++ "]("
+                                                ++ relativizeUrlsWith
+                                                    "https://duplode.github.io/"
+                                                    (toFilePath ident -<.> "html")
+                                                ++ ")."
+                                            , G.newIssueLabels = Just
+                                                ["comment-thread"]
+                                            }
+                                    eNewIss & either
+                                        (error . (("ghIssues: Issue creation failed "
+                                                ++ "for " ++ toFilePath ident ++ ": ")
+                                            ++) . show)
+                                        (\newIss -> let newN = G.issueNumber newIss
+                                            in if newN /= potN
+                                                then error $
+                                                    "ghIssues: New issue number for "
+                                                        ++ toFilePath ident ++ " is "
+                                                        ++ show newN ++ ", expected "
+                                                        ++ show potN
+                                                else (St.liftIO . putStrLn $
+                                                        "Created issue " ++ show newN
+                                                        ++ " for " ++ toFilePath ident)
+                                                    *> St.put newN)
+                                    )
+                    )
+            makeItem ()
+
+-- Qv. http://stackoverflow.com/q/4064378
+getPassword :: IO String
+getPassword = do
+  putStr "Password: "
+  hFlush stdout
+  pass <- withEcho False getLine
+  putChar '\n'
+  return pass
+
+withEcho :: Bool -> IO a -> IO a
+withEcho echo action = do
+  old <- hGetEcho stdin
+  bracket_ (hSetEcho stdin echo) (hSetEcho stdin old) action
 --------------------------------------------------------------------------------

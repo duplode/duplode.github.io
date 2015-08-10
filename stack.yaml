@@ -1,5 +1,7 @@
 flags: {}
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- github-0.13.2
+- failure-0.2.0.3
 resolver: nightly-2015-07-19

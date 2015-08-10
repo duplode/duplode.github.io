@@ -1,18 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Scripts
     ( deploy
     , SiteBuilders(..)
+    , PotentialIssue(..)
     ) where
 
 import qualified Hakyll as H
 import System.Environment (withArgs)
+import GHC.Generics (Generic)
+import Data.Binary (Binary)
 import Control.Monad.Managed (with)
 import Turtle
 
 deploy :: SiteBuilders -> H.Configuration -> IO ExitCode
 deploy builders conf =
     echoOK "Rebuilding and deploying site...\n"
+    -- Automated issue-thread creation. It already works, and will be
+    -- enabled once it gets some extra polish.
+    -- .&&. withArgs ["build"] (ghIssuesRules builders & H.hakyllWithExitCode conf)
     .&&. withArgs ["rebuild"]
         (theSiteRules builders & H.hakyllWithExitCode conf)
     .&&. shell "rsync -avc --delete --exclude '.git' _site/ ../master/" ""
@@ -35,3 +42,12 @@ data SiteBuilders = SiteBuilders
     { theSiteRules :: H.Rules ()
     , ghIssuesRules :: H.Rules ()
     }
+
+data PotentialIssue = PotentialIssue
+    { potentialIssueNumber :: Int
+    , potentialIssueTitle :: String
+    , potentialIssuePath :: String
+    } deriving (Show, Generic)
+
+instance Binary PotentialIssue
+
