@@ -87,10 +87,10 @@ fmap f <span class="fu">.</span> lengthC <span class="fu">=</span> lengthC <span
 <h2 id="structures-and-structures">Structures and Structures</h2>
 <p>Earlier on, we have said that we would not be directly concerned with structure in the sense mathematicians use the word, but only with the fuzzy Haskell concept that sometimes goes by the same name. To wrap things up, we will now illustrate the fact that both acceptions are not worlds apart. Let’s have another look at the second functor law, which states that <code>fmap</code> preserves composition:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">fmap (g <span class="fu">.</span> f) <span class="fu">=</span> fmap g <span class="fu">.</span> fmap f</code></pre></div>
-<p>Structure, in the mathematical sense, refers to some collection of interesting operations and distinguished elements. In this example, the relevant operation is function composition, which is part of the structure of the <em>Hask</em> category. Besides that, however, we are now able to note the uncanny resemblance between the shapes of the law, which says that it does not matter whether we compose <code>f</code> and <code>g</code> before applying <code>fmap</code>, and of the commutativity properties we used to characterise functorial contexts. The upshot is that by identifying context and structure of a <code>Functor</code> with polymorphic functions, we retain much of the spirit of the mathematical usage of structure. The interesting operations, in our case, are the polymorphic functions with which the context is probed. Perhaps it even makes sense to keep talking of structure of a <code>Functor</code> even after dropping the container metaphor.</p>
+<p>Structure, in the mathematical sense, refers to some collection of interesting operations and distinguished elements. In this example, the relevant operation is function composition, which is part of the structure of the <strong>Hask</strong> category. Besides that, however, we are now able to note the uncanny resemblance between the shapes of the law, which says that it does not matter whether we compose <code>f</code> and <code>g</code> before applying <code>fmap</code>, and of the commutativity properties we used to characterise functorial contexts. The upshot is that by identifying context and structure of a <code>Functor</code> with polymorphic functions, we retain much of the spirit of the mathematical usage of structure. The interesting operations, in our case, are the polymorphic functions with which the context is probed. Perhaps it even makes sense to keep talking of structure of a <code>Functor</code> even after dropping the container metaphor.</p>
 <h2 id="fmap-preserves-fmap">fmap Preserves fmap</h2>
 <p>Speaking of the second law, we will, just for kicks, use it to show how to turn things around and look at <code>fmap</code> as a natural transformation between <code>Functor</code>s. In order to do so, we have to recall that <code>(.)</code> is <code>fmap</code> for the function functor:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- First, we rewrite the second law in a more suggstive form:</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- First, we rewrite the second law in a more suggestive form:</span>
 fmap (g <span class="fu">.</span> f) <span class="fu">=</span> fmap g <span class="fu">.</span> fmap f
 fmap (((<span class="fu">.</span>) g) f) <span class="fu">=</span> (<span class="fu">.</span>) (fmap g) (fmap f)
 fmap <span class="fu">.</span> (<span class="fu">.</span>) g <span class="fu">=</span> ((<span class="fu">.</span>) <span class="fu">.</span> fmap) g <span class="fu">.</span> fmap
@@ -105,7 +105,7 @@ fmap_t <span class="fu">=</span> fmap
 <span class="ot">fmap_fun ::</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> ((<span class="ot">-&gt;</span>) a b <span class="ot">-&gt;</span> (<span class="ot">-&gt;</span>) a c)
 fmap_fun <span class="fu">=</span> (<span class="fu">.</span>)
 
-<span class="co">-- fmap from identity to the composite functor ((-&gt;) a) . t</span>
+<span class="co">-- fmap from identity to the composite functor ((-&gt;) (t a)) . t</span>
 <span class="ot">fmap_fun_t ::</span> (<span class="dt">Functor</span> t)
            <span class="ot">=&gt;</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> ((<span class="ot">-&gt;</span>) (t a) (t b) <span class="ot">-&gt;</span> (<span class="ot">-&gt;</span>) (t a) (t c))
 fmap_fun_t <span class="fu">=</span> fmap_fun <span class="fu">.</span> fmap_t
@@ -115,7 +115,7 @@ fmap_t <span class="fu">.</span> fmap_fun g <span class="fu">=</span> fmap_fun_t
 
 <span class="co">-- That, however, shows fmap_t is a natural transformation:</span>
 fmap <span class="fu">.</span> fmap g <span class="fu">=</span> fmap g <span class="fu">.</span> fmap</code></pre></div>
-<p>By fixing <code>t</code> and <code>a</code> in the signature of <code>fmap_t</code> above, we get one functor on either side of the outer function arrow: <code>((-&gt;) a)</code> on the left and <code>((-&gt;) a) . t</code> on the right. <code>fmap</code> is a natural transformation between these two functors.</p>
+<p>By fixing <code>t</code> and <code>a</code> in the signature of <code>fmap_t</code> above, we get one functor on either side of the outer function arrow: <code>((-&gt;) a)</code> on the left and <code>((-&gt;) (t a)) . t</code> on the right. <code>fmap</code> is a natural transformation between these two functors.</p>
 <h2 id="further-reading">Further Reading</h2>
 <ul>
 <li><p>In <em><a href="http://existentialtype.wordpress.com/2011/03/27/the-holy-trinity/">The Holy Trinity</a></em>, Robert Harper comments on the deep connection between logic, type theory and category theory that allows us to shift seamlessly between the categorical and the type theoretical perspectives, as we have done here.</p></li>
