@@ -248,9 +248,9 @@ fmap (g . f) = fmap g . fmap f
 Structure, in the mathematical sense, refers to some collection of
 interesting operations and distinguished elements. In this example, the
 relevant operation is function composition, which is part of the
-structure of the *Hask* category. Besides that, however, we are now able
-to note the uncanny resemblance between the shapes of the law, which
-says that it does not matter whether we compose `f` and `g` before
+structure of the **Hask** category. Besides that, however, we are now
+able to note the uncanny resemblance between the shapes of the law,
+which says that it does not matter whether we compose `f` and `g` before
 applying `fmap`, and of the commutativity properties we used to
 characterise functorial contexts. The upshot is that by identifying
 context and structure of a `Functor` with polymorphic functions, we
@@ -269,7 +269,7 @@ between `Functor`s. In order to do so, we have to recall that `(.)` is
 `fmap` for the function functor:
 
 ``` haskell
--- First, we rewrite the second law in a more suggstive form:
+-- First, we rewrite the second law in a more suggestive form:
 fmap (g . f) = fmap g . fmap f
 fmap (((.) g) f) = (.) (fmap g) (fmap f)
 fmap . (.) g = ((.) . fmap) g . fmap
@@ -284,7 +284,7 @@ fmap_t = fmap
 fmap_fun :: (b -> c) -> ((->) a b -> (->) a c)
 fmap_fun = (.)
 
--- fmap from identity to the composite functor ((->) a) . t
+-- fmap from identity to the composite functor ((->) (t a)) . t
 fmap_fun_t :: (Functor t)
            => (b -> c) -> ((->) (t a) (t b) -> (->) (t a) (t c))
 fmap_fun_t = fmap_fun . fmap_t
@@ -297,8 +297,8 @@ fmap . fmap g = fmap g . fmap
 ```
 By fixing `t` and `a` in the signature of `fmap_t` above, we get one
 functor on either side of the outer function arrow: `((->) a)` on the
-left and `((->) a) . t` on the right. `fmap` is a natural transformation
-between these two functors.
+left and `((->) (t a)) . t` on the right. `fmap` is a natural
+transformation between these two functors.
 
 Further Reading
 ---------------
