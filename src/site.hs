@@ -1,5 +1,6 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists #-}
 module Main where
 
 import System.FilePath (takeFileName, (-<.>), (</>))
@@ -10,6 +11,9 @@ import Data.Either (either)
 import Data.List (sortBy)
 import Data.Function ((&))
 import Data.Ord (comparing)
+import Data.Vector ((!?))
+import Data.String (fromString)
+import qualified Data.Text.IO as T (putStrLn)
 import System.IO
 import Control.Exception
 import Data.String (fromString)
@@ -17,8 +21,10 @@ import Text.Read (readMaybe)
 import Hakyll
 import Text.Highlighting.Kate (styleToCss, tango)
 import Text.Pandoc.Options
-import qualified Github.Issues as G
-import qualified Github.Auth as G
+import qualified GitHub.Endpoints.Issues as G
+import qualified GitHub.Auth as G
+import qualified GitHub.Data.Name as G
+import qualified GitHub.Data.Id as G
 
 import qualified Scripts as Scr
 
@@ -40,8 +46,7 @@ ourPandocWriterOptions = defaultHakyllWriterOptions{ writerHtml5 = True }
 tocPandocWriterOptions :: WriterOptions
 tocPandocWriterOptions = ourPandocWriterOptions
     { writerTableOfContents = True
-    , writerTemplate = "$toc$\n$body$"
-    , writerStandalone = True
+    , writerTemplate = Just ("$toc$\n$body$")
     }
 
 processWithPandoc :: Item String -> Compiler (Item String)
@@ -256,14 +261,14 @@ ghIssues = do
             potIssues <- sortBy (comparing $
                     Scr.potentialIssueNumber . itemBody)
                 <$> loadAllSnapshots withIssues "potential-issue"
-            emLastIssue <- fmap (fmap listToMaybe) . unsafeCompiler $
-                G.issuesForRepo "duplode" "duplode.github.io" [G.PerPage 1]
+            emLastIssue <- fmap (fmap (!? 0)) . unsafeCompiler $
+                G.issuesForRepo "duplode" "duplode.github.io" mempty
             unsafeCompiler $ emLastIssue & either
                 (error . ("ghIssues: Last issue request failed: " ++) . show)
                 (\mLastIssue -> do
                     let nLastIssue = fromMaybe 0 $
                             G.issueNumber <$> mLastIssue
-                    auth <- G.GithubBasicAuth
+                    auth <- G.BasicAuth
                         <$> (putStrLn "GitHub username:"
                             *> fmap fromString getLine)
                         <*> fmap fromString getPassword
@@ -277,12 +282,12 @@ ghIssues = do
                                 nextN = curN + 1
                                 title = Scr.potentialIssueTitle potIss
                             eOldIssue <- St.liftIO $ G.issue
-                                "duplode" "duplode.github.io" potN
+                                "duplode" "duplode.github.io" (G.Id potN)
                             eOldIssue & flip either
-                                (St.liftIO . putStrLn
-                                . (("Issue " ++ show potN ++ " for "
-                                    ++ toFilePath ident ++ " already taken "
-                                    ++ "by: ") ++)
+                                (St.liftIO . T.putStrLn
+                                . (("Issue " <> fromString (show potN) <> " for "
+                                    <> fromString (toFilePath ident) <> " already taken "
+                                    <> "by: ") <>)
                                 . G.issueTitle)
                                 (const $ do -- TODO: Analyse the error.
                                     St.unless (potN == nextN) $
@@ -291,17 +296,17 @@ ghIssues = do
                                             ++ ", expected " ++ show nextN)
                                     eNewIss <- St.liftIO $ G.createIssue auth
                                         "duplode" "duplode.github.io"
-                                        (G.newIssue title)
+                                        (G.newIssue (fromString title))
                                             -- TODO: Duplicates the post route.
-                                            { G.newIssueBody = Just $
+                                            { G.newIssueBody = Just . fromString $
                                                 "Comment thread for ["
                                                 ++ title ++ "]("
                                                 ++ relativizeUrlsWith
                                                     "https://duplode.github.io/"
                                                     (toFilePath ident -<.> "html")
                                                 ++ ")."
-                                            , G.newIssueLabels = Just
-                                                ["comment-thread"]
+                                            , G.newIssueLabels = Just $
+                                                [G.N "comment-thread"]
                                             }
                                     eNewIss & either
                                         (error . (("ghIssues: Issue creation failed "

@@ -35,7 +35,7 @@ deploy builders conf =
     .&&. echoOK "\nPushing pending commits, if any."
     .&&. with (shell "git push gh master" "" & fork) wait
 
-echoOK :: MonadIO io => Text -> io ExitCode
+echoOK :: MonadIO io => Line -> io ExitCode
 echoOK txt = echo txt *> pure ExitSuccess
 
 data SiteBuilders = SiteBuilders
