@@ -22,7 +22,7 @@ executable duplode-github-io
   build-depends:       base >= 4.8 && < 5
                      , hakyll >= 4.9 && < 4.10
                      , pandoc
-                     , highlighting-kate
+                     , skylighting
                      , filepath >= 1.4
                      , turtle >= 1.3 && < 1.4
                      , managed

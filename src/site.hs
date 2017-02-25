@@ -19,7 +19,7 @@ import Control.Exception
 import Data.String (fromString)
 import Text.Read (readMaybe)
 import Hakyll
-import Text.Highlighting.Kate (styleToCss, tango)
+import Skylighting (styleToCss, tango)
 import Text.Pandoc.Options
 import qualified GitHub.Endpoints.Issues as G
 import qualified GitHub.Auth as G
