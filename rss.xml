@@ -7,8 +7,135 @@
         <description><![CDATA[Haskell amusements]]></description>
         <atom:link href="http://duplode.github.io/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Mon, 27 Jul 2015 06:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sun, 26 Feb 2017 10:00:00 UT</lastBuildDate>
         <item>
+    <title>Casual Hacking With stack, Reloaded</title>
+    <link>http://duplode.github.io/posts/casual-hacking-with-stack-reloaded.html</link>
+    <description><![CDATA[<p>It has been quite a while since I <a href="../posts/casual-hacking-with-stack.html">wrote</a> about how to use stack for casual play outside of the context of a conventional Haskell project. In the meantime, stack has gained a feature called the <em>global project</em> which in many cases makes it possible to do quick experiments with essentially no setup, while still taking advantage of the infrastructure provided through stack.</p>
+<div>
+
+</div>
+<!--more-->
+<p>The global project consists of a <code>stack.yaml</code> file and an associated <code>.stack-work</code> directory, which are kept in <code>~/.stack/global-project</code> and are used by stack whenever there is no other <code>stack.yaml</code> lying around. The <code>stack.yaml</code> of the global project specifies a resolver, just like any other <code>stack.yaml</code>. If said resolver is a snapshot you use elsewhere, you get access to all packages you have installed from that snapshot with zero configuration.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="bu">pwd</span>
+<span class="ex">/home/duplode</span>
+$ <span class="fu">ls</span> -lrt <span class="kw">|</span> <span class="fu">grep</span> stack.yaml
+$ <span class="ex">stack</span> ghci
+<span class="ex">Configuring</span> GHCi with the following packages: 
+<span class="ex">GHCi</span>, version 8.0.1: http://www.haskell.org/ghc/  :? for help
+<span class="ex">Loaded</span> GHCi configuration from /home/duplode/.ghci
+<span class="ex">Loaded</span> GHCi configuration from /tmp/ghci22741/ghci-script
+<span class="ex">GHCi</span><span class="op">&gt;</span> import Control.Lens
+<span class="ex">GHCi</span><span class="op">&gt;</span> (1,2) ^<span class="bu">.</span> <span class="ex">_1</span>
+<span class="ex">1</span></code></pre></div>
+<p>By the way, this also holds for the stack-powered <a href="http://commercialhaskell.github.io/intero/">Intero</a> Emacs mode, which makes it possible to simply open a new <code>*.hs</code> file anywhere and immediately start hacking away.</p>
+<p>What about packages you didn’t install beforehand? They are no problem, thanks to the <code>--package</code> option of <code>stack ghci</code>, which allows installing snapshot packages at a whim.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> ghci --package fmlist
+<span class="ex">fmlist-0.9</span>: download
+<span class="ex">fmlist-0.9</span>: configure
+<span class="ex">fmlist-0.9</span>: build
+<span class="ex">fmlist-0.9</span>: copy/register
+<span class="ex">Configuring</span> GHCi with the following packages: 
+<span class="ex">GHCi</span>, version 8.0.1: http://www.haskell.org/ghc/  :? for help
+<span class="ex">Loaded</span> GHCi configuration from /home/duplode/.ghci
+<span class="ex">Loaded</span> GHCi configuration from /tmp/ghci22828/ghci-script
+<span class="ex">GHCi</span><span class="op">&gt;</span> import Data.FMList
+<span class="ex">GHCi</span><span class="op">&gt;</span> :m - Data.FMList 
+<span class="ex">GHCi</span><span class="op">&gt;</span> import qualified Data.FMList as FM
+<span class="ex">GHCi</span><span class="op">&gt;</span> FM.foldMapA (\x -<span class="op">&gt;</span> show <span class="op">&lt;</span>$<span class="op">&gt;</span> [0..x]) [<span class="ex">0..3</span>]
+[<span class="st">&quot;0000&quot;</span>,<span class="st">&quot;0001&quot;</span>,<span class="st">&quot;0002&quot;</span>,<span class="st">&quot;0003&quot;</span>,<span class="st">&quot;0010&quot;</span>,<span class="st">&quot;0011&quot;</span>,<span class="st">&quot;0012&quot;</span>,<span class="st">&quot;0013&quot;</span>,<span class="st">&quot;0020&quot;</span>,<span class="st">&quot;0021&quot;</span>,
+<span class="st">&quot;0022&quot;</span>,<span class="st">&quot;0023&quot;</span>,<span class="st">&quot;0100&quot;</span>,<span class="st">&quot;0101&quot;</span>,<span class="st">&quot;0102&quot;</span>,<span class="st">&quot;0103&quot;</span>,<span class="st">&quot;0110&quot;</span>,<span class="st">&quot;0111&quot;</span>,<span class="st">&quot;0112&quot;</span>,<span class="st">&quot;0113&quot;</span>,
+<span class="st">&quot;0120&quot;</span>,<span class="st">&quot;0121&quot;</span>,<span class="st">&quot;0122&quot;</span>,<span class="st">&quot;0123&quot;</span>]</code></pre></div>
+<p>One caveat is that <code>--package</code> won’t install packages outside of the snapshot on its own, so you have to add them to the <code>extra-deps</code> field of the global project’s <code>stack.yaml</code> beforehand, just like you would do for an actual project. If you need several non-Stackage packages, you may find it convenient to create a throwaway project for the sole purpose of letting <code>stack solver</code> figure out the necessary <code>extra-deps</code> for you.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="fu">mkdir</span> throwaway
+$ <span class="ex">stack</span> new throwaway --resolver lts-7.14 <span class="co"># Same resolver of the global project.</span>
+<span class="co"># ...</span>
+<span class="ex">Writing</span> configuration to file: throwaway/stack.yaml
+<span class="ex">All</span> done.
+$ <span class="bu">cd</span> throwaway
+$ <span class="ex">vi</span> throwaway.cabal <span class="co"># Let's add reactive-banana to the dependencies.</span>
+$ <span class="ex">stack</span> solver
+<span class="co"># ...</span>
+<span class="ex">Successfully</span> determined a build plan with 2 external dependencies.
+
+<span class="ex">The</span> following changes will be made to stack.yaml:
+<span class="ex">*</span> Dependencies to be added
+    <span class="ex">extra-deps</span>:
+    <span class="ex">-</span> pqueue-1.3.2
+    <span class="ex">-</span> reactive-banana-1.1.0.1
+
+<span class="ex">To</span> automatically update stack.yaml, rerun with <span class="st">'--update-config'</span>
+$ <span class="ex">vi</span> ~/.stack/global-project/stack.yaml <span class="co"># Add the packages to the extra-deps.</span>
+$ <span class="bu">cd</span> ..
+$ <span class="fu">rm</span> -rf throwaway/
+$ <span class="ex">stack</span> ghci --package reactive-banana
+<span class="ex">pqueue-1.3.2</span>: configure
+<span class="ex">pqueue-1.3.2</span>: build
+<span class="ex">pqueue-1.3.2</span>: copy/register
+<span class="ex">reactive-banana-1.1.0.1</span>: configure
+<span class="ex">reactive-banana-1.1.0.1</span>: build
+<span class="ex">reactive-banana-1.1.0.1</span>: copy/register
+<span class="ex">Completed</span> 2 action(s)<span class="ex">.</span>
+<span class="ex">Configuring</span> GHCi with the following packages: 
+<span class="ex">GHCi</span>, version 8.0.1: http://www.haskell.org/ghc/  :? for help
+<span class="ex">Loaded</span> GHCi configuration from /home/duplode/.ghci
+<span class="ex">Loaded</span> GHCi configuration from /tmp/ghci23103/ghci-script
+<span class="ex">GHCi</span><span class="op">&gt;</span> import Reactive.Banana
+<span class="ex">GHCi</span><span class="op">&gt;</span> :t stepper
+<span class="ex">stepper</span> :: MonadMoment m =<span class="op">&gt;</span> a -<span class="op">&gt;</span> Event a -<span class="op">&gt;</span> m (Behavior a)</code></pre></div>
+<p>Support for running <code>stack solver</code> directly with the global project <a href="https://github.com/commercialhaskell/stack/issues/2656">is on the horizon</a>.</p>
+<p>There are also interesting possibilities if you need to compile your throwaway code. That might be useful, for instance, if you ever feel like testing a hypothesis with a <a href="http://www.serpentine.com/criterion/tutorial.html">criterion</a> benchmark). While there is a <code>stack ghc</code> command, if you don’t need GHC profiles then taking advantage of <code>--ghci-options</code> to enable <code>-fobject-code</code> for <code>stack ghci</code> can be a more pleasant alternative.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> ghci --ghci-options <span class="st">&quot;-O2 -fobject-code&quot;</span>
+<span class="ex">Configuring</span> GHCi with the following packages: 
+<span class="ex">GHCi</span>, version 8.0.1: http://www.haskell.org/ghc/  :? for help
+<span class="ex">Loaded</span> GHCi configuration from /home/duplode/.ghci
+<span class="ex">Loaded</span> GHCi configuration from /tmp/ghci23628/ghci-script
+<span class="ex">GHCi</span><span class="op">&gt;</span> :l Foo.hs 
+[<span class="ex">1</span> of 1] Compiling Foo              ( Foo.hs, /home/duplode/.stack/global-project/.stack-work/odir/Foo.o )
+<span class="ex">Ok</span>, modules loaded: Foo (/home/duplode/.stack/global-project/.stack-work/odir/Foo.o)<span class="ex">.</span>
+<span class="ex">GHCi</span><span class="op">&gt;</span> :main
+<span class="ex">A</span> random number for you: 2045528912275320075</code></pre></div>
+<p>A nice little thing about this approach is that the build artifacts are kept in the global project’s <code>.stack-work</code>, which means they won’t pollute whichever other directory you happen to be at. <code>-fobject-code</code> means you can’t write definitions directly on the GHCi prompt; however, that is not much of a nuisance, given that you are compiling the code anyway, and that the source file is just a <code>:!vim Foo.hs</code> away.</p>
+<p>While in these notes I have focused on seat-of-the-pants experimentation, stack also provides tools for running Haskell code with minimal configuration in a more controlled manner. I specially recommend having a look at the <a href="https://docs.haskellstack.org/en/stable/GUIDE/#script-interpreter"><em>script interpreter</em> section of the stack User Guide</a>.</p>
+
+<div id="comment-nav" class="pure-g-r">
+  <div class="pure-u-1-5">
+    
+    
+  </div>
+  <div class="pure-u-1-5">
+    <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/8">Comment on GitHub</a>
+
+    
+      
+        (see <a href="posts/casual-hacking-with-stack-reloaded.html#comment-nav">the full post</a> for a reddit link)
+      
+    
+  </div>
+  <div class="pure-u-3-5">
+  </div>
+</div>
+
+<div><div class="license">
+  <p>
+    <span class="inline-centered">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <img alt="Creative Commons License" style="border-width:0" src="//i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+    </span>
+    <span class="inline-centered">
+      Post licensed under a
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+    </span>
+  </p>
+</div>
+
+</div>
+]]></description>
+    <pubDate>Sun, 26 Feb 2017 10:00:00 UT</pubDate>
+    <guid>http://duplode.github.io/posts/casual-hacking-with-stack-reloaded.html</guid>
+    <dc:creator>Daniel Mlot</dc:creator>
+</item>
+<item>
     <title>Migrating a Project to stack</title>
     <link>http://duplode.github.io/posts/migrating-a-project-to-stack.html</link>
     <description><![CDATA[<p>This post consists of notes on how I converted one of my Haskell projects to stack. It provides a small illustration of how flexible stack can be in accomodating project organisation quirks on the way towards predictable builds.<!--more--> If you want to see the complete results, here are links to the <a href="https://bitbucket.org/duplode/stunts-cartography">Bitbucket repository</a> of Stunts Cartography, the example project I am using, and specifically to the <a href="https://bitbucket.org/duplode/stunts-cartography/src/3eb07c44f6e2eed19591f765b14fc5fbe2b8f946">source tree immediately after the migration</a>.</p>
@@ -149,7 +276,8 @@ Listening on http://127.0.0.1:10000/
 <item>
     <title>Casual Hacking With stack</title>
     <link>http://duplode.github.io/posts/casual-hacking-with-stack.html</link>
-    <description><![CDATA[<p>Sandboxes are exceptionally helpful not just for working in long-term Haskell projects, but also for casual experiments. While playing around, we tend to install all sorts of packages in a carefree way, which increases a lot the risk of entering cabal hell. While vanilla cabal-install sandboxes prevent such a disaster, using them systematically for experiments mean that, unless you are meticulous, you will end up either with dozens of .hs files in a single sandbox or with dozens of copies of the libraries strewn across your home directory. And no one likes to be meticulous while playing around. In that context, stack, the recently released alternative to cabal-install, can prevent trouble with installing packages in a way more manageable than through ad-hoc sandboxes. In this post, I will suggest a few ways of using stack that may be convenient for experiments. I have been using stack for only a few days, therefore suggestions are most welcome!</p>
+    <description><![CDATA[<p><em>2017 update: This post was written shortly after the initial release of stack. While the workflow suggested here remains potentially useful, later versions of stack offer more immediate support for working outside the boundaries of a conventional Haskell project. For more on that, see <a href="../posts/casual-hacking-with-stack-reloaded.html">Casual Hacking With stack, Reloaded</a>.</em></p>
+<p>Sandboxes are exceptionally helpful not just for working in long-term Haskell projects, but also for casual experiments. While playing around, we tend to install all sorts of packages in a carefree way, which increases a lot the risk of entering cabal hell. While vanilla cabal-install sandboxes prevent such a disaster, using them systematically for experiments mean that, unless you are meticulous, you will end up either with dozens of .hs files in a single sandbox or with dozens of copies of the libraries strewn across your home directory. And no one likes to be meticulous while playing around. In that context, stack, the recently released alternative to cabal-install, can prevent trouble with installing packages in a way more manageable than through ad-hoc sandboxes. In this post, I will suggest a few ways of using stack that may be convenient for experiments. I have been using stack for only a few days, therefore suggestions are most welcome!</p>
 <div>
 
 </div>
