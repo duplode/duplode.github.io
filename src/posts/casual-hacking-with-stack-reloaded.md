@@ -3,7 +3,7 @@ title: Casual Hacking With stack, Reloaded
 published: 2017-02-26T10:00:00Z
 license: CC-BY-SA
 reddit: true
-gh-issue: 8
+gh-issue: 9
 ---
 
 It has been quite a while since
