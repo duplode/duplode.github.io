@@ -58,11 +58,11 @@ Lib.hs
 ./test:
 Spec.hs</code></pre>
 <p>Of particular interest is the <code>stack.yaml</code> file, which holds the settings for the local stack environment. We will talk more about it soon.</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">flags:</span> <span class="kw">{}</span>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span>
 <span class="fu">packages:</span>
 <span class="kw">-</span> <span class="st">'.'</span>
-<span class="fu">extra-deps:</span> <span class="kw">[]</span>
-<span class="fu">resolver:</span> nightly-2015-07-19</code></pre></div>
+<span class="fu">extra-deps:</span><span class="at"> </span><span class="kw">[]</span>
+<span class="fu">resolver:</span><span class="at"> nightly-2015-07-19</span></code></pre></div>
 <p>As for the default <code>new-template.cabal</code> file, you can use its <code>build-depends</code> section to keep track of what you are installing. That will make <code>stack build</code> (the command which builds the current project without installing it) to download and install any dependencies you add to the cabal file automatically. Besides that, having the installed packages noted down may prove useful in case you need to reproduce your configuration elsewhere <a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>. If your experiments become a real project, you can clean up the <code>build-depends</code> without losing track of the packages you installed for testing purposes by moving their entries to a second cabal file, kept in a subdirectory:</p>
 <pre><code>$ mkdir xp
 $ cp new-template.cabal xp/xp.cabal
@@ -107,16 +107,16 @@ Completed all 3 actions.</code></pre>
 <span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Lib</span>, <span class="dt">Main</span><span class="fu">.</span>
 <span class="fu">*</span><span class="dt">Main</span> <span class="dt">F</span><span class="fu">&gt;</span></code></pre></div>
 <p>Dependencies not in Stackage have to be specified in <code>stack.yaml</code> as well as in the cabal files, so that stack can manage them too. Alternative sources of packages include source trees in subdirectories of the project, Hackage and remote Git repositories <a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a>:</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">flags:</span> <span class="kw">{}</span>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span>
 <span class="fu">packages:</span>
 <span class="kw">-</span> <span class="st">'.'</span>
 <span class="kw">-</span> <span class="st">'xp'</span>
-<span class="kw">-</span> <span class="fu">location:</span> deps/acme-missiles-0.3 <span class="co"># Sources in a subdirectory.</span>
-  <span class="fu">extra-dep:</span> true <span class="co"># Mark as dep, i.e. not part of the project proper.</span>
+<span class="kw">-</span> <span class="fu">location:</span><span class="at"> deps/acme-missiles-0.3 </span><span class="co"># Sources in a subdirectory.</span>
+  <span class="fu">extra-dep:</span><span class="at"> true </span><span class="co"># Mark as dep, i.e. not part of the project proper.</span>
 <span class="fu">extra-deps:</span>
 <span class="kw">-</span> acme-safe-0.1.0.0 <span class="co"># From Hackage.</span>
 <span class="kw">-</span> acme-dont-1.1 <span class="co"># Also from Hackage, dependency of acme-safe.</span>
-<span class="fu">resolver:</span> nightly-2015-07-19</code></pre></div>
+<span class="fu">resolver:</span><span class="at"> nightly-2015-07-19</span></code></pre></div>
 <p><code>stack build</code> will then install the extra dependencies to <code>.stack-work/install</code>. You can use <code>stack solver</code> to chase the indirect dependencies introduced by them. For instance, this is its output after commenting the <code>acme-dont</code> line in the <code>stack.yaml</code> just above:</p>
 <pre><code>$ stack solver --no-modify-stack-yaml
 This command is not guaranteed to give you a perfect build plan

@@ -178,8 +178,8 @@ modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class=
 <p>A perennial topic in discussions about <code>lens</code> is the order of composition of lenses. They are often said to compose backwards; that is, backwards with respect to composition of record accessors and similar getters. For instance, the getter corresponding to the <code>_1 . _2</code> lens is <code>snd . fst</code>. The claim that lenses compose backwards, or in the “wrong order”, however, are only defensible when talking about style, and not about semantics. That becomes clear after placing the signatures of a getter and its corresponding lens side by side.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t fst
 fst<span class="ot"> ::</span> (a, b) <span class="ot">-&gt;</span> a
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t _1<span class="ot"> ::</span> <span class="dt">Lens'</span> (a, b) a
-_1<span class="ot"> ::</span> <span class="dt">Lens'</span> (a, b) a
+<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t<span class="ot"> _1 ::</span> <span class="dt">Lens'</span> (a, b) a
+<span class="ot">_1 ::</span> <span class="dt">Lens'</span> (a, b) a
 <span class="ot"> ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> (a, b) <span class="ot">-&gt;</span> f (a, b)</code></pre></div>
 <p>The getter takes a value of the source type and produces a value of the target type. The lens, however, takes a function from the target type and produces a function from the source type. Therefore, it is no surprise that the order of composition differs, and the order for lenses is entirely natural. That ties in closely to what we have seen while implementing lenses. While we can squeeze lenses until they give back getters, it is much easier to think of them as generalised modifiers.</p>
 <section class="footnotes">
