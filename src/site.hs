@@ -263,9 +263,10 @@ ghIssues = do
 
     create ["virtual/gh-issues"] $
         compile $ do
-            potIssues <- sortBy (comparing $
-                    Scr.potentialIssueNumber . itemBody)
-                <$> loadAllSnapshots withIssues "potential-issue"
+            potIssues <- sortBy
+                    (comparing $ Scr.potentialIssueNumber . itemBody)
+                <$> loadAllSnapshots
+                    (withIssues .&&. hasVersion "gh-issue") "potential-issue"
             emLastIssue <- fmap (fmap (!? 0)) . unsafeCompiler $
                 G.issuesForRepo "duplode" "duplode.github.io" mempty
             emLastIssue & either
