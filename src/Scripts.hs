@@ -20,11 +20,11 @@ deploy :: SiteBuilders -> H.Configuration -> IO ExitCode
 deploy builders conf =
     echoOK "Rebuilding and deploying site...\n"
     -- Automated issue-thread creation. Currently under testing.
-    .&&. withArgs ["rebuild"]
-        (liftA2 (>>) theSiteRules ghIssuesRules builders
-            & H.hakyllWithExitCode conf)
+    -- .&&. withArgs ["rebuild"]
+    --    (liftA2 (>>) theSiteRules ghIssuesRules builders
+    --        & H.hakyllWithExitCode conf)
     -- Switch lines to build without automated issue-thread creation.
-    -- .&&. withArgs ["rebuild"] (theSiteRules builders & H.hakyllWithExitCode conf)
+    .&&. withArgs ["rebuild"] (theSiteRules builders & H.hakyllWithExitCode conf)
     .&&. shell "rsync -avc --delete --exclude '.git' _site/ ../master/" ""
     .&&. cd "../master"
         *> shell "git rev-parse --git-dir > /dev/null" ""
