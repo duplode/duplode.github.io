@@ -4,6 +4,7 @@ published: 2015-07-22T23:30:00-03:00
 license: CC-BY-SA
 reddit: true
 gh-issue: 6
+retired: true
 ---
 
 *2017 update: This post was written shortly after the initial release

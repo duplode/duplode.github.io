@@ -6,7 +6,7 @@ module Main where
 
 import System.FilePath (takeFileName, (-<.>), (</>))
 import Data.Monoid ((<>))
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (fromMaybe, listToMaybe, isNothing)
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Except as Er
 import Control.Monad
@@ -183,6 +183,8 @@ theSite = do
         route $ idRoute
         compile $ do
             barePosts <- fmap (take 6) . recentFirst
+                =<< filterM (fmap isNothing
+                        . (`getMetadataField` "retired") . itemIdentifier)
                 =<< loadAllSnapshots (allPosts .&&. hasNoVersion) "content"
             getResourceBody
                 >>= applyAsTemplate

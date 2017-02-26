@@ -8,10 +8,10 @@ gh-issue: 8
 
 It has been quite a while since
 I [wrote](/posts/casual-hacking-with-stack.html) about how to use stack
-for casual play outside of the context of a Haskell package. In the
-meantime, stack has gained a feature called the *global project* which
-in many cases makes it possible to do quick experiments with
-essentially no setup, while still taking advantage of the
+for casual play outside of the context of a conventional Haskell
+project. In the meantime, stack has gained a feature called the *global
+project* which in many cases makes it possible to do quick experiments
+with essentially no setup, while still taking advantage of the
 infrastructure provided through stack.
 
 <div></div><!--more-->
