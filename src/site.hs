@@ -1,23 +1,28 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Main where
 
 import System.FilePath (takeFileName, (-<.>), (</>))
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe, listToMaybe)
 import qualified Control.Monad.State as St
+import qualified Control.Monad.Except as Er
+import Control.Monad
+import Data.Bifunctor
 import Data.Either (either)
 import Data.List (sortBy)
 import Data.Function ((&))
 import Data.Ord (comparing)
 import Data.Vector ((!?))
 import Data.String (fromString)
+import qualified GHC.Exts as Ex (fromList)
 import qualified Data.Text.IO as T (putStrLn)
 import System.IO
 import Control.Exception
 import Data.String (fromString)
-import Text.Read (readMaybe)
+import Text.Read (readMaybe, readEither)
 import Hakyll
 import Skylighting (styleToCss, tango)
 import Text.Pandoc.Options
@@ -226,7 +231,7 @@ theSite = do
 
     match "fragments/*" $ compile getResourceBody
 
--- TODO: Make these rules less ugly.
+-- Automated GitHub issue thread creation.
 ghIssues :: Rules ()
 ghIssues = do
     -- For testing purposes, switch to plainPosts .||. literatePosts
@@ -240,21 +245,21 @@ ghIssues = do
             mIssue <- ident `getMetadataField` "gh-issue"
             case mIssue of
                 Nothing -> makeItem ()
-                Just issue -> case readMaybe issue :: Maybe Int of
-                    Nothing -> error $ "ghIssues: Malformed issue for "
-                        ++ postPath -- TODO: bail out more gracefully.
-                    Just nIssue
-                        | nIssue < 1 -> error $ "ghIssues: Issue < 1 for "
-                            ++ postPath
-                        | otherwise -> do
-                            potIss <- makeItem $
-                                Scr.PotentialIssue
-                                    { Scr.potentialIssueNumber = nIssue
-                                    , Scr.potentialIssueTitle = title
-                                    , Scr.potentialIssuePath = postPath
-                                    }
-                            saveSnapshot "potential-issue" potIss
-                            makeItem ()
+                Just issue -> parsePotentialIssueNumber issue & either
+                    (\case -- TODO: bail out more gracefully.
+                        Scr.MalformedIssueNumber -> Er.throwError
+                            ["ghIssues: Malformed issue for " ++ postPath]
+                        Scr.NegativeIssueNumber -> Er.throwError
+                            ["ghIssues: Issue < 1 for " ++ postPath])
+                    (\nIssue -> do
+                        potIss <- makeItem $
+                            Scr.PotentialIssue
+                                { Scr.potentialIssueNumber = nIssue
+                                , Scr.potentialIssueTitle = title
+                                , Scr.potentialIssuePath = postPath
+                                }
+                        saveSnapshot "potential-issue" potIss
+                        makeItem ())
 
     create ["virtual/gh-issues"] $
         compile $ do
@@ -263,69 +268,97 @@ ghIssues = do
                 <$> loadAllSnapshots withIssues "potential-issue"
             emLastIssue <- fmap (fmap (!? 0)) . unsafeCompiler $
                 G.issuesForRepo "duplode" "duplode.github.io" mempty
-            unsafeCompiler $ emLastIssue & either
-                (error . ("ghIssues: Last issue request failed: " ++) . show)
+            emLastIssue & either
+                (\err -> Er.throwError
+                    [ "ghIssues: Last issue request failed: " ++ show err ])
                 (\mLastIssue -> do
                     let nLastIssue = fromMaybe 0 $
                             G.issueNumber <$> mLastIssue
-                    auth <- G.BasicAuth
-                        <$> (putStrLn "GitHub username:"
-                            *> fmap fromString getLine)
-                        <*> fmap fromString getPassword
-                    -- Creates GitHub issues for each potIss, but only if the
-                    -- issue numbers are sensible (that is, they increase by
-                    -- one, starting from the last existing issue number).
+                    auth <- unsafeCompiler authGitHub
                     flip St.evalStateT nLastIssue $
-                        St.forM_ potIssues $ \(Item ident potIss) -> do
-                            curN <- St.get
-                            let potN = Scr.potentialIssueNumber potIss
-                                nextN = curN + 1
-                                title = Scr.potentialIssueTitle potIss
-                            eOldIssue <- St.liftIO $ G.issue
-                                "duplode" "duplode.github.io" (G.Id potN)
-                            eOldIssue & flip either
-                                (St.liftIO . T.putStrLn
-                                . (("Issue " <> fromString (show potN) <> " for "
-                                    <> fromString (toFilePath ident) <> " already taken "
-                                    <> "by: ") <>)
-                                . G.issueTitle)
-                                (const $ do -- TODO: Analyse the error.
-                                    St.unless (potN == nextN) $
-                                        error ("ghIssues: Requested issue number for "
-                                            ++ toFilePath ident ++ " is " ++ show potN
-                                            ++ ", expected " ++ show nextN)
-                                    eNewIss <- St.liftIO $ G.createIssue auth
-                                        "duplode" "duplode.github.io"
-                                        (G.newIssue (fromString title))
-                                            -- TODO: Duplicates the post route.
-                                            { G.newIssueBody = Just . fromString $
-                                                "Comment thread for ["
-                                                ++ title ++ "]("
-                                                ++ relativizeUrlsWith
-                                                    "https://duplode.github.io/"
-                                                    (toFilePath ident -<.> "html")
-                                                ++ ")."
-                                            , G.newIssueLabels = Just $
-                                                [G.N "comment-thread"]
-                                            }
-                                    eNewIss & either
-                                        (error . (("ghIssues: Issue creation failed "
-                                                ++ "for " ++ toFilePath ident ++ ": ")
-                                            ++) . show)
-                                        (\newIss -> let newN = G.issueNumber newIss
-                                            in if newN /= potN
-                                                then error $
-                                                    "ghIssues: New issue number for "
-                                                        ++ toFilePath ident ++ " is "
-                                                        ++ show newN ++ ", expected "
-                                                        ++ show potN
-                                                else (St.liftIO . putStrLn $
-                                                        "Created issue " ++ show newN
-                                                        ++ " for " ++ toFilePath ident)
-                                                    *> St.put newN)
-                                    )
-                    )
+                        St.forM_ potIssues (attemptCreatingTheIssue auth)
+                )
             makeItem ()
+    where
+    parsePotentialIssueNumber :: String -> Either Scr.PotentialIssueError Int
+    parsePotentialIssueNumber s = do
+        nIssue <- first (const Scr.MalformedIssueNumber) $ readEither s
+        when (nIssue < 1) $ Left Scr.NegativeIssueNumber
+        return nIssue
+
+    authGitHub :: IO G.Auth
+    authGitHub = G.BasicAuth
+        <$> (putStrLn "GitHub username:" *> fmap fromString getLine)
+        <*> fmap fromString getPassword
+
+    retrieveOldIssue :: Int -> IO (Either G.Error G.Issue)
+    retrieveOldIssue n =  G.issue "duplode" "duplode.github.io" (G.Id n)
+
+    createTheIssue :: G.Auth -> String -> Identifier
+        -> IO (Either G.Error G.Issue)
+    createTheIssue auth title ident = G.createIssue auth
+        "duplode" "duplode.github.io"
+        (G.newIssue (fromString title))
+            -- TODO: Duplicates the post route.
+            { G.newIssueBody = Just . fromString $
+                "Comment thread for ["
+                ++ title ++ "]("
+                ++ relativizeUrlsWith
+                    "https://duplode.github.io/"
+                    (toFilePath ident -<.> "html")
+                ++ ")."
+            , G.newIssueLabels = Just $
+                Ex.fromList [G.N "comment-thread"]
+            }
+
+    -- Creates a GitHub issue for a potIss, but only if the
+    -- issue numbers are sensible (that is, they increase by
+    -- one, starting from the last existing issue number).
+    attemptCreatingTheIssue :: G.Auth -> Item Scr.PotentialIssue
+        -> St.StateT Int Compiler ()
+    attemptCreatingTheIssue auth (Item ident potIss) = do
+        curN <- St.get
+        let potN = Scr.potentialIssueNumber potIss
+            nextN = curN + 1
+            title = Scr.potentialIssueTitle potIss
+        eOldIssue <- St.lift . unsafeCompiler $
+            retrieveOldIssue potN
+        eOldIssue & flip either
+            -- If there is an old issue, we assume that the
+            -- post was already published, and do nothing.
+            (\gIss -> St.lift . unsafeCompiler . T.putStrLn $
+                fromString
+                    ("Issue " ++ show potN ++ " for "
+                    ++ toFilePath ident ++ " already taken "
+                    ++ "by: ")
+                <> G.issueTitle gIss)
+            (const $ do -- TODO: Analyse the error.
+                St.unless (potN == nextN) $
+                    Er.throwError
+                        [ "ghIssues: Requested issue number for "
+                        ++ toFilePath ident ++ " is " ++ show potN
+                        ++ ", expected " ++ show nextN ]
+                eNewIss <- St.lift . unsafeCompiler $
+                    createTheIssue auth title ident
+                eNewIss & either
+                    (\err -> Er.throwError
+                        [ "ghIssues: Issue creation failed "
+                        ++ "for " ++ toFilePath ident ++ ": "
+                        ++ show err ])
+                    (\newIss -> let newN = G.issueNumber newIss
+                        in if newN /= potN
+                            then Er.throwError $
+                                [ "ghIssues: Issue for "
+                                ++ toFilePath ident
+                                ++ " created with wrong number "
+                                ++ show newN ++ ", expected "
+                                ++ show potN ]
+                            else (St.lift . unsafeCompiler . putStrLn $
+                                    "Created issue " ++ show newN
+                                    ++ " for " ++ toFilePath ident)
+                                *> St.put newN)
+            )
+
 
 -- Qv. http://stackoverflow.com/q/4064378
 getPassword :: IO String
