@@ -325,13 +325,13 @@ Further Reading
   about Haskell functions.
 
 - *[Free  Theorems Involving Type Constructor Classes
-   ](http://www.iai.uni-bonn.de/~jv/Voi09b.html)*,
-  a functional pearl by Janis Voigtländer illustrates how free theorem
-  generation can be generalised to types parametric on type constructors
-  and type classes.
+   ](http://www.janis-voigtlaender.eu/Voi09b.html)*,
+  a functional pearl by Janis Voigtländer that illustrates how free
+  theorem generation can be generalised to types parametric on type
+  constructors and type classes.
 
 - For an explicitly categorical perspective on parametricity, a good
   place to start if you are willing to dig into theory is the section on
   parametricity in *[Some Aspects of Categories in Computer Science
-  ](https://www.site.uottawa.ca/~phil/papers/)* by Philip J. Scott.
+  ](http://www.site.uottawa.ca/~phil/papers/)* by Philip J. Scott.
 
