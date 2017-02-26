@@ -6,6 +6,14 @@ reddit: true
 gh-issue: 6
 ---
 
+*2017 update: This post was written shortly after the initial release
+of stack. While the workflow suggested here remains potentially
+useful, later versions of stack offer more immediate support for
+working outside the boundaries of a conventional Haskell project. For
+more on that,
+see
+[Casual Hacking With stack, Reloaded](/posts/casual-hacking-with-stack-reloaded.html).*
+
 Sandboxes are exceptionally helpful not just for working in long-term
 Haskell projects, but also for casual experiments. While playing around,
 we tend to install all sorts of packages in a carefree way, which
