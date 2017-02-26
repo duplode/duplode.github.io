@@ -31,11 +31,11 @@ deploy builders conf =
     .&&. ( fold (inshell "git status --porcelain" "") countLines
         >>= \case
             0 -> return ExitSuccess
-            _ -> echoOK "\nAdding and committing the following changes:"
+            _ -> echoOK "Adding and committing the following changes:"
                 .&&. shell "git status" ""
                 .&&. shell "git add ." ""
                 .&&. with (shell "git commit" "" & fork) wait )
-    .&&. echoOK "\nPushing pending commits, if any."
+    .&&. echoOK "Pushing pending commits, if any."
     .&&. with (shell "git push gh master" "" & fork) wait
 
 echoOK :: MonadIO io => Line -> io ExitCode
