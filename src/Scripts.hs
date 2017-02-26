@@ -9,6 +9,7 @@ module Scripts
     ) where
 
 import qualified Hakyll as H
+import Control.Applicative
 import System.Environment (withArgs)
 import GHC.Generics (Generic)
 import Data.Binary (Binary)
@@ -19,7 +20,9 @@ deploy :: SiteBuilders -> H.Configuration -> IO ExitCode
 deploy builders conf =
     echoOK "Rebuilding and deploying site...\n"
     -- Automated issue-thread creation. Currently under testing.
-    .&&. withArgs ["rebuild"] (ghIssuesRules builders & H.hakyllWithExitCode conf)
+    .&&. withArgs ["rebuild"]
+        (liftA2 (>>) theSiteRules ghIssuesRules builders
+            & H.hakyllWithExitCode conf)
     -- Switch lines to build without automated issue-thread creation.
     -- .&&. withArgs ["rebuild"] (theSiteRules builders & H.hakyllWithExitCode conf)
     .&&. shell "rsync -avc --delete --exclude '.git' _site/ ../master/" ""
