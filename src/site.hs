@@ -158,7 +158,7 @@ theSite = do
     match "posts.html" $ do
         route $ idRoute
         compile $ do
-            posts <- recentFirst =<< loadAll allPosts
+            posts <- recentFirst =<< loadAll (allPosts .&&. hasNoVersion)
             getResourceBody
                 >>= applyAsTemplate
                     (listField "posts" postItemCtx (return posts))
@@ -183,7 +183,7 @@ theSite = do
         route $ idRoute
         compile $ do
             barePosts <- fmap (take 6) . recentFirst
-                =<< loadAllSnapshots allPosts "content"
+                =<< loadAllSnapshots (allPosts .&&. hasNoVersion) "content"
             getResourceBody
                 >>= applyAsTemplate
                     (listField "post-teasers" teaserCtx (return barePosts))
@@ -224,7 +224,7 @@ theSite = do
 
             barePosts <- mapM processRssItem
                 =<< fmap (take 12) . recentFirst
-                =<< loadAllSnapshots allPosts "content"
+                =<< loadAllSnapshots (allPosts .&&. hasNoVersion) "content"
             renderRss rssConfig feedCtx barePosts
 
     match "templates/*" $ compile templateCompiler
@@ -235,7 +235,7 @@ theSite = do
 ghIssues :: Rules ()
 ghIssues = do
     -- For testing purposes, switch to plainPosts .||. literatePosts
-    let withIssues = allPosts .&&. hasVersion "gh-issue"
+    let withIssues = allPosts
 
     match withIssues . version "gh-issue" $
         compile $ do
@@ -265,7 +265,8 @@ ghIssues = do
         compile $ do
             potIssues <- sortBy
                     (comparing $ Scr.potentialIssueNumber . itemBody)
-                <$> loadAllSnapshots withIssues "potential-issue"
+                <$> loadAllSnapshots
+                    (withIssues .&&. hasVersion "gh-issue") "potential-issue"
             emLastIssue <- fmap (fmap (!? 0)) . unsafeCompiler $
                 G.issuesForRepo "duplode" "duplode.github.io" mempty
             emLastIssue & either
