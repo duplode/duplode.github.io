@@ -235,7 +235,7 @@ theSite = do
 ghIssues :: Rules ()
 ghIssues = do
     -- For testing purposes, switch to plainPosts .||. literatePosts
-    let withIssues = allPosts
+    let withIssues = allPosts .&&. hasVersion "gh-issue"
 
     match withIssues . version "gh-issue" $
         compile $ do
@@ -265,8 +265,7 @@ ghIssues = do
         compile $ do
             potIssues <- sortBy
                     (comparing $ Scr.potentialIssueNumber . itemBody)
-                <$> loadAllSnapshots
-                    (withIssues .&&. hasVersion "gh-issue") "potential-issue"
+                <$> loadAllSnapshots withIssues "potential-issue"
             emLastIssue <- fmap (fmap (!? 0)) . unsafeCompiler $
                 G.issuesForRepo "duplode" "duplode.github.io" mempty
             emLastIssue & either
