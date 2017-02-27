@@ -57,8 +57,6 @@ Configuring GHCi with the following packages:
 GHCi, version 8.0.1: http://www.haskell.org/ghc/  :? for help
 Loaded GHCi configuration from /home/duplode/.ghci
 Loaded GHCi configuration from /tmp/ghci22828/ghci-script
-GHCi> import Data.FMList
-GHCi> :m - Data.FMList 
 GHCi> import qualified Data.FMList as FM
 GHCi> FM.foldMapA (\x -> show <$> [0..x]) [0..3]
 ["0000","0001","0002","0003","0010","0011","0012","0013","0020","0021",
