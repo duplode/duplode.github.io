@@ -39,8 +39,6 @@ $ <span class="ex">stack</span> ghci
 <span class="ex">GHCi</span>, version 8.0.1: http://www.haskell.org/ghc/  :? for help
 <span class="ex">Loaded</span> GHCi configuration from /home/duplode/.ghci
 <span class="ex">Loaded</span> GHCi configuration from /tmp/ghci22828/ghci-script
-<span class="ex">GHCi</span><span class="op">&gt;</span> import Data.FMList
-<span class="ex">GHCi</span><span class="op">&gt;</span> :m - Data.FMList 
 <span class="ex">GHCi</span><span class="op">&gt;</span> import qualified Data.FMList as FM
 <span class="ex">GHCi</span><span class="op">&gt;</span> FM.foldMapA (\x -<span class="op">&gt;</span> show <span class="op">&lt;</span>$<span class="op">&gt;</span> [0..x]) [<span class="ex">0..3</span>]
 [<span class="st">&quot;0000&quot;</span>,<span class="st">&quot;0001&quot;</span>,<span class="st">&quot;0002&quot;</span>,<span class="st">&quot;0003&quot;</span>,<span class="st">&quot;0010&quot;</span>,<span class="st">&quot;0011&quot;</span>,<span class="st">&quot;0012&quot;</span>,<span class="st">&quot;0013&quot;</span>,<span class="st">&quot;0020&quot;</span>,<span class="st">&quot;0021&quot;</span>,
