@@ -4,8 +4,6 @@
 module Scripts
     ( deploy
     , SiteBuilders(..)
-    , PotentialIssue(..)
-    , PotentialIssueError(..)
     ) where
 
 import qualified Hakyll as H
@@ -19,12 +17,10 @@ import Turtle
 deploy :: SiteBuilders -> H.Configuration -> IO ExitCode
 deploy builders conf =
     echoOK "Rebuilding and deploying site...\n"
-    -- Automated issue-thread creation. Currently under testing.
+    -- Builds the site and creates issue-threads.
     .&&. withArgs ["rebuild"]
        (liftA2 (>>) theSiteRules ghIssuesRules builders
            & H.hakyllWithExitCode conf)
-    -- Switch lines to build without automated issue-thread creation.
-    -- .&&. withArgs ["rebuild"] (theSiteRules builders & H.hakyllWithExitCode conf)
     .&&. shell "rsync -avc --delete --exclude '.git' _site/ ../master/" ""
     .&&. cd "../master"
         *> shell "git rev-parse --git-dir > /dev/null" ""
@@ -46,13 +42,3 @@ data SiteBuilders = SiteBuilders
     , ghIssuesRules :: H.Rules ()
     }
 
-data PotentialIssue = PotentialIssue
-    { potentialIssueNumber :: Int
-    , potentialIssueTitle :: String
-    , potentialIssuePath :: String
-    } deriving (Show, Generic)
-
-instance Binary PotentialIssue
-
-data PotentialIssueError = MalformedIssueNumber | NegativeIssueNumber
-    deriving (Eq, Show)
