@@ -30,6 +30,9 @@ import qualified GitHub.Endpoints.Issues as G
 import qualified GitHub.Auth as G
 import qualified GitHub.Data.Name as G
 import qualified GitHub.Data.Id as G
+import qualified GitHub.Data.Options as G
+import qualified GitHub.Data.Request as G
+import qualified GitHub.Request as G
 
 import qualified Scripts as Scr
 
@@ -269,8 +272,7 @@ ghIssues = do
                     (comparing $ Scr.potentialIssueNumber . itemBody)
                 <$> loadAllSnapshots
                     (withIssues .&&. hasVersion "gh-issue") "potential-issue"
-            emLastIssue <- fmap (fmap (!? 0)) . unsafeCompiler $
-                G.issuesForRepo "duplode" "duplode.github.io" mempty
+            emLastIssue <- unsafeCompiler retrieveLatestIssue
             emLastIssue & either
                 (\err -> Er.throwError
                     [ "ghIssues: Last issue request failed: " ++ show err ])
@@ -278,8 +280,8 @@ ghIssues = do
                     let nLastIssue = fromMaybe 0 $
                             G.issueNumber <$> mLastIssue
                     auth <- unsafeCompiler authGitHub
-                    flip St.evalStateT nLastIssue $
-                        St.forM_ potIssues (attemptCreatingTheIssue auth)
+                    forM_ potIssues $
+                        attemptCreatingTheIssue auth nLastIssue
                 )
             makeItem ()
     where
@@ -293,9 +295,6 @@ ghIssues = do
     authGitHub = G.BasicAuth
         <$> (putStrLn "GitHub username:" *> fmap fromString getLine)
         <*> fmap fromString getPassword
-
-    retrieveOldIssue :: Int -> IO (Either G.Error G.Issue)
-    retrieveOldIssue n =  G.issue "duplode" "duplode.github.io" (G.Id n)
 
     createTheIssue :: G.Auth -> String -> Identifier
         -> IO (Either G.Error G.Issue)
@@ -314,34 +313,31 @@ ghIssues = do
                 Ex.fromList [G.N "comment-thread"]
             }
 
-    -- Creates a GitHub issue for a potIss, but only if the
-    -- issue numbers are sensible (that is, they increase by
-    -- one, starting from the last existing issue number).
-    attemptCreatingTheIssue :: G.Auth -> Item Scr.PotentialIssue
-        -> St.StateT Int Compiler ()
-    attemptCreatingTheIssue auth (Item ident potIss) = do
-        curN <- St.get
+    -- This relies on there being no gaps between issue numbers, and in
+    -- it being impossible to delete an issue.
+    retrieveLatestIssue :: IO (Either G.Error (Maybe G.Issue))
+    retrieveLatestIssue = do
+        let eReqLatestIssue = G.issuesForRepoR "duplode" "duplode.github.io"
+                (G.sortDescending <> G.sortByCreated <> G.stateAll) 1
+        second (!? 0) <$> G.executeRequest' eReqLatestIssue
+
+    -- Currently unused.
+    retrieveOldIssue :: Int -> IO (Either G.Error G.Issue)
+    retrieveOldIssue n =  G.issue "duplode" "duplode.github.io" (G.Id n)
+
+    -- Creates a GitHub issue for a potIss, but only if the issue
+    -- numbers are above that of the latest existing issue.
+    attemptCreatingTheIssue :: G.Auth -> Int -> Item Scr.PotentialIssue
+        -> Compiler ()
+    attemptCreatingTheIssue auth lastN (Item ident potIss) = do
         let potN = Scr.potentialIssueNumber potIss
-            nextN = curN + 1
             title = Scr.potentialIssueTitle potIss
-        eOldIssue <- St.lift . unsafeCompiler $
-            retrieveOldIssue potN
-        eOldIssue & flip either
-            -- If there is an old issue, we assume that the
-            -- post was already published, and do nothing.
-            (\gIss -> St.lift . unsafeCompiler . T.putStrLn $
-                fromString
-                    ("Issue " ++ show potN ++ " for "
-                    ++ toFilePath ident ++ " already taken "
-                    ++ "by: ")
-                <> G.issueTitle gIss)
-            (const $ do -- TODO: Analyse the error.
-                St.unless (potN == nextN) $
-                    Er.throwError
-                        [ "ghIssues: Requested issue number for "
-                        ++ toFilePath ident ++ " is " ++ show potN
-                        ++ ", expected " ++ show nextN ]
-                eNewIss <- St.lift . unsafeCompiler $
+        if potN <= lastN
+            then unsafeCompiler . putStrLn $
+                    "Issue " ++ show potN ++ " for "
+                    ++ toFilePath ident ++ " already taken."
+            else do
+                eNewIss <- unsafeCompiler $
                     createTheIssue auth title ident
                 eNewIss & either
                     (\err -> Er.throwError
@@ -356,11 +352,11 @@ ghIssues = do
                                 ++ " created with wrong number "
                                 ++ show newN ++ ", expected "
                                 ++ show potN ]
-                            else (St.lift . unsafeCompiler . putStrLn $
+                            else unsafeCompiler . putStrLn $
                                     "Created issue " ++ show newN
-                                    ++ " for " ++ toFilePath ident)
-                                *> St.put newN)
-            )
+                                    ++ " for " ++ toFilePath ident
+                    )
+
 
 
 -- Qv. http://stackoverflow.com/q/4064378
