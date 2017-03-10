@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>What's in a Fold: The Basic Catamorphism in recursion-schemes - The Life Monadic</title>
+        <link rel="stylesheet" href="//cdn.jsdelivr.net/pure/0.4.2/pure-min.css" />
+        <link rel="stylesheet" type="text/css" href="../css/skin.css" />
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body class="pure-skin-duplode">
+      <div class="pure-g-r">
+        <div class="pure-u-1-5">
+          <div id="navigation">
+            <div class="pure-menu pure-menu-open">
+              <a class="pure-menu-heading menu-title">
+                The Life<br>
+                Monadic<br>
+                <span class="menu-subtitle">by duplode</span>
+              </a>
+              <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../posts.html">Posts</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../rss.xml">RSS</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="pure-u-4-5">
+          <div id="content">
+            <h1>What's in a Fold: The Basic Catamorphism in recursion-schemes</h1>
+
+            <p><em>March 10, 2017</em></p>
+
+<p>This article is meant as an accessible introduction to the most basic recursion scheme, the catamorphism. It won’t engage in deep dives into theory, or survey practical motives for using recursion schemes – that will be covered by the further reading suggestions at the end. Rather, its main goal is simply offering a concrete presentation of how folds can be generalised. This presentation will be done in terms of the types and combinators used by the <a href="https://hackage.haskell.org/package/recursion-schemes-5.0.1"><em>recursion-schemes</em></a> library, so that the article doubles as an introduction to some of its key conventions.</p>
+<div>
+
+</div>
+<!--more-->
+<h2 id="foldr">foldr</h2>
+<p>The primeval example of a fold in Haskell is the right fold of a list.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>One way of picturing what the first two arguments of <code>foldr</code> are for is seeing them as replacements for the list constructors: the <code>b</code> argument is an initial value corresponding to the empty list, while the binary function incorporates each element prepended through <code>(:)</code> into the result of the fold.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> [a] <span class="fu">=</span> [] <span class="fu">|</span> a <span class="fu">:</span> [a]
+
+foldr (<span class="fu">+</span>) <span class="dv">0</span> [ <span class="dv">1</span> ,  <span class="dv">2</span> ,  <span class="dv">3</span> ]
+foldr (<span class="fu">+</span>) <span class="dv">0</span> ( <span class="dv">1</span> <span class="fu">:</span> (<span class="dv">2</span> <span class="fu">:</span> (<span class="dv">3</span> <span class="fu">:</span> [])) )
+            ( <span class="dv">1</span> <span class="fu">+</span> (<span class="dv">2</span> <span class="fu">+</span> (<span class="dv">3</span> <span class="fu">+</span> <span class="dv">0</span> )) )</code></pre></div>
+<p>By applying this strategy to other data structures, we can get analogous folds for them.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- This is foldr; I have flipped the arguments for cosmetic reasons.</span>
+<span class="kw">data</span> [a] <span class="fu">=</span> [] <span class="fu">|</span> (<span class="fu">:</span>) a [a]
+<span class="ot">foldList ::</span> b <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b
+
+<span class="co">-- Does this one look familiar?</span>
+<span class="kw">data</span> <span class="dt">Maybe</span> a <span class="fu">=</span> <span class="dt">Nothing</span> <span class="fu">|</span> <span class="dt">Just</span> a
+<span class="ot">foldMaybe ::</span> b <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a <span class="ot">-&gt;</span> b
+
+<span class="co">-- This is not the definition in Data.List.NonEmpty; the differences</span>
+<span class="co">-- between them, however, are superficial.</span>
+<span class="kw">data</span> <span class="dt">NEList</span><span class="ot"> ::</span> <span class="dt">NEList</span> a (<span class="dt">Maybe</span> (<span class="dt">NEList</span> a))
+<span class="ot">foldNEList ::</span> (a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">NEList</span> a <span class="ot">-&gt;</span> b
+
+<span class="co">-- A binary tree like the one in Diagrams.TwoD.Layout.Tree (and in</span>
+<span class="co">-- many other places).</span>
+<span class="kw">data</span> <span class="dt">BTree</span> a <span class="fu">=</span> <span class="dt">Empty</span> <span class="fu">|</span> <span class="dt">BNode</span> a (<span class="dt">BTree</span> a) (<span class="dt">BTree</span> a)
+<span class="ot">foldBTree ::</span> b <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">BTree</span> a <span class="ot">-&gt;</span> b</code></pre></div>
+<p>It would make sense to capture this pattern into an abstraction. At first glance, however, it is not obvious how to do so. Though we know intuitively what the folds above have in common, their type signatures have lots of superficial differences between them. Our immediate goal, then, will be simplifying things by getting rid of these differences.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></p>
+<h2 id="listf">ListF</h2>
+<p>We will sketch the simplification using the tangible and familiar example of lists. Let’s return to the type of <code>foldr</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">(a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>With the cosmetic flip I had applied previously, it becomes:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">b <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>The annoying irregularities among the types of the folds in the previous section had to do with the number of arguments other than the data structure (one per constructor) and the types of said arguments (dependent on the shape of each constructor). Though we cannot entirely suppress these differences, we have a few tricks that make it possible to disguise them rather well. The number of extra arguments, for instance, can be always be reduced to just one with sufficient currying:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">(b, a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>The first argument is now a pair. We continue by making its two halves more like each other by converting them into unary functions: the first component acquires a dummy <code>()</code> argument, while the second one gets some more currying:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">(() <span class="ot">-&gt;</span> b, (a, b) <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>We now have a pair of unary functions with result type <code>b</code>. A pair of functions with the same result type, however, is equivalent to a single function from <code>Either</code> one of the argument types (if you are sceptical about that, you might want to work out the isomorphism – that is, the pair of conversion functions – that witnesses this fact):</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">(<span class="dt">Either</span> () (a, b) <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>At this point, the only extra argument of the fold is an unary function with result type <code>b</code>. We have condensed the peculiarities of the original arguments at a single place (the argument of said function), which makes the overall shape of the signature a lot simpler. Since it can be awkward to work with anonymous nestings of <code>Either</code> and pairs, we will replace <code>Either () (a, b)</code> with an equivalent type equipped with suggestive names:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">ListF</span> a b <span class="fu">=</span>  <span class="dt">Nil</span> <span class="fu">|</span> <span class="dt">Cons</span> a b
+<span class="co">--            Left () | Right (a,b)</span></code></pre></div>
+<p>That leaves us with:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">(<span class="dt">ListF</span> a b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>The most important fact about <code>ListF</code> is that it mirrors the shape of the list type except for one crucial difference…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> []    a   <span class="fu">=</span> []  <span class="fu">|</span> (<span class="fu">:</span>)  a [a]
+<span class="kw">data</span> <span class="dt">ListF</span> a b <span class="fu">=</span> <span class="dt">Nil</span> <span class="fu">|</span> <span class="dt">Cons</span> a b</code></pre></div>
+<p>… namely, <em>it is not recursive</em>. An <code>[a]</code> value built with <code>(:)</code> has another <code>[a]</code> in itself, but a <code>ListF a b</code> built with <code>Cons</code> does not contain another <code>ListF a b</code>. To put it in another way, <code>ListF</code> is the outcome of taking away the recursive nesting in the list data type and filling the resulting hole with a placeholder type, the <code>b</code> in our signatures, that corresponds to the result of the fold. This strategy can be used to obtain a <code>ListF</code> analogue for any other data structure. You might, for instance, try it with the <code>BTree a</code> type shown in the first section.</p>
+<h2 id="cata">cata</h2>
+<p>We have just learned that the list <code>foldr</code> can be expressed using this signature:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">(<span class="dt">ListF</span> a b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>We might figure out a <code>foldr</code> implementation with this signature in a mechanical way, by throwing all of the tricks from the previous section at <code>Data.List.foldr</code> until we squeeze out something with the right type. It is far more illuminating, however, to start from scratch. If we go down that route, the first question that arises is how to apply a <code>ListF a b -&gt; b</code> function to an <code>[a]</code>. It is clear that the list must somehow be converted to a <code>ListF a b</code>, so that the function can be applied to it.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">foldList ::</span> (<span class="dt">ListF</span> a b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b
+foldList f <span class="fu">=</span> f <span class="fu">.</span> something
+<span class="co">-- foldList f xs = f (something xs)</span>
+<span class="co">-- something :: [a] -&gt; ListF a b</span></code></pre></div>
+<p>We can get part of the way there by recalling how <code>ListF</code> mirrors the shape of the list type. That being so, going from <code>[a]</code> to <code>ListF a [a]</code> is just a question of matching the corresponding constructors.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">project ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">ListF</span> a [a]
+project <span class="fu">=</span> \<span class="kw">case</span>
+    [] <span class="ot">-&gt;</span> <span class="dt">Nil</span>
+    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> <span class="dt">Cons</span> x xs
+
+<span class="ot">foldList ::</span> (<span class="dt">ListF</span> a b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b
+foldList f <span class="fu">=</span> f <span class="fu">.</span> something <span class="fu">.</span> project
+<span class="co">-- something :: ListF a [a] -&gt; ListF a b</span></code></pre></div>
+<p><code>project</code> witnesses the simple fact that, given that <code>ListF a b</code> is the <code>[a]</code> except with a <code>b</code> placeholder in the tail position, where there would be a nested <code>[a]</code>, if we plug the placeholder with <code>[a]</code> we get something equivalent to the <code>[a]</code> list type we began with.</p>
+<p>We now need to go from <code>ListF a [a]</code> to <code>ListF a b</code>; in other words, we have to change the <code>[a]</code> inside <code>ListF</code> into a <code>b</code>. And sure enough, we do have a function from <code>[a]</code> to <code>b</code>…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">foldList ::</span> (<span class="dt">ListF</span> a b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> ([a] <span class="ot">-&gt;</span> b)
+<span class="ot">f ::</span> <span class="dt">ListF</span> a b <span class="ot">-&gt;</span> b
+foldList<span class="ot"> f ::</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<p>… the fold itself! To conveniently reach inside <code>ListF a b</code>, we set up a <code>Functor</code> instance:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">ListF</span> a) <span class="kw">where</span>
+    fmap f <span class="fu">=</span> \<span class="kw">case</span>
+        <span class="dt">Nil</span> <span class="ot">-&gt;</span> <span class="dt">Nil</span>
+        <span class="dt">Cons</span> x y <span class="ot">-&gt;</span> <span class="dt">Cons</span> x (f y)
+
+<span class="ot">foldList ::</span> (<span class="dt">ListF</span> a b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b
+foldList f <span class="fu">=</span> f <span class="fu">.</span> fmap (foldList f) <span class="fu">.</span> project</code></pre></div>
+<p>And there it is, the list fold. First, <code>project</code> exposes the list (or, more precisely, its first constructor) to our machinery; then, the tail of the list (if there is one – what happens if there isn’t?) is recursively folded through the <code>Functor</code> instance of <code>ListF</code>; finally, the overall result is obtained by applying <code>f</code> to the resulting <code>ListF a b</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- A simple demonstration of foldList in action.</span>
+<span class="ot">f ::</span> <span class="dt">ListF</span> a b <span class="ot">-&gt;</span> b
+f <span class="fu">=</span> \<span class="kw">case</span> { <span class="dt">Nil</span> <span class="ot">-&gt;</span> <span class="dv">0</span>; <span class="dt">Cons</span> x y <span class="ot">-&gt;</span> x <span class="fu">+</span> y }
+
+foldList f [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]
+<span class="co">-- Let's try and evaluate this by hand.</span>
+foldList f (<span class="dv">1</span> <span class="fu">:</span> <span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">:</span> [])
+f <span class="fu">.</span> fmap (foldList f) <span class="fu">.</span> project <span class="fu">$</span> (<span class="dv">1</span> <span class="fu">:</span> <span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">:</span> [])
+f <span class="fu">.</span> fmap (foldList f) <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (<span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">:</span> [])
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (foldList f (<span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">:</span> []))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">.</span> fmap (foldList f) <span class="fu">$</span> project (<span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">:</span> []))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">.</span> fmap (foldList f) <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (<span class="dv">3</span> <span class="fu">:</span> []))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (foldList f (<span class="dv">3</span> <span class="fu">:</span> [])))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (f <span class="fu">.</span> fmap (foldList f) <span class="fu">.</span> project <span class="fu">$</span> (<span class="dv">3</span> <span class="fu">:</span> [])))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (f <span class="fu">.</span> fmap (foldList f) <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">3</span> []))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">3</span> (foldList f [])))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">3</span> (f <span class="fu">.</span> fmap (foldList f) <span class="fu">.</span> project <span class="fu">$</span> [])))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">3</span> (f <span class="fu">.</span> fmap (foldList f) <span class="fu">$</span> <span class="dt">Nil</span>)))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">3</span> (f <span class="fu">$</span> <span class="dt">Nil</span>)))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">3</span> <span class="dv">0</span>))
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> (f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">2</span> <span class="dv">3</span>)
+f <span class="fu">$</span> <span class="dt">Cons</span> <span class="dv">1</span> <span class="dv">5</span>
+<span class="dv">6</span></code></pre></div>
+<p>One interesting thing about our definition of <code>foldList</code> is that all the list-specific details are tucked within the implementations of <code>project</code>, <code>fmap</code> for <code>ListF</code> and <code>f</code> (whatever it is). That being so, if we look only at the implementation and not at the signature, we find no no outward signs of anything related to lists. No outward signs, that is, except for the name we gave the function. That’s easy enough to solve, though: it is just a question of inventing a new one:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">cata f <span class="fu">=</span> f <span class="fu">.</span> fmap (cata f) <span class="fu">.</span> project</code></pre></div>
+<p><code>cata</code> is short for <em>catamorphism</em>, the fancy name given to ordinary folds in the relevant theory. There is a function called <code>cata</code> in <em>recursion-schemes</em>. <a href="https://hackage.haskell.org/package/recursion-schemes-5.0.1/docs/Data-Functor-Foldable.html#t:Recursive">Its implementation</a>…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">cata f <span class="fu">=</span> c <span class="kw">where</span> c <span class="fu">=</span> f <span class="fu">.</span> fmap c <span class="fu">.</span> project</code></pre></div>
+<p>… is the same as ours, almost down to the last character. Its type signature, however, is much more general:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">cata ::</span> <span class="dt">Recursive</span> t <span class="ot">=&gt;</span> (<span class="dt">Base</span> t b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t <span class="ot">-&gt;</span> b</code></pre></div>
+<p>It involves, in no particular order:</p>
+<ul>
+<li><p><code>b</code>, the type of the result of the fold;</p></li>
+<li><p><code>t</code>, the type of the data structure being folded. In our example, <code>t</code> would be <code>[a]</code>; or, as GHC would put it, <code>t ~ [a]</code>.</p></li>
+<li><p><code>Base</code>, a type family that generalises what we did with <code>[a]</code> and <code>ListF</code> by assigning <em>base functors</em> to data types. We can read <code>Base t</code> as “the base functor of <code>t</code>”; in our example, we have <code>Base   [a] ~ ListF a</code>.</p></li>
+<li><p><code>Recursive</code>, a type class whose minimal definition consists of <code>project</code>, with the type of <code>project</code> now being <code>t -&gt; Base t t</code>.</p></li>
+</ul>
+<p>The base functor is supposed to be a <code>Functor</code>, so that we can use <code>fmap</code> on it. That is enforced through a <code>Functor (Base t)</code> constraint in the definition of the <code>Recursive</code> class. Note, however, that there is no such restriction on <code>t</code> itself: it doesn’t need to be a polymorphic, or even to involve a type constructor.</p>
+<p>In summary, once we managed to concentrate the surface complexity in the signature of <code>foldr</code> at a single place, the <code>ListF a b -&gt; b</code> function, an opportunity to generalise it revealed itself. Incidentally, that function, and more generally any <code>Base t b -&gt; b</code> function that can be given to <code>cata</code>, is referred to as an <em>algebra</em>. In this context, the term “algebra” is meant in a precise technical sense; still, we can motivate it with a legitimate recourse to intuition. In basic school algebra, we use certain rules to get simpler expressions out of more complicated ones, such as <span class="math inline"><em>a</em><em>x</em> + <em>b</em><em>x</em> = (<em>a</em> + <em>b</em>)<em>x</em></span>. Similarly, a <code>Base t b -&gt; b</code> algebra boils down to a set of rules that tell us what to do to get a <code>b</code> result out of the <code>Base t b</code> we are given at each step of the fold.</p>
+<h2 id="fix">Fix</h2>
+<p>The <code>cata</code> function we ended up with in the previous section…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">cata ::</span> <span class="dt">Recursive</span> t <span class="ot">=&gt;</span> (<span class="dt">Base</span> t b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t <span class="ot">-&gt;</span> b
+cata f <span class="fu">=</span> c <span class="kw">where</span> c <span class="fu">=</span> f <span class="fu">.</span> fmap c <span class="fu">.</span> project</code></pre></div>
+<p>… is perfectly good for practical purposes: it allows us to fold anything that we can give a <code>Base</code> functor and a corresponding <code>project</code>. Not only that, the implementation of <code>cata</code> is very elegant. And yet, a second look at its signature suggests that there might be an even simpler way of expressing <code>cata</code>. The signature uses both <code>t</code> and <code>Base t b</code>. As we have seen for the <code>ListF</code> example, these two types are very similar (their shapes match except for recursiveness), and so using both in the same signature amounts to encoding the same information in two different ways – perhaps unnecessarily so.</p>
+<p>In the implementation of <code>cata</code>, it is specifically <code>project</code> that links <code>t</code> and <code>Base t b</code>, as it translates the constructors from one type to the other.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">project (<span class="dv">1</span> <span class="fu">:</span> <span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">:</span> [])
+<span class="dt">Cons</span> <span class="dv">1</span> (<span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">:</span> [])</code></pre></div>
+<p>Now, let’s look at what happens once we repeatedly expand the definition of <code>cata</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">c <span class="fu">=</span> cata f
+p <span class="fu">=</span> project
+                                c
+                         f <span class="fu">.</span> fmap c <span class="fu">.</span> p
+               f <span class="fu">.</span> fmap (f <span class="fu">.</span> fmap c <span class="fu">.</span> p) <span class="fu">.</span> p
+     f <span class="fu">.</span> fmap (f <span class="fu">.</span> fmap (f <span class="fu">.</span> fmap c <span class="fu">.</span> p) <span class="fu">.</span> p) <span class="fu">.</span> p
+f <span class="fu">.</span> fmap (   <span class="fu">.</span>   <span class="fu">.</span>   <span class="fu">.</span>   f <span class="fu">.</span> fmap c <span class="fu">.</span> p   <span class="fu">.</span>   <span class="fu">.</span>   <span class="fu">.</span>   ) <span class="fu">.</span> p</code></pre></div>
+<p>This continues indefinitely. The fold terminates when, at some point, <code>fmap c</code> does nothing (in the case of <code>ListF</code>, that happens when we get to a <code>Nil</code>). Note, however, that even at that point we can carry on expanding the definition, merrily introducing do-nothing operations for as long as we want.</p>
+<p>At the right side of the expanded expression, we have a chain of increasingly deep <code>fmap</code>-ped applications of <code>project</code>:<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">.</span>   <span class="fu">.</span>   <span class="fu">.</span>   fmap (fmap project) <span class="fu">.</span> fmap project <span class="fu">.</span> project</code></pre></div>
+<p>If we could factor that out into a separate function, it would change a <code>t</code> data structure into something equivalent to it, but built with the <code>Base t</code> constructors:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>{
+<span class="dt">GHCi</span><span class="fu">|</span> fmap (fmap (fmap project))
+<span class="dt">GHCi</span><span class="fu">|</span>     <span class="fu">.</span> fmap (fmap project) <span class="fu">.</span> fmap project <span class="fu">.</span> project
+<span class="dt">GHCi</span><span class="fu">|</span>     <span class="fu">$</span> <span class="dv">1</span> <span class="fu">:</span> <span class="dv">2</span> <span class="fu">:</span> <span class="dv">3</span> <span class="fu">:</span> []
+<span class="dt">GHCi</span><span class="fu">|</span> <span class="fu">:</span>}
+<span class="dt">Cons</span> <span class="dv">1</span> (<span class="dt">Cons</span> <span class="dv">2</span> (<span class="dt">Cons</span> <span class="dv">3</span> <span class="dt">Nil</span>))</code></pre></div>
+<p>We would then be able to regard this conversion as a preliminary, relatively uninteresting step that precedes the application of a slimmed down <code>cata</code>, that doesn’t use neither <code>project</code> nor the <code>t</code> type.<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">cata f <span class="fu">=</span> leanCata f <span class="fu">.</span> omniProject</code></pre></div>
+<p>Defining <code>omniProject</code> seems simple once we notice the self-similarity in the chain of <code>project</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">omniProject <span class="fu">=</span> <span class="fu">.</span>   <span class="fu">.</span>   <span class="fu">.</span>   fmap (fmap project) <span class="fu">.</span> fmap project <span class="fu">.</span> project
+omniProject <span class="fu">=</span> fmap (fmap (   <span class="fu">.</span>   <span class="fu">.</span>   <span class="fu">.</span>   project) <span class="fu">.</span> project) <span class="fu">.</span> project
+omniProject <span class="fu">=</span> fmap omniProject <span class="fu">.</span> project</code></pre></div>
+<p>Guess what happens next:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> omniProject <span class="fu">=</span> fmap omniProject <span class="fu">.</span> project
+
+<span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">502</span><span class="fu">:</span><span class="dv">16</span><span class="fu">:</span> error<span class="fu">:</span>
+    • <span class="dt">Occurs</span> check<span class="fu">:</span> cannot construct the infinite <span class="kw">type</span><span class="fu">:</span> b <span class="fu">~</span> <span class="dt">Base</span> t b
+      <span class="dt">Expected</span> <span class="kw">type</span><span class="fu">:</span> t <span class="ot">-&gt;</span> b
+        <span class="dt">Actual</span> <span class="kw">type</span><span class="fu">:</span> t <span class="ot">-&gt;</span> <span class="dt">Base</span> t b
+    • <span class="dt">In</span> the expression<span class="fu">:</span> fmap omniProject <span class="fu">.</span> project
+      <span class="dt">In</span> an equation for ‘omniProject’<span class="fu">:</span>
+          omniProject <span class="fu">=</span> fmap omniProject <span class="fu">.</span> project
+    • <span class="dt">Relevant</span> bindings include
+<span class="ot">        omniProject ::</span> t <span class="ot">-&gt;</span> b (bound at <span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">502</span><span class="fu">:</span><span class="dv">1</span>)</code></pre></div>
+<p>GHCi complains about an “infinite type”, and that is entirely appropriate. Every <code>fmap</code>-ped <code>project</code> changes the type of the result by introducing a new layer of <code>Base t</code>. That being so, the type of <code>omniProject</code> would be…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">omniProject ::</span> <span class="dt">Recursive</span> t <span class="ot">=&gt;</span> t <span class="ot">-&gt;</span> <span class="dt">Base</span> t (<span class="dt">Base</span> t (<span class="dt">Base</span> t (  <span class="fu">.</span>  <span class="fu">.</span>  <span class="fu">.</span></code></pre></div>
+<p>… which is clearly a problem, as we don’t have a type that encode an infinite nesting of type constructors. There is a simple way of solving that, though: we <em>make up</em> the type we want!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Fix</span> f <span class="fu">=</span> <span class="dt">Fix</span> (f (<span class="dt">Fix</span> f))
+
+<span class="ot">unfix ::</span> <span class="dt">Fix</span> f <span class="ot">-&gt;</span> f (<span class="dt">Fix</span> f)
+unfix (<span class="dt">Fix</span> f) <span class="fu">=</span> f</code></pre></div>
+<p>If we read <code>Fix f</code> as “infinite nesting of <code>f</code>”, the right-hand side of the <code>newtype</code> definition just above reads “an infinite nesting of <code>f</code> contains an <code>f</code> of infinite nestings of <code>f</code>”, which is an entirely reasonable encoding of such a thing.<a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a></p>
+<p>All we need to make our tentative definition of <code>omniProject</code> legal Haskell is wrapping the whole thing in a <code>Fix</code>. The recursive <code>fmap</code>-ping will ensure <code>Fix</code> is applied at all levels:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">omniProject ::</span> <span class="dt">Recursive</span> t <span class="ot">=&gt;</span> t <span class="ot">-&gt;</span> <span class="dt">Fix</span> (<span class="dt">Base</span> t)
+omniProject <span class="fu">=</span> <span class="dt">Fix</span> <span class="fu">.</span> fmap omniProject <span class="fu">.</span> project</code></pre></div>
+<p>Another glance at the definition of <code>cata</code> shows that this is just <code>cata</code> using <code>Fix</code> as the algebra:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">omniProject <span class="fu">=</span> cata <span class="dt">Fix</span></code></pre></div>
+<p>That being so, <code>cata Fix</code> will change anything with a <code>Recursive</code> instance into its <code>Fix</code>-wearing form:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> cata <span class="dt">Fix</span> [<span class="dv">0</span><span class="fu">..</span><span class="dv">9</span>]
+<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">0</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">1</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">2</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">3</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">4</span> (
+<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">5</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">6</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">7</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">8</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">9</span> (
+<span class="dt">Fix</span> <span class="dt">Nil</span>))))))))))))))))))))</code></pre></div>
+<p>Defining a <code>Fix</code>-style structure from scratch, without relying on a <code>Recursive</code> instance, is just a question of introducing <code>Fix</code> in the appropriate places. For extra convenience, you might want to define “smart constructors” like these two:<a href="#fn6" class="footnoteRef" id="fnref6"><sup>6</sup></a></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">nil ::</span> <span class="dt">Fix</span> (<span class="dt">ListF</span> a)
+nil <span class="fu">=</span> <span class="dt">Fix</span> <span class="dt">Nil</span>
+
+<span class="ot">cons ::</span> a <span class="ot">-&gt;</span> <span class="dt">Fix</span> (<span class="dt">ListF</span> a) <span class="ot">-&gt;</span> <span class="dt">Fix</span> (<span class="dt">ListF</span> a)
+cons x xs <span class="fu">=</span> <span class="dt">Fix</span> (<span class="dt">Cons</span> x xs)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="dv">1</span> <span class="ot">`cons`</span> (<span class="dv">2</span> <span class="ot">`cons`</span> (<span class="dv">3</span> <span class="ot">`cons`</span> nil))
+<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">1</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">2</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">3</span> (<span class="dt">Fix</span> <span class="dt">Nil</span>))))))</code></pre></div>
+<p>Before we jumped into this <code>Fix</code> rabbit hole, we were trying to find a <code>leanCata</code> function such that:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">cata f <span class="fu">=</span> leanCata f <span class="fu">.</span> omniProject</code></pre></div>
+<p>We can now easily define <code>leanCata</code> by mirroring what we have done for <code>omniProject</code>: first, we get rid of the <code>Fix</code> wrapper; then, we fill in the other half of the definition of <code>cata</code> that we left behind when we extracted <code>omniProject</code> – that is, the repeated application of <code>f</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">leanCata f <span class="fu">=</span> f <span class="fu">.</span> fmap (leanCata f) <span class="fu">.</span> unfix</code></pre></div>
+<p>(It is possible to prove that this <em>must</em> be the definition of <code>leanCata</code> using the definitions of <code>cata</code> and <code>omniProject</code> and the <code>cata f = leanCata f . omniProject</code> specification. You might want to work it out yourself; alternatively, you can find it in an appendix at the end of this article.)</p>
+<p>What should be the type of <code>leanCata</code>? <code>unfix</code> calls for a <code>Fix f</code>, and <code>fmap</code> demands this <code>f</code> to be a <code>Functor</code>. As the definition doesn’t use <code>cata</code> or <code>project</code>, there is no need to involve <code>Base</code> or <code>Recursive</code>. That being so, we get:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">leanCata ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (f b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Fix</span> f <span class="ot">-&gt;</span> b
+leanCata f <span class="fu">=</span> f <span class="fu">.</span> fmap (leanCata f) <span class="fu">.</span> unfix</code></pre></div>
+<p>This is how you will usually see <code>cata</code> being defined in other texts about the subject.<a href="#fn7" class="footnoteRef" id="fnref7"><sup>7</sup></a></p>
+<p>Similarly to what we have seen for <code>omniProject</code>, the implementation of <code>leanCata</code> looks a lot like the <code>cata</code> we began with, except that it has <code>unfix</code> where <code>project</code> used to be. And sure enough, <em>recursion-schemes</em> defines…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="kw">instance</span> <span class="dt">Base</span> (<span class="dt">Fix</span> f) <span class="fu">=</span> f
+
+<span class="kw">instance</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> <span class="dt">Recursive</span> (<span class="dt">Fix</span> f) <span class="kw">where</span>
+  project (<span class="dt">Fix</span> a) <span class="fu">=</span> a</code></pre></div>
+<p>… so that its <code>cata</code> also works as <code>leanCata</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> foo <span class="fu">=</span> <span class="dv">1</span> <span class="ot">`cons`</span> (<span class="dv">2</span> <span class="ot">`cons`</span> (<span class="dv">3</span> <span class="ot">`cons`</span> nil))
+<span class="dt">GHCi</span><span class="fu">&gt;</span> foo
+<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">1</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">2</span> (<span class="dt">Fix</span> (<span class="dt">Cons</span> <span class="dv">3</span> (<span class="dt">Fix</span> <span class="dt">Nil</span>))))))
+<span class="dt">GHCi</span><span class="fu">&gt;</span> cata (\<span class="kw">case</span> {<span class="dt">Nil</span> <span class="ot">-&gt;</span> <span class="dv">1</span>; <span class="dt">Cons</span> x y <span class="ot">-&gt;</span> x <span class="fu">*</span> y}) foo
+<span class="dv">6</span></code></pre></div>
+<p>In the end, we did manage to get a tidier <code>cata</code>. Crucially, we now also have a clear picture of folding, the fundamental way of consuming a data structure recursively. On the one hand, any fold can be expressed in terms of an algebra for the base functor of the structure being folded by the means of a simple function, <code>cata</code>. On the other hand, the relationship between data structures and their base functors is made precise through <code>Fix</code>, which introduces recursion into functors in a way that captures the essence of recursiveness of data types.</p>
+<p>To wrap things up, here a few more questions for you to ponder:</p>
+<ul>
+<li><p>Does the data structure that we get by using <code>Maybe</code> as a base functor correspond to anything familiar? Use <code>cata</code> to write a fold that does something interesting with it.</p></li>
+<li><p>What could possibly be the base functor of a non-recursive data structure?</p></li>
+<li><p>Find <em>two</em> base functors that give rise to non-empty lists. One of them corresponds directly to the <code>NEList</code> definition given at the beginning of this article.</p></li>
+<li><p>As we have discussed, <code>omniProject</code>/<code>cata Fix</code> can be used to losslessly convert a data structure to the corresponding <code>Fix</code>-encoded form. Write the other half of the isomorphism for lists; that is, the function that changes a <code>Fix (ListF a)</code> back into an <code>[a]</code>.</p></li>
+</ul>
+<h2 id="closing-remarks">Closing remarks</h2>
+<p>When it comes to recursion schemes, there is a lot more to play with than just the fundamental catamorphism that we discussed here. In particular, <em>recursion-schemes</em> offers all sorts of specialised folds (and <em>un</em>folds), often with richly decorated type signatures meant to express more directly some particular kind of recursive (or <em>co</em>recursive) algorithm. But that’s a story for another time. For now, I will just make a final observation about unfolds.</p>
+<p>Intuitively, an unfold is the opposite of a fold – while a fold consumes a data structure to produce a result, an unfold generates a data structure from a seed. In recursion schemes parlance, the intuition is made precise by the notion of <em>anamorphism</em>, a counterpart (technically, a <em>dual</em>) to the catamorphism. Still, if we have a look at <code>unfoldr</code> in <code>Data.List</code>, the exact manner in which it is opposite to <code>foldr</code> is not immediately obvious from its signature.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a]</code></pre></div>
+<p>One way of clarifying that is considering the first argument of <code>unfoldr</code> from the same perspective that we used to uncover <code>ListF</code> early in this article.</p>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><p><a href="https://www.schoolofhaskell.com/user/bartosz/understanding-algebras"><em>Understanding F-Algebras</em></a>, by Bartosz Milewski, covers similar ground to this article from an explicitly categorical perspective. A good follow-up read for sharpening your picture of the key concepts we have discussed here.</p></li>
+<li><p><a href="http://blog.sumtypeofway.com/an-introduction-to-recursion-schemes/"><em>An Introduction to Recursion Schemes</em></a>, by Patrick Thompson, is the first in a series of three articles that present some common recursion schemes at a gentle pace. You will note that examples involving syntax trees and simplifying expressions are a running theme across these articles. That is in line with what we said about the word “algebra” at the end of the section about <code>cata</code>.</p></li>
+<li><p><a href="https://jtobin.io/practical-recursion-schemes"><em>Practical Recursion Schemes</em></a>, by Jared Tobin, offers a faster-paced demonstration of basic recursion schemes. Unlike the other articles in this list, it explores the machinery of the <em>recursion-schemes</em> library that we have dealt with here.</p></li>
+<li><p><a href="http://maartenfokkinga.github.io/utwente/#detail_0000003415">*Functional Programming With Bananas, Lenses, Envelopes and Barbed Wire</a>, by Erik Meijer, Maarten Fokkinga and Ross Paterson, is a classic paper about recursion schemes, the one which popularised concepts such as catamorphism and anamorphism. If you plan to go through it, you may find <a href="http://blog.ezyang.com/2010/05/bananas-lenses-envelopes-and-barbed-wire-a-translation-guide/">this key to its notation</a> by Edward Z. Yang useful.</p></li>
+</ul>
+<h2 id="appendix-leancata">Appendix: leanCata</h2>
+<p>This is the derivation mentioned in the middle of the section about <code>Fix</code>. We begin from our specification for <code>leanCata</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">cata f <span class="fu">=</span> leanCata f <span class="fu">.</span> omniProject</code></pre></div>
+<p>Take the left-hand side and substitute the definition of <code>cata</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">.</span> fmap (cata f) <span class="fu">.</span> project</code></pre></div>
+<p>Substitute the right-hand side of the <code>leanCata</code> specification:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">.</span> fmap (leanCata f <span class="fu">.</span> omniProject) <span class="fu">.</span> project</code></pre></div>
+<p>By the second functor law:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">.</span> fmap (leanCata f) <span class="fu">.</span> fmap omniProject <span class="fu">.</span> project</code></pre></div>
+<p><code>unfix . Fix = id</code>, so we can slip it in like this:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">.</span> fmap (leanCata f) <span class="fu">.</span> unfix <span class="fu">.</span> <span class="dt">Fix</span> <span class="fu">.</span> fmap omniProject <span class="fu">.</span> project</code></pre></div>
+<p>Substituting the definition of <code>omniProject</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">.</span> fmap (leanCata f) <span class="fu">.</span> unfix <span class="fu">.</span> omniProject</code></pre></div>
+<p>Substituting this back into the specification:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">.</span> fmap (leanCata f) <span class="fu">.</span> unfix <span class="fu">.</span> omniProject <span class="fu">=</span> leanCata f <span class="fu">.</span> omniProject</code></pre></div>
+<p>Assuming a sensible <code>Recursive</code> instance, using <code>omniProject</code> gives a structure equivalent to the original one. As a consequence, <code>omniProject</code> is injective (that is, it never gives equal results for different original structures). That being so, we can “cancel out” <code>omniProject</code> in both sides of the equation above. The definition of <code>leanCata</code> follows immediately.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">.</span> fmap (leanCata f) <span class="fu">.</span> unfix <span class="fu">=</span> leanCata f</code></pre></div>
+<section class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>By the way, it is worth emphasising that the <code>Foldable</code> class from <em>base</em> is not the abstraction we are looking for. One way of seeing why is placing the signature of <code>foldBTree</code> side by side with the one of <code>Foldable.foldr</code>.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>In what follows, I will use the <code>LambdaCase</code> extension liberally, so that I have fewer boring variable names to make up. If you haven’t seen it yet, all you need to know is that…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">\<span class="kw">case</span>
+    [] <span class="ot">-&gt;</span> foo
+    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> bar</code></pre></div>
+<p>… is the same as:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">\list <span class="ot">-&gt;</span> <span class="kw">case</span> list <span class="kw">of</span>
+    [] <span class="ot">-&gt;</span> foo
+    x<span class="fu">:</span>xs <span class="ot">-&gt;</span> bar</code></pre></div>
+<a href="#fnref2">↩</a></li>
+<li id="fn3"><p>While that is clear to the naked eye, it can be shown more rigorously by applying the second functor law, that is:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">fmap (g <span class="fu">.</span> f) <span class="fu">=</span> fmap g <span class="fu">.</span> fmap f</code></pre></div>
+<a href="#fnref3">↩</a></li>
+<li id="fn4"><p>This is in some ways similar to how <code>(&gt;&gt;= f) = join . fmap f</code> can be read as a factoring of <code>(&gt;&gt;=)</code> into a preliminary step (<code>fmap f</code>) followed by the quintessential monadic operation (<code>join</code>).<a href="#fnref4">↩</a></p></li>
+<li id="fn5"><p>The name <code>Fix</code> comes from “fixed point”, the mathematical term used to describe a value which is left unchanged by some function. In this case, if we have an infinite nesting of the <code>f</code> type constructor, it doesn’t make any difference if we apply <code>f</code> to it one more time.<a href="#fnref5">↩</a></p></li>
+<li id="fn6"><p>As suggested by Jared Tobin’s <em>Practical Recursion Schemes</em> article, which is in the further reading list at the end of this post.<a href="#fnref6">↩</a></p></li>
+<li id="fn7"><p>The names in said texts tend to be different, though. Common picks include <code>μ</code> for the <code>Fix</code> type constructor, <code>In</code> for the <code>Fix</code> value constructor, <code>out</code> for <code>unfix</code>, and <code>⦇f⦈</code> for <code>leanCata f</code> (using the famed banana brackets).<a href="#fnref7">↩</a></p></li>
+</ol>
+</section>
+
+<div id="comment-nav" class="pure-g-r">
+  <div class="pure-u-1-5">
+    
+      <div class="reddit-button">
+<script type="text/javascript" src="//www.reddit.com/static/button/button1.js">
+  reddit_target='haskell';
+  reddit_newwindow=1;
+</script>
+</div>
+
+    
+  </div>
+  <div class="pure-u-1-5">
+    <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/12">Comment on GitHub</a>
+
+    
+      
+    
+  </div>
+  <div class="pure-u-3-5">
+  </div>
+</div>
+
+<div><div class="license">
+  <p>
+    <span class="inline-centered">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <img alt="Creative Commons License" style="border-width:0" src="//i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+    </span>
+    <span class="inline-centered">
+      Post licensed under a
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+    </span>
+  </p>
+</div>
+
+</div>
+
+
+
+          </div>
+          <div id="footer">
+            <p>Powered by <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
+          </div>
+        </div>
+      </div>
+    </body>
+</html>
