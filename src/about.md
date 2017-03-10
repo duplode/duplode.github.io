@@ -9,7 +9,7 @@ optional). I can be spotted in locations such as:
   [sources of this blog](https://github.com/duplode/duplode.github.io/tree/sources).
 - [Wikibooks](https://en.wikibooks.org/wiki/User:Duplode), where I watch
   over and contribute to the Haskell Wikibook.
-- [StackOverflow](http://stackoverflow.com/users/2751851/duplode).
+- [Stack Overflow](http://stackoverflow.com/users/2751851/duplode).
   There, I can occasionaly be found hanging around the Haskell tag.
 - [Bitbucket](https://bitbucket.org/duplode/stunts-cartography), which I
   use mainly for my Stunts-related projects. What is

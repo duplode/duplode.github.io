@@ -151,10 +151,10 @@ If functors were really containers, `Const` would be an Acme product. A
 `Const a b` value does not contain anything of type `b`; what it does
 contain is an `a` value that we cannot even modify, given that `fmap f`
 is `id` regardless of what `f` is. As a consequence, if, given a field
-of type `a`, we pick `Const a a` as the functor to use with `modifyF`,
-if our chosen modifying function wraps the field value with `Const` then
-it will not be affected by the setter, and we will be able to recover it
-later. That suffices for recovering the getter.
+of type `a`, we pick `Const a` as the functor to use with `modifyF` and
+use the modifying function to wrap the field value with `Const`, then
+the value will not be affected by the setter, and we will be able to
+recover it later. That suffices for recovering the getter.
 
 > get :: (s -> a) -> (s -> a -> s) -> s -> a
 > get getter setter = getConst . modifyF getter setter Const
