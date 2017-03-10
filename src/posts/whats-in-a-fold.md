@@ -1,18 +1,18 @@
 ---
 title: "What's in a Fold: The Basic Catamorphism in recursion-schemes"
-published: 2017-03-10T08:00:00Z
+published: 2017-03-10T06:00:00Z
 license: CC-BY-SA
 reddit: true
 gh-issue: 12
 ---
 
-This article is an accessible introduction to the most basic recursion
-scheme, the catamorphism. It won't engage in deep dives into theory,
-or survey practical motives for using recursion schemes -- that will
-be covered by the further reading suggestions at the end.  Rather, its
-main goal is simply offering a concrete presentation of how folds can
-be generalised. This presentation will be done in terms of the types
-and combinators used by
+This article is meant as an accessible introduction to the most basic
+recursion scheme, the catamorphism. It won't engage in deep dives into
+theory, or survey practical motives for using recursion schemes --
+that will be covered by the further reading suggestions at the end.
+Rather, its main goal is simply offering a concrete presentation of
+how folds can be generalised. This presentation will be done in terms
+of the types and combinators used by
 the
 [*recursion-schemes*](https://hackage.haskell.org/package/recursion-schemes-5.0.1) library,
 so that the article doubles as an introduction to some of its key
@@ -43,7 +43,7 @@ foldr (+) 0 ( 1 : (2 : (3 : [])) )
             ( 1 + (2 + (3 + 0 )) )
 ```
 
-By projecting this picture on other data structures, we can get
+By applying this strategy to other data structures, we can get
 analogous folds for them.
 
 ``` haskell
@@ -60,6 +60,8 @@ foldMaybe :: b -> (a -> b) -> Maybe a -> b
 data NEList :: NEList a (Maybe (NEList a))
 foldNEList :: (a -> Maybe b -> b) -> NEList a -> b
 
+-- A binary tree like the one in Diagrams.TwoD.Layout.Tree (and in
+-- many other places).
 data BTree a = Empty | BNode a (BTree a) (BTree a)
 foldBTree :: b -> (a -> b -> b -> b) -> BTree a -> b
 ```
@@ -172,7 +174,7 @@ signature:
 (ListF a b -> b) -> [a] -> b
 ```
 
-We could figure out a `foldr` implementation with this signature in a
+We might figure out a `foldr` implementation with this signature in a
 mechanical way, by throwing all of the tricks from the previous
 section at `Data.List.foldr` until we squeeze out something with the
 right type. It is far more illuminating, however, to start from
