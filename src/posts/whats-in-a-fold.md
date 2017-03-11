@@ -289,9 +289,9 @@ One interesting thing about our definition of `foldList` is that all
 the list-specific details are tucked within the implementations of
 `project`, `fmap` for `ListF` and `f` (whatever it is). That being so,
 if we look only at the implementation and not at the signature, we
-find no no outward signs of anything related to lists. No outward
-signs, that is, except for the name we gave the function. That's easy
-enough to solve, though: it is just a question of inventing a new one:
+find no outward signs of anything related to lists. No outward signs,
+that is, except for the name we gave the function. That's easy enough
+to solve, though: it is just a question of inventing a new one:
 
 ``` haskell
 cata f = f . fmap (cata f) . project
@@ -332,7 +332,7 @@ The base functor is supposed to be a `Functor`, so that we can use
 `fmap` on it. That is enforced through a `Functor (Base t)` constraint
 in the definition of the `Recursive` class. Note, however, that there
 is no such restriction on `t` itself: it doesn't need to be a
-polymorphic, or even to involve a type constructor.
+polymorphic type, or even to involve a type constructor.
 
 In summary, once we managed to concentrate the surface complexity in
 the signature of `foldr` at a single place, the `ListF a b -> b`
@@ -472,7 +472,7 @@ by introducing a new layer of `Base t`. That being so, the type of
 omniProject :: Recursive t => t -> Base t (Base t (Base t (  .  .  .
 ```
 
-... which is clearly a problem, as we don't have a type that encode an
+... which is clearly a problem, as we don't have a type that encodes an
 infinite nesting of type constructors. There is a simple way of solving
 that, though: we *make up* the type we want!
 
@@ -562,8 +562,8 @@ leanCata f = f . fmap (leanCata f) . unfix
 (It is possible to prove that this *must* be the definition of
 `leanCata` using the definitions of `cata` and `omniProject` and the
 `cata f = leanCata f . omniProject` specification. You might want to
-work it out yourself; alternatively, you can find it in an appendix at
-the end of this article.)
+work it out yourself; alternatively, you can find the derivation in an
+appendix at the end of this article.)
 
 
 What should be the type of `leanCata`? `unfix` calls for a `Fix f`,
@@ -739,12 +739,14 @@ Substituting this back into the specification:
 f . fmap (leanCata f) . unfix . omniProject = leanCata f . omniProject
 ```
 
-Assuming a sensible `Recursive` instance, using `omniProject`
-gives a structure equivalent to the original one. As a
-consequence, `omniProject` is injective (that is, it never gives
-equal results for different original structures). That being so,
-we can "cancel out" `omniProject` in both sides of the equation
-above. The definition of `leanCata` follows immediately.
+Assuming a sensible `Recursive` and `Base` instances for `t`, `t` and
+`Fix (Base t)` should be isomorphic (that is, losslessly
+interconvertible) types, with `omniProject` performing one of the two
+relevant conversions.  As a consequence, `omniProject` is surjective
+(that is, it is possible to obtain every `Fix (Base t)` value through
+it). That being so, we can "cancel out" the `omniProject`s at the
+right end of both sides of the equation above. The definition of
+`leanCata` follows immediately.
 
 ``` haskell
 f . fmap (leanCata f) . unfix = leanCata f
