@@ -248,11 +248,15 @@ values. This is a very general solution: there are instances of
 [`Sum`](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Sum.html),
 and
 [`Product`](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Product.html)
-functors, which suffice to encode any algebraic data type.[^derive]
+functors, which suffice to encode any algebraic data type.[^unit-void]
+That explains why the `DeriveTraversable` GHC extension exists. (Note,
+though, that `Traversable` instances in general aren't unique.)
 
-[^derive]: That explains why the `DeriveTraversable` GHC extension
-    exists. (Note, though, that  `Traversable` instances in general
-    aren't unique.)
+[^unit-void]: Suffice, that is, with the help of the trivial data
+    types, `()` (unit) and
+    [`Void`](https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Void.html).
+    As an arbitrary example, `Maybe` can be encoded using this functor
+    toolkit as `Sum (Const ()) Identity`.
 
 It must be noted that our reconstruction does not reflect how
 `Traversable` was discovered, as the idea of using it to walk across
