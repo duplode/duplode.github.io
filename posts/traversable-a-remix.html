@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Traversable: A Remix - The Life Monadic</title>
         <link rel="stylesheet" href="//cdn.jsdelivr.net/pure/0.4.2/pure-min.css" />
         <link rel="stylesheet" type="text/css" href="../css/skin.css" />
@@ -10,8 +11,8 @@
     </head>
     <body class="pure-skin-duplode">
       <div class="pure-g-r">
-        <div class="pure-u-1-5">
-          <div id="navigation">
+        <div class="pure-u-1-4">
+          <div id="navigation" class="no-print">
             <div class="pure-menu pure-menu-open">
               <a class="pure-menu-heading menu-title">
                 The Life<br>
@@ -27,7 +28,7 @@
             </div>
           </div>
         </div>
-        <div class="pure-u-4-5">
+        <div class="pure-u-3-4">
           <div id="content">
             <h1>Traversable: A Remix</h1>
 
@@ -40,146 +41,144 @@
 <!--more-->
 <h2 id="weird-fishes">Weird fishes</h2>
 <p>Let’s begin with a familiar sight:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">a <span class="ot">-&gt;</span> <span class="dt">F</span> b</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1">a <span class="ot">-&gt;</span> <span class="dt">F</span> b</a></code></pre></div>
 <p>There are quite a few overlapping ways of talking about functions with such a type. If <code>F</code> is a <code>Functor</code>, we can say the function produces a functorial context; if it is an <code>Applicative</code>, we (also) say it produces an effect; and if it is a <code>Monad</code> we (also) call it a Kleisli arrow. Kleisli arrows are the functions we use with <code>(&gt;&gt;=)</code>. Kleisli arrows for a specific <code>Monad</code> form a category, with <code>return</code> as identity and the fish operator, <code>(&lt;=&lt;)</code>, as composition. If we pick <code>join</code> as the fundamental <code>Monad</code> operation, <code>(&lt;=&lt;)</code> can be defined in terms of it as:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&lt;=&lt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> (b <span class="ot">-&gt;</span> m c) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m c)
-g <span class="fu">&lt;=&lt;</span> f <span class="fu">=</span> join <span class="fu">.</span> fmap g <span class="fu">.</span> f</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">(&lt;=&lt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> (b <span class="ot">-&gt;</span> m c) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m c)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">g <span class="fu">&lt;=&lt;</span> f <span class="fu">=</span> join <span class="fu">.</span> fmap g <span class="fu">.</span> f</a></code></pre></div>
 <p>The category laws, then, become an alternative presentation of the monad laws:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">return <span class="fu">&lt;=&lt;</span> f <span class="fu">=</span> f
-f <span class="fu">&lt;=&lt;</span> return <span class="fu">=</span> f
-(h <span class="fu">&lt;=&lt;</span> g) <span class="fu">&lt;=&lt;</span> f <span class="fu">=</span> h <span class="fu">&lt;=&lt;</span> (g <span class="fu">&lt;=&lt;</span> f)</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1">return <span class="fu">&lt;=&lt;</span> f <span class="fu">=</span> f</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">f <span class="fu">&lt;=&lt;</span> return <span class="fu">=</span> f</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">(h <span class="fu">&lt;=&lt;</span> g) <span class="fu">&lt;=&lt;</span> f <span class="fu">=</span> h <span class="fu">&lt;=&lt;</span> (g <span class="fu">&lt;=&lt;</span> f)</a></code></pre></div>
 <p>All of that is very well-known. Something less often noted, though, is that there is an interesting category for <code>a -&gt; F b</code> functions even if <code>F</code> is not a <code>Monad</code>. Getting to it is amusingly easy: we just have to take the Kleisli category operators and erase the monad-specific parts from their definitions. In the case of <code>(&lt;=&lt;)</code>, that means removing the <code>join</code> (and, for type bookkeeping purposes, slipping in a <a href="http://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Compose.html"><code>Compose</code></a> in its place):</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&lt;%&lt;) ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g) <span class="ot">=&gt;</span>
-    (b <span class="ot">-&gt;</span> g c) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Compose</span> f g c)
-g <span class="fu">&lt;%&lt;</span> f <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> fmap g <span class="fu">.</span> f</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ot">(&lt;%&lt;) ::</span> (<span class="dt">Functor</span> f, <span class="dt">Functor</span> g) <span class="ot">=&gt;</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">    (b <span class="ot">-&gt;</span> g c) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Compose</span> f g c)</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">g <span class="fu">&lt;%&lt;</span> f <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> fmap g <span class="fu">.</span> f</a></code></pre></div>
 <p>While <code>(&lt;=&lt;)</code> creates two monadic layers and merges them, <code>(&lt;%&lt;)</code> creates two functorial layers and leaves both in place. Note that doing away with <code>join</code> means the <code>Functor</code>s introduced by the functions being composed can differ, and so the category we are setting up has <em>all</em> functions that fit <code>Functor f =&gt; a -&gt; f b</code> as arrows. That is unlike what we have with <code>(&lt;=&lt;)</code> and the corresponding Kleisli categories, which only concern a single specific monad.</p>
 <p>As for <code>return</code>, not relying on <code>Monad</code> means we need a different identity. Given the freedom to pick any <code>Functor</code> mentioned just above, it makes perfect sense to replace bringing a value into a <code>Monad</code> in a boring way by bringing a value into the boring <code>Functor</code> <em>par excellence</em>, <a href="http://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Identity.html"><code>Identity</code></a>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Identity</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="dt">Identity</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a</a></code></pre></div>
 <p>With <code>(&lt;%&lt;)</code> as composition and <code>Identity</code> as identity, we can state the following category laws:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Identity</span> <span class="fu">&lt;%&lt;</span> f <span class="fu">~</span> f
-f <span class="fu">&lt;%&lt;</span> <span class="dt">Identity</span> <span class="fu">~</span> f
-(h <span class="fu">&lt;%&lt;</span> g) <span class="fu">&lt;%&lt;</span> f <span class="fu">~</span> h <span class="fu">&lt;%&lt;</span> (g <span class="fu">&lt;%&lt;</span> f)</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="dt">Identity</span> <span class="fu">&lt;%&lt;</span> f <span class="fu">~</span> f</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">f <span class="fu">&lt;%&lt;</span> <span class="dt">Identity</span> <span class="fu">~</span> f</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">(h <span class="fu">&lt;%&lt;</span> g) <span class="fu">&lt;%&lt;</span> f <span class="fu">~</span> h <span class="fu">&lt;%&lt;</span> (g <span class="fu">&lt;%&lt;</span> f)</a></code></pre></div>
 <p>Why didn’t I write them as equalities? Once the definition of <code>(&lt;%&lt;)</code> is substituted, it becomes clear that they do not hold literally as equalities: the left hand sides of the identity laws will have a stray <code>Identity</code>, and the uses of <code>Compose</code> on either side of the associativity law will be associated differently. Since <code>Identity</code> and <code>Compose</code> are essentially bookkeeping boilerplate, however, it would be entirely reasonable to ignore such differences. If we do that, it becomes clear that the laws do hold. All in all, we have a category, even though we can’t go all the way and shape it into a <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Category.html"><code>Category</code></a> instance, not only due to the trivialities we chose to overlook, but also because of how each <code>a -&gt; F b</code> function introduces a functorial layer <code>F</code> in a way that is not reflected in the target object <code>b</code>.</p>
-<p>The first thing to do once after figuring out we have a category in our hands is looking for functors involving it.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> One of the simplest paths towards one is considering a way to, given some <code>Functor</code> <code>T</code>, change the source and target objects in an <code>a -&gt; F b</code> function to <code>T a</code> and <code>T b</code> (that is precisely what <code>fmap</code> does with regular functions). This would give an endofunctor, whose arrow mapping would have a signature shaped like this:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">(a <span class="ot">-&gt;</span> <span class="dt">F</span> b) <span class="ot">-&gt;</span> <span class="dt">T</span> a <span class="ot">-&gt;</span> <span class="dt">F</span> (<span class="dt">T</span> b)</code></pre></div>
+<p>The first thing to do once after figuring out we have a category in our hands is looking for functors involving it.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> One of the simplest paths towards one is considering a way to, given some <code>Functor</code> <code>T</code>, change the source and target objects in an <code>a -&gt; F b</code> function to <code>T a</code> and <code>T b</code> (that is precisely what <code>fmap</code> does with regular functions). This would give an endofunctor, whose arrow mapping would have a signature shaped like this:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1">(a <span class="ot">-&gt;</span> <span class="dt">F</span> b) <span class="ot">-&gt;</span> <span class="dt">T</span> a <span class="ot">-&gt;</span> <span class="dt">F</span> (<span class="dt">T</span> b)</a></code></pre></div>
 <p>This signature shape, however, <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Traversable.html">should ring a bell</a>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> (<span class="dt">Functor</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> <span class="dt">Traversable</span> t <span class="kw">where</span>
-<span class="ot">    traverse ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> f (t b)
-    <span class="co">-- etc.</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">class</span> (<span class="dt">Functor</span> t, <span class="dt">Foldable</span> t) <span class="ot">=&gt;</span> <span class="dt">Traversable</span> t <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="ot">    traverse ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> f (t b)</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">    <span class="co">-- etc.</span></a></code></pre></div>
 <p>If <code>traverse</code> were the arrow mapping of our endofunctor, the relevant functor laws would be:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">traverse <span class="dt">Identity</span> <span class="fu">=</span> <span class="dt">Identity</span>
-traverse (g <span class="fu">&lt;%&lt;</span> f) <span class="fu">=</span> traverse g <span class="fu">&lt;%&lt;</span> traverse f</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1">traverse <span class="dt">Identity</span> <span class="fu">=</span> <span class="dt">Identity</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">traverse (g <span class="fu">&lt;%&lt;</span> f) <span class="fu">=</span> traverse g <span class="fu">&lt;%&lt;</span> traverse f</a></code></pre></div>
 <p>Substituting the definition of <code>(&lt;%&lt;)</code> reveals these are the identity and composition laws of <code>Traversable</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">traverse <span class="dt">Identity</span> <span class="fu">=</span> <span class="dt">Identity</span>
-traverse (<span class="dt">Compose</span> <span class="fu">.</span> fmap g <span class="fu">.</span> f) <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> fmap (traverse g) <span class="fu">.</span> traverse f</code></pre></div>
-<p>There it is: a <code>Traversable</code> instance is an endofunctor for a category made of arbitrary context-producing functions.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1">traverse <span class="dt">Identity</span> <span class="fu">=</span> <span class="dt">Identity</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">traverse (<span class="dt">Compose</span> <span class="fu">.</span> fmap g <span class="fu">.</span> f) <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> fmap (traverse g) <span class="fu">.</span> traverse f</a></code></pre></div>
+<p>There it is: a <code>Traversable</code> instance is an endofunctor for a category made of arbitrary context-producing functions.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a></p>
 <p>Is it really, though? You may have noticed I have glossed over something quite glaring: if <code>(&lt;%&lt;)</code> only involved <code>Functor</code> constraints, where does the <code>Applicative</code> in <code>traverse</code> comes from?</p>
 <h2 id="arpeggi">Arpeggi</h2>
 <p>Let’s pretend we have just invented the <code>Traversable</code> class by building it around the aforementioned endofunctor. At this point, there is no reason for using anything more restrictive than <code>Functor</code> in the signature of its arrow mapping:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Tentative signature:</span>
-traverse<span class="ot"> ::</span> (<span class="dt">Functor</span> f, <span class="dt">Traversable</span> t) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> f (t b)</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="co">-- Tentative signature:</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">traverse<span class="ot"> ::</span> (<span class="dt">Functor</span> f, <span class="dt">Traversable</span> t) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> f (t b)</a></code></pre></div>
 <p>The natural thing to do now is trying to write <code>traverse</code> for various choices of <code>t</code>. Let’s try it for one of the simplest <code>Functor</code>s around: the pair functor, <code>(,) e</code> – values with something extra attached:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Traversable</span> ((,) e) <span class="kw">where</span>
-    <span class="co">-- traverse :: Functor f =&gt; (a -&gt; f b) -&gt; (e, a) -&gt; f (e, b)</span>
-    traverse f (e, x) <span class="fu">=</span> ((,) e) <span class="fu">&lt;$&gt;</span> f x</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Traversable</span> ((,) e) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">    <span class="co">-- traverse :: Functor f =&gt; (a -&gt; f b) -&gt; (e, a) -&gt; f (e, b)</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">    traverse f (e, x) <span class="fu">=</span> ((,) e) <span class="fu">&lt;$&gt;</span> f x</a></code></pre></div>
 <p>Simple enough: apply the function to the contained value, and then shift the extra stuff into the functorial context with <code>fmap</code>. The resulting <code>traverse</code> follows the functor laws just fine.</p>
 <p>If we try to do it for different functors, though, we quickly run into trouble. <code>Maybe</code> looks simple enough…</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Maybe</span> <span class="kw">where</span>
-    <span class="co">-- traverse :: Functor f =&gt; (a -&gt; f b) -&gt; Maybe a -&gt; f (Maybe b)</span>
-    traverse f (<span class="dt">Just</span> x) <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">&lt;$&gt;</span> f x
-    traverse f <span class="dt">Nothing</span>  <span class="fu">=</span> <span class="co">-- ex nihilo</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">    <span class="co">-- traverse :: Functor f =&gt; (a -&gt; f b) -&gt; Maybe a -&gt; f (Maybe b)</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3">    traverse f (<span class="dt">Just</span> x) <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">&lt;$&gt;</span> f x</a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">    traverse f <span class="dt">Nothing</span>  <span class="fu">=</span> <span class="co">-- ex nihilo</span></a></code></pre></div>
 <p>… but the <code>Nothing</code> case stumps us: there is no value that can be supplied to <code>f</code>, which means the functorial context would have to be created out of nothing.</p>
 <p>For another example, consider what we might do with an homogeneous pair type (or, if you will, a vector of length two):</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Duo</span> a <span class="fu">=</span> <span class="dt">Duo</span> a a
-
-<span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Duo</span> <span class="kw">where</span>
-    fmap f (<span class="dt">Duo</span> x y) <span class="fu">=</span> <span class="dt">Duo</span> (f x) (f y)
-
-<span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Duo</span> <span class="kw">where</span>
-    <span class="co">-- traverse :: Functor f =&gt; (a -&gt; f b) -&gt; Duo a -&gt; f (Duo b)</span>
-    traverse f (<span class="dt">Duo</span> x y) <span class="fu">=</span> <span class="co">-- dilemma</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Duo</span> a <span class="fu">=</span> <span class="dt">Duo</span> a a</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb14-3" data-line-number="3"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Duo</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb14-4" data-line-number="4">    fmap f (<span class="dt">Duo</span> x y) <span class="fu">=</span> <span class="dt">Duo</span> (f x) (f y)</a>
+<a class="sourceLine" id="cb14-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb14-6" data-line-number="6"><span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Duo</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb14-7" data-line-number="7">    <span class="co">-- traverse :: Functor f =&gt; (a -&gt; f b) -&gt; Duo a -&gt; f (Duo b)</span></a>
+<a class="sourceLine" id="cb14-8" data-line-number="8">    traverse f (<span class="dt">Duo</span> x y) <span class="fu">=</span> <span class="co">-- dilemma</span></a></code></pre></div>
 <p>Here, we seemingly have to choose between applying <code>f</code> to <code>x</code> or to <code>y</code>, and then using <code>fmap (\z -&gt; Duo z z)</code> on the result. No matter the choice, though, discarding one of the values means the functor laws will be broken. A lawful implementation would require somehow combining the functorial values <code>f x</code> and <code>f y</code>.</p>
 <p>As luck would have it, though, there is a type class which provides ways to both create a functorial context out of nothing and to combine functorial values: <code>Applicative</code>. <code>pure</code> solves the first problem; <code>(&lt;*&gt;)</code>, the second:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Maybe</span> <span class="kw">where</span>
-    <span class="co">-- traverse :: Applicative f =&gt; (a -&gt; f b) -&gt; Maybe a -&gt; f (Maybe b)</span>
-    traverse f (<span class="dt">Just</span> x) <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">&lt;$&gt;</span> f x
-    traverse f <span class="dt">Nothing</span>  <span class="fu">=</span> pure <span class="dt">Nothing</span>
-
-<span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Duo</span> <span class="kw">where</span>
-    <span class="co">-- traverse :: Applicative f =&gt; (a -&gt; f b) -&gt; Duo a -&gt; f (Duo b)</span>
-    traverse f (<span class="dt">Duo</span> x y) <span class="fu">=</span> <span class="dt">Duo</span> <span class="fu">&lt;$&gt;</span> f x <span class="fu">&lt;*&gt;</span> f y</code></pre></div>
-<p>Shifting to the terminology of containers for a moment, we can describe the matter by saying the version of <code>traverse</code> with the <code>Functor</code> constraint can only handle containers that hold exactly one value. Once the constraint is strengthened to <code>Applicative</code>, however, we have the means to deal with containers that may hold zero or many values. This is a very general solution: there are instances of <code>Traversable</code> for the <code>Identity</code>, <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Const.html"><code>Const</code></a>, <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Sum.html"><code>Sum</code></a>, and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Product.html"><code>Product</code></a> functors, which suffice to encode any algebraic data type.<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a> That explains why the <code>DeriveTraversable</code> GHC extension exists. (Note, though, that <code>Traversable</code> instances in general aren’t unique.)</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb15-2" data-line-number="2">    <span class="co">-- traverse :: Applicative f =&gt; (a -&gt; f b) -&gt; Maybe a -&gt; f (Maybe b)</span></a>
+<a class="sourceLine" id="cb15-3" data-line-number="3">    traverse f (<span class="dt">Just</span> x) <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">&lt;$&gt;</span> f x</a>
+<a class="sourceLine" id="cb15-4" data-line-number="4">    traverse f <span class="dt">Nothing</span>  <span class="fu">=</span> pure <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb15-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Duo</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb15-7" data-line-number="7">    <span class="co">-- traverse :: Applicative f =&gt; (a -&gt; f b) -&gt; Duo a -&gt; f (Duo b)</span></a>
+<a class="sourceLine" id="cb15-8" data-line-number="8">    traverse f (<span class="dt">Duo</span> x y) <span class="fu">=</span> <span class="dt">Duo</span> <span class="fu">&lt;$&gt;</span> f x <span class="fu">&lt;*&gt;</span> f y</a></code></pre></div>
+<p>Shifting to the terminology of containers for a moment, we can describe the matter by saying the version of <code>traverse</code> with the <code>Functor</code> constraint can only handle containers that hold exactly one value. Once the constraint is strengthened to <code>Applicative</code>, however, we have the means to deal with containers that may hold zero or many values. This is a very general solution: there are instances of <code>Traversable</code> for the <code>Identity</code>, <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Const.html"><code>Const</code></a>, <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Sum.html"><code>Sum</code></a>, and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Functor-Product.html"><code>Product</code></a> functors, which suffice to encode any algebraic data type.<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> That explains why the <code>DeriveTraversable</code> GHC extension exists. (Note, though, that <code>Traversable</code> instances in general aren’t unique.)</p>
 <p>It must be noted that our reconstruction does not reflect how <code>Traversable</code> was discovered, as the idea of using it to walk across containers holding an arbitrary number of values was there from the start. That being so, <code>Applicative</code> plays an essential role in the usual presentations of <code>Traversable</code>. To illustrate that, I will now paraphrase Definition 3.3 in Jaskelioff and Rypacek’s <a href="https://arxiv.org/abs/1202.2919"><em>An Investigation of the Laws of Traversals</em></a>. It is formulated not in terms of <code>traverse</code>, but of <code>sequenceA</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">sequenceA<span class="ot"> ::</span> (<span class="dt">Applicative</span> f, <span class="dt">Traversable</span> t) <span class="ot">=&gt;</span> t (f a) <span class="ot">-&gt;</span> f (t a)</code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1">sequenceA<span class="ot"> ::</span> (<span class="dt">Applicative</span> f, <span class="dt">Traversable</span> t) <span class="ot">=&gt;</span> t (f a) <span class="ot">-&gt;</span> f (t a)</a></code></pre></div>
 <p><code>sequenceA</code> is characterised as a natural transformation in the category of applicative functors which “respects the monoidal structure of applicative functor composition”. It is worth it to take a few moments to unpack that:</p>
 <ul>
 <li><p>The category of applicative functors has what the <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Traversable.html"><code>Data.Traversable</code> documentation</a> calls “applicative transformations” as arrows – functions of general type <code>(Applicative f, Applicative g) =&gt; f a -&gt; g a</code> which preserve <code>pure</code> and <code>(&lt;*&gt;)</code>.</p></li>
 <li><p><code>sequenceA</code> is a natural transformation in the aforementioned category of applicative functors. The two functors it maps between amount to the two ways of composing an applicative functor with the relevant traversable functor. The naturality law of <code>Traversable</code>…</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- t is an applicative transformation</span>
-t <span class="fu">.</span> sequenceA <span class="fu">=</span> sequenceA <span class="fu">.</span> fmap t</code></pre></div></li>
-</ul>
-<p>… captures that fact (which, thanks to parametricity, is a given in Haskell).</p>
-<ul>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="co">-- t is an applicative transformation</span></a>
+<a class="sourceLine" id="cb17-2" data-line-number="2">t <span class="fu">.</span> sequenceA <span class="fu">=</span> sequenceA <span class="fu">.</span> fmap t</a></code></pre></div>
+<p>… captures that fact (which, thanks to parametricity, is a given in Haskell).</p></li>
 <li><p>Applicative functors form a monoid, with <code>Identity</code> as unit and functor composition as multiplication. <code>sequenceA</code> preserves these monoidal operations, and the identity and composition laws of <code>Traversable</code> express that:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">sequenceA <span class="fu">.</span> fmap <span class="dt">Identity</span> <span class="fu">=</span> <span class="dt">Identity</span>
-sequenceA <span class="fu">.</span> fmap <span class="dt">Compose</span> <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> fmap sequenceA <span class="fu">.</span> sequenceA</code></pre></div></li>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" data-line-number="1">sequenceA <span class="fu">.</span> fmap <span class="dt">Identity</span> <span class="fu">=</span> <span class="dt">Identity</span></a>
+<a class="sourceLine" id="cb18-2" data-line-number="2">sequenceA <span class="fu">.</span> fmap <span class="dt">Compose</span> <span class="fu">=</span> <span class="dt">Compose</span> <span class="fu">.</span> fmap sequenceA <span class="fu">.</span> sequenceA</a></code></pre></div></li>
 </ul>
 <p>All of that seems only accidentally related to what we have done up to this point. However, if <code>sequenceA</code> is taken as the starting point, <code>traverse</code> can be defined in terms of it:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">traverse f <span class="fu">=</span> sequenceA <span class="fu">.</span> fmap f</code></pre></div>
-<p>Crucially, the opposite path is also possible. It follows from parametricity<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a> that…</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">traverse f <span class="fu">=</span> traverse id <span class="fu">.</span> fmap f</code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" data-line-number="1">traverse f <span class="fu">=</span> sequenceA <span class="fu">.</span> fmap f</a></code></pre></div>
+<p>Crucially, the opposite path is also possible. It follows from parametricity<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a> that…</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" data-line-number="1">traverse f <span class="fu">=</span> traverse id <span class="fu">.</span> fmap f</a></code></pre></div>
 <p>… which allows us to start from <code>traverse</code>, define…</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">sequenceA <span class="fu">=</span> traverse id</code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb21-1" data-line-number="1">sequenceA <span class="fu">=</span> traverse id</a></code></pre></div>
 <p>… and continue as before. At this point, our narrative merges with the traditional account of <code>Traversable</code>.</p>
 <h2 id="a-note-about-lenses">A note about lenses</h2>
 <p>In the previous section, we saw how using <code>Applicative</code> rather than <code>Functor</code> in the type of <code>traverse</code> made it possible to handle containers which don’t necessarily hold just one value. It is not a coincidence that, in <em>lens</em>, this is precisely the difference between <code>Traversal</code> and <code>Lens</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Traversal</span> s t a b <span class="fu">=</span> forall f<span class="fu">.</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t
-<span class="kw">type</span> <span class="dt">Lens</span> s t a b <span class="fu">=</span> forall f<span class="fu">.</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Traversal</span> s t a b <span class="fu">=</span> forall f<span class="fu">.</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</a>
+<a class="sourceLine" id="cb22-2" data-line-number="2"><span class="kw">type</span> <span class="dt">Lens</span> s t a b <span class="fu">=</span> forall f<span class="fu">.</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</a></code></pre></div>
 <p>A <code>Lens</code> targets exactly one value. A <code>Traversal</code> might reach zero, one or many targets, which requires a strengthening of the constraint. Van Laarhoven (i.e. <em>lens</em>-style) <code>Traversal</code>s and <code>Lens</code>es can be seen as a straightforward generalisation of the <code>traverse</code>-as-arrow-mapping view we have been discussing here, in which the, so to say, functoriality of the container isn’t necessarily reflected at type level in a direct way.</p>
 <h2 id="a-note-about-profunctors">A note about profunctors</h2>
 <p>Early on, we noted that <code>(&lt;%&lt;)</code> gave us a category that cannot be expressed as a Haskell <code>Category</code> because its composition is too quirky. We have a general-purpose class that is often a good fit for things that look like functions, arrows and/or <code>Category</code> instances but don’t compose in conventional ways: <code>Profunctor</code>. And sure enough: <em>profunctors</em> defines a profunctor called <a href="https://hackage.haskell.org/package/profunctors-5.2/docs/Data-Profunctor.html#t:Star"><code>Star</code></a>…</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Lift a 'Functor' into a 'Profunctor' (forwards).</span>
-<span class="kw">newtype</span> <span class="dt">Star</span> f d c <span class="fu">=</span> <span class="dt">Star</span> {<span class="ot"> runStar ::</span> d <span class="ot">-&gt;</span> f c }</code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb23-1" data-line-number="1"><span class="co">-- | Lift a 'Functor' into a 'Profunctor' (forwards).</span></a>
+<a class="sourceLine" id="cb23-2" data-line-number="2"><span class="kw">newtype</span> <span class="dt">Star</span> f d c <span class="fu">=</span> <span class="dt">Star</span> {<span class="ot"> runStar ::</span> d <span class="ot">-&gt;</span> f c }</a></code></pre></div>
 <p>… which corresponds to the arrows of the category we presented in the first section. It should come as no surprise that <code>Star</code> is an instance of a class called <code>Traversing</code>…</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Abridged definition.</span>
-<span class="kw">class</span> (<span class="dt">Choice</span> p, <span class="dt">Strong</span> p) <span class="ot">=&gt;</span> <span class="dt">Traversing</span> p <span class="kw">where</span>
-<span class="ot">  traverse' ::</span> <span class="dt">Traversable</span> f <span class="ot">=&gt;</span> p a b <span class="ot">-&gt;</span> p (f a) (f b)
-<span class="ot">  wander ::</span> (forall f<span class="fu">.</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> p s t
-
-<span class="kw">instance</span> <span class="dt">Applicative</span> m <span class="ot">=&gt;</span> <span class="dt">Traversing</span> (<span class="dt">Star</span> m) <span class="kw">where</span>
-  traverse' (<span class="dt">Star</span> m) <span class="fu">=</span> <span class="dt">Star</span> (traverse m)
-  wander f (<span class="dt">Star</span> amb) <span class="fu">=</span> <span class="dt">Star</span> (f amb)</code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb24-1" data-line-number="1"><span class="co">-- Abridged definition.</span></a>
+<a class="sourceLine" id="cb24-2" data-line-number="2"><span class="kw">class</span> (<span class="dt">Choice</span> p, <span class="dt">Strong</span> p) <span class="ot">=&gt;</span> <span class="dt">Traversing</span> p <span class="kw">where</span></a>
+<a class="sourceLine" id="cb24-3" data-line-number="3"><span class="ot">  traverse' ::</span> <span class="dt">Traversable</span> f <span class="ot">=&gt;</span> p a b <span class="ot">-&gt;</span> p (f a) (f b)</a>
+<a class="sourceLine" id="cb24-4" data-line-number="4"><span class="ot">  wander ::</span> (forall f<span class="fu">.</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> p s t</a>
+<a class="sourceLine" id="cb24-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb24-6" data-line-number="6"><span class="kw">instance</span> <span class="dt">Applicative</span> m <span class="ot">=&gt;</span> <span class="dt">Traversing</span> (<span class="dt">Star</span> m) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb24-7" data-line-number="7">  traverse' (<span class="dt">Star</span> m) <span class="fu">=</span> <span class="dt">Star</span> (traverse m)</a>
+<a class="sourceLine" id="cb24-8" data-line-number="8">  wander f (<span class="dt">Star</span> amb) <span class="fu">=</span> <span class="dt">Star</span> (f amb)</a></code></pre></div>
 <p>… which is a profunctor-oriented generalisation of <code>Traversable</code>.</p>
 <p>Amusingly, it turns out there is a baroque way of expressing <code>(&lt;%&lt;)</code> composition with the <em>profunctors</em> vocabulary. <a href="https://hackage.haskell.org/package/profunctors-5.2/docs/Data-Profunctor-Composition.html"><code>Data.Profunctor.Composition</code></a> gives us a notion of profunctor composition:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Procompose</span> p q d c <span class="kw">where</span>
-  <span class="dt">Procompose</span><span class="ot"> ::</span> p x c <span class="ot">-&gt;</span> q d x <span class="ot">-&gt;</span> <span class="dt">Procompose</span> p q d c</code></pre></div>
-<p><code>Procompose</code> simply pairs two profunctorial values with matching extremities. That is unlike <code>Category</code> composition, which welds two arrows<a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a> into one:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(.) ::</span> <span class="dt">Category</span> cat <span class="ot">=&gt;</span> cat b c <span class="ot">-&gt;</span> cat a b <span class="ot">-&gt;</span> cat a c</code></pre></div>
-<p>The difference is rather like that between combining functorial layers at type level with <code>Compose</code> and fusing monadic layers with <code>join</code><a href="#fn6" class="footnoteRef" id="fnref6"><sup>6</sup></a>.</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb25-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Procompose</span> p q d c <span class="kw">where</span></a>
+<a class="sourceLine" id="cb25-2" data-line-number="2">  <span class="dt">Procompose</span><span class="ot"> ::</span> p x c <span class="ot">-&gt;</span> q d x <span class="ot">-&gt;</span> <span class="dt">Procompose</span> p q d c</a></code></pre></div>
+<p><code>Procompose</code> simply pairs two profunctorial values with matching extremities. That is unlike <code>Category</code> composition, which welds two arrows<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a> into one:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb26-1" data-line-number="1"><span class="ot">(.) ::</span> <span class="dt">Category</span> cat <span class="ot">=&gt;</span> cat b c <span class="ot">-&gt;</span> cat a b <span class="ot">-&gt;</span> cat a c</a></code></pre></div>
+<p>The difference is rather like that between combining functorial layers at type level with <code>Compose</code> and fusing monadic layers with <code>join</code><a href="#fn6" class="footnote-ref" id="fnref6"><sup>6</sup></a>.</p>
 <p>Among a handful of other interesting things, <code>Data.Functor.Procompose</code> offers <a href="https://hackage.haskell.org/package/profunctors-5.2/docs/Data-Profunctor-Composition.html#v:stars">a <em>lens</em>-style isomorphism</a>…</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">stars ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> <span class="dt">Iso'</span> (<span class="dt">Procompose</span> (<span class="dt">Star</span> f) (<span class="dt">Star</span> g) d c) (<span class="dt">Star</span> (<span class="dt">Compose</span> f g) d c)</code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb27-1" data-line-number="1"><span class="ot">stars ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> <span class="dt">Iso'</span> (<span class="dt">Procompose</span> (<span class="dt">Star</span> f) (<span class="dt">Star</span> g) d c) (<span class="dt">Star</span> (<span class="dt">Compose</span> f g) d c)</a></code></pre></div>
 <p>… which gives us a rather lyrical encoding of <code>(&lt;%&lt;)</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import </span><span class="dt">Data.Profunctor</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import </span><span class="dt">Data.Profunctor.Composition</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import </span><span class="dt">Data.Profunctor.Traversing</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import </span><span class="dt">Data.Functor.Compose</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import </span><span class="dt">Control.Lens</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> f <span class="fu">=</span> <span class="dt">Star</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> print x <span class="fu">*&gt;</span> pure x
-<span class="dt">GHCi</span><span class="fu">&gt;</span> g <span class="fu">=</span> <span class="dt">Star</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> [<span class="dv">0</span><span class="fu">..</span>x]
-<span class="dt">GHCi</span><span class="fu">&gt;</span> getCompose <span class="fu">$</span> runStar (traverse' (view stars (g <span class="ot">`Procompose`</span> f))) [<span class="dv">0</span><span class="fu">..</span><span class="dv">2</span>]
-<span class="dv">0</span>
-<span class="dv">1</span>
-<span class="dv">2</span>
-[[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>]]</code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb28-1" data-line-number="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="dt">Data.Profunctor</span></a>
+<a class="sourceLine" id="cb28-2" data-line-number="2"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="dt">Data.Profunctor.Composition</span></a>
+<a class="sourceLine" id="cb28-3" data-line-number="3"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="dt">Data.Profunctor.Traversing</span></a>
+<a class="sourceLine" id="cb28-4" data-line-number="4"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="dt">Data.Functor.Compose</span></a>
+<a class="sourceLine" id="cb28-5" data-line-number="5"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="dt">Control.Lens</span></a>
+<a class="sourceLine" id="cb28-6" data-line-number="6"><span class="dt">GHCi</span><span class="fu">&gt;</span> f <span class="fu">=</span> <span class="dt">Star</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> print x <span class="fu">*&gt;</span> pure x</a>
+<a class="sourceLine" id="cb28-7" data-line-number="7"><span class="dt">GHCi</span><span class="fu">&gt;</span> g <span class="fu">=</span> <span class="dt">Star</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> [<span class="dv">0</span><span class="fu">..</span>x]</a>
+<a class="sourceLine" id="cb28-8" data-line-number="8"><span class="dt">GHCi</span><span class="fu">&gt;</span> getCompose <span class="fu">$</span> runStar (traverse' (view stars (g <span class="ot">`Procompose`</span> f))) [<span class="dv">0</span><span class="fu">..</span><span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb28-9" data-line-number="9"><span class="dv">0</span></a>
+<a class="sourceLine" id="cb28-10" data-line-number="10"><span class="dv">1</span></a>
+<a class="sourceLine" id="cb28-11" data-line-number="11"><span class="dv">2</span></a>
+<a class="sourceLine" id="cb28-12" data-line-number="12">[[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>]]</a></code></pre></div>
 <p>If you feel like playing with that, note that <a href="https://hackage.haskell.org/package/profunctors-5.2/docs/Data-Profunctor-Sieve.html"><code>Data.Profunctor.Sieve</code></a> offers a more compact (though prosaic) spelling:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import </span><span class="dt">Data.Profunctor.Sieve</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t sieve
-<span class="ot">sieve ::</span> <span class="dt">Sieve</span> p f <span class="ot">=&gt;</span> p a b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> f b
-<span class="dt">GHCi</span><span class="fu">&gt;</span> getCompose <span class="fu">$</span> traverse (sieve (g <span class="ot">`Procompose`</span> f)) [<span class="dv">0</span><span class="fu">..</span><span class="dv">2</span>]
-<span class="dv">0</span>
-<span class="dv">1</span>
-<span class="dv">2</span>
-[[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>]]</code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb29-1" data-line-number="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="dt">Data.Profunctor.Sieve</span></a>
+<a class="sourceLine" id="cb29-2" data-line-number="2"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t sieve</a>
+<a class="sourceLine" id="cb29-3" data-line-number="3"><span class="ot">sieve ::</span> <span class="dt">Sieve</span> p f <span class="ot">=&gt;</span> p a b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> f b</a>
+<a class="sourceLine" id="cb29-4" data-line-number="4"><span class="dt">GHCi</span><span class="fu">&gt;</span> getCompose <span class="fu">$</span> traverse (sieve (g <span class="ot">`Procompose`</span> f)) [<span class="dv">0</span><span class="fu">..</span><span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb29-5" data-line-number="5"><span class="dv">0</span></a>
+<a class="sourceLine" id="cb29-6" data-line-number="6"><span class="dv">1</span></a>
+<a class="sourceLine" id="cb29-7" data-line-number="7"><span class="dv">2</span></a>
+<a class="sourceLine" id="cb29-8" data-line-number="8">[[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>],[<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">2</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>],[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>]]</a></code></pre></div>
 <h2 id="further-reading">Further reading</h2>
 <ul>
 <li><p>The already mentioned <a href="https://arxiv.org/abs/1202.2919"><em>An Investigation of the Laws of Traversals</em></a>, by Mauro Jaskelioff and Ondrej Rypacek, is a fine entry point to the ways of formulating <code>Traversable</code>. It also touches upon some important matters I didn’t explore here, such as how the notion of container <code>Traversable</code> mobilises can be made precise, or the implications of the <code>Traversable</code> laws. I plan to discuss some aspects of these issues in a follow-up post.</p></li>
@@ -189,17 +188,17 @@ sequenceA <span class="fu">.</span> fmap <span class="dt">Compose</span> <span c
 <section class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p>For why that is a good idea, see Gabriel Gonzalez’s <a href="http://www.haskellforall.com/2012/09/the-functor-design-pattern.html"><em>The functor design pattern</em></a>.<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>A more proper derivation for the results in this section can be found <a href="http://stackoverflow.com/a/39955475/2751851">in this Stack Overflow answer</a>, which I didn’t transcribe here to avoid boring you.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>Suffice, that is, with the help of the trivial data types, <code>()</code> (unit) and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Void.html"><code>Void</code></a>. As an arbitrary example, <code>Maybe</code> can be encoded using this functor toolkit as <code>Sum (Const ()) Identity</code>.<a href="#fnref3">↩</a></p></li>
-<li id="fn4"><p>The property is an immediate consequence of the free theorem for <code>traverse</code>. Cf. <a href="http://stackoverflow.com/a/32813063/2751851">this Stack Overflow answer by Rein Heinrichs</a>.<a href="#fnref4">↩</a></p></li>
-<li id="fn5"><p>I mean “arrows” in the general sense, and not necessarily <code>Arrow</code>s as in <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Arrows.html"><code>Control.Arrow</code></a>!<a href="#fnref5">↩</a></p></li>
-<li id="fn6"><p>This is not merely a loose analogy. For details, see Bartosz Milewski’s <a href="https://bartoszmilewski.com/2017/02/09/monoids-on-steroids/"><em>Monoids on Steroids</em></a>, and and in particular its section about <code>Arrow</code>s.<a href="#fnref6">↩</a></p></li>
+<li id="fn1"><p>For why that is a good idea, see Gabriel Gonzalez’s <a href="http://www.haskellforall.com/2012/09/the-functor-design-pattern.html"><em>The functor design pattern</em></a>.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn2"><p>A more proper derivation for the results in this section can be found <a href="http://stackoverflow.com/a/39955475/2751851">in this Stack Overflow answer</a>, which I didn’t transcribe here to avoid boring you.<a href="#fnref2" class="footnote-back">↩</a></p></li>
+<li id="fn3"><p>Suffice, that is, with the help of the trivial data types, <code>()</code> (unit) and <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-Void.html"><code>Void</code></a>. As an arbitrary example, <code>Maybe</code> can be encoded using this functor toolkit as <code>Sum (Const ()) Identity</code>.<a href="#fnref3" class="footnote-back">↩</a></p></li>
+<li id="fn4"><p>The property is an immediate consequence of the free theorem for <code>traverse</code>. Cf. <a href="http://stackoverflow.com/a/32813063/2751851">this Stack Overflow answer by Rein Heinrichs</a>.<a href="#fnref4" class="footnote-back">↩</a></p></li>
+<li id="fn5"><p>I mean “arrows” in the general sense, and not necessarily <code>Arrow</code>s as in <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Arrows.html"><code>Control.Arrow</code></a>!<a href="#fnref5" class="footnote-back">↩</a></p></li>
+<li id="fn6"><p>This is not merely a loose analogy. For details, see Bartosz Milewski’s <a href="https://bartoszmilewski.com/2017/02/09/monoids-on-steroids/"><em>Monoids on Steroids</em></a>, and and in particular its section about <code>Arrow</code>s.<a href="#fnref6" class="footnote-back">↩</a></p></li>
 </ol>
 </section>
 
-<div id="comment-nav" class="pure-g-r">
-  <div class="pure-u-1-5">
+<div id="comment-nav" class="pure-g-r no-print">
+  <div class="pure-u-1-4">
     
       <div class="reddit-button">
 <script type="text/javascript" src="//www.reddit.com/static/button/button1.js">
@@ -210,14 +209,14 @@ sequenceA <span class="fu">.</span> fmap <span class="dt">Compose</span> <span c
 
     
   </div>
-  <div class="pure-u-1-5">
+  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/13">Comment on GitHub</a>
 
     
       
     
   </div>
-  <div class="pure-u-3-5">
+  <div class="pure-u-3-4">
   </div>
 </div>
 
@@ -239,7 +238,7 @@ sequenceA <span class="fu">.</span> fmap <span class="dt">Compose</span> <span c
 
 
           </div>
-          <div id="footer">
+          <div id="footer" class="no-print">
             <p>Powered by <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
           </div>
         </div>

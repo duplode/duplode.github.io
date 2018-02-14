@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Lenses You Can Make at Home - The Life Monadic</title>
         <link rel="stylesheet" href="//cdn.jsdelivr.net/pure/0.4.2/pure-min.css" />
         <link rel="stylesheet" type="text/css" href="../css/skin.css" />
@@ -10,8 +11,8 @@
     </head>
     <body class="pure-skin-duplode">
       <div class="pure-g-r">
-        <div class="pure-u-1-5">
-          <div id="navigation">
+        <div class="pure-u-1-4">
+          <div id="navigation" class="no-print">
             <div class="pure-menu pure-menu-open">
               <a class="pure-menu-heading menu-title">
                 The Life<br>
@@ -27,7 +28,7 @@
             </div>
           </div>
         </div>
-        <div class="pure-u-4-5">
+        <div class="pure-u-3-4">
           <div id="content">
             <h1>Lenses You Can Make at Home</h1>
 
@@ -40,167 +41,167 @@
 <!--more-->
 <h2 id="humble-beginnings">Humble Beginnings</h2>
 <p>Dramatis personæ:</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Functor.Identity</span> (<span class="dt">Identity</span>(..))
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Applicative</span> (<span class="dt">Const</span>(..))</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Functor.Identity</span> (<span class="dt">Identity</span>(..))</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Control.Applicative</span> (<span class="dt">Const</span>(..))</a></code></pre></div>
 <p>I will define a toy data type so that we have something concrete to play with, as well as a starting point for working out generalisations.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Foo</span> <span class="fu">=</span> <span class="dt">Foo</span> {<span class="ot"> bar ::</span> <span class="dt">Int</span> } <span class="kw">deriving</span> (<span class="dt">Show</span>)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Foo</span> <span class="fu">=</span> <span class="dt">Foo</span> {<span class="ot"> bar ::</span> <span class="dt">Int</span> } <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
 <p>The record definition gets us a function for accessing the <code>bar</code> field.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t bar
-<span class="ot">bar ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t bar</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="ot">bar ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a></code></pre></div>
 <p>As for the setter, we have to define it ourselves, unless we feel like mucking around with record update syntax.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; setBar ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> setBar x y <span class="fu">=</span> x { bar <span class="fu">=</span> y }</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ot">setBar ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">setBar x y <span class="fu">=</span> x { bar <span class="fu">=</span> y }</a></code></pre></div>
 <p>Armed with a proper getter and setter pair, we can easily flip the sign of the <code>bar</code> inside a <code>Foo</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">let</span> x <span class="fu">=</span> <span class="dt">Foo</span> <span class="dv">3</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> setBar x (negate <span class="fu">$</span> bar x)
-<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="fu">-</span><span class="dv">3</span>}</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="kw">let</span> x <span class="fu">=</span> <span class="dt">Foo</span> <span class="dv">3</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="dt">GHCi</span><span class="fu">&gt;</span> setBar x (negate <span class="fu">$</span> bar x)</a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="fu">-</span><span class="dv">3</span>}</a></code></pre></div>
 <p>We can make it even easier by defining a modifier function for <code>bar</code>.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyBar ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> modifyBar k x <span class="fu">=</span> setBar x <span class="fu">.</span> k <span class="fu">.</span> bar <span class="fu">$</span> x</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> modifyBar negate x
-<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="fu">-</span><span class="dv">3</span>}</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">modifyBar ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">modifyBar k x <span class="fu">=</span> setBar x <span class="fu">.</span> k <span class="fu">.</span> bar <span class="fu">$</span> x</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> modifyBar negate x</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="fu">-</span><span class="dv">3</span>}</a></code></pre></div>
 <p><code>setBar</code> can be recovered from <code>modifyBar</code> by using <code>const</code> to discard the original value and put the new one in its place.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">const y <span class="fu">=</span> \_ <span class="ot">-&gt;</span> y</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; setBar' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> setBar' x y <span class="fu">=</span> modifyBar (const y) x</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1">const y <span class="fu">=</span> \_ <span class="ot">-&gt;</span> y</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">setBar' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">setBar' x y <span class="fu">=</span> modifyBar (const y) x</a></code></pre></div>
 <p>If our data type had several fields, defining a modifier for each of them would amount to quite a lot of boilerplate. We could minimise it by, starting from our <code>modifyBar</code> definition, abstracting from the specific getter and setter for <code>bar</code>. Here, things begin to pick up steam. I will define a general <code>modify</code> function, which, given an appropriate getter-setter pair, can deal with any field of any data type.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-<span class="ot">&gt;</span> modify getter setter k x <span class="fu">=</span> setter x <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="ot">modify ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">modify getter setter k x <span class="fu">=</span> setter x <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</a></code></pre></div>
 <p>It is trivial to recover <code>modifyBar</code>; when we do so, <code>s</code> becomes <code>Foo</code> and <code>a</code> becomes <code>Int</code>.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyBar' ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> modifyBar' <span class="fu">=</span> modify bar setBar</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="ot">modifyBar' ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">modifyBar' <span class="fu">=</span> modify bar setBar</a></code></pre></div>
 <h2 id="functors-galore">Functors Galore</h2>
 <p>The next step of generalisation is the one leap of faith I will ask of you in the way towards lenses. I will introduce a variant of <code>modify</code> in which the modifying function, rather than being a plain <code>a -&gt; a</code> function, returns a functorial value. Defining it only takes an extra <code>fmap</code>.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s)
-<span class="ot">&gt;</span>                      <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s
-<span class="ot">&gt;</span> modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s)</a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">                     <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s</a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</a></code></pre></div>
 <p>And here is its specialisation for <code>bar</code>.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyBarF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> f <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> f <span class="dt">Foo</span>
-<span class="ot">&gt;</span> modifyBarF <span class="fu">=</span> modifyF bar setBar</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="ot">modifyBarF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> f <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> f <span class="dt">Foo</span></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">modifyBarF <span class="fu">=</span> modifyF bar setBar</a></code></pre></div>
 <p>Why on Earth we would want to do that? For one, it allows for some nifty tricks depending on the functor we choose. Let’s try it with lists. Specialising the <code>modifyF</code> type would give:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">modifyL ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> [a]) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> [s]</code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="ot">modifyL ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> [a]) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> [s]</a></code></pre></div>
 <p>Providing the getter and the setter would result in a <code>(a -&gt; [a]) -&gt; s -&gt; [s]</code> function. Can you guess what it would do?</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> modifyBarF (\y <span class="ot">-&gt;</span> [<span class="dv">0</span><span class="fu">..</span>y]) x
-[<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="dv">0</span>},<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="dv">1</span>},<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="dv">2</span>},<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="dv">3</span>}]</code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> modifyBarF (\y <span class="ot">-&gt;</span> [<span class="dv">0</span><span class="fu">..</span>y]) x</a>
+<a class="sourceLine" id="cb15-2" data-line-number="2">[<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="dv">0</span>},<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="dv">1</span>},<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="dv">2</span>},<span class="dt">Foo</span> {bar <span class="fu">=</span> <span class="dv">3</span>}]</a></code></pre></div>
 <p>As the types suggest, we get a function which modifies the field in multiple ways and collects the results.</p>
 <p>I claimed that moving from <code>modify</code> to <code>modifyF</code> was a generalisation. Indeed, we can recover <code>modify</code> by bringing <code>Identity</code>, the dummy functor, into play.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Identity</span> a <span class="fu">=</span> <span class="dt">Identity</span> {<span class="ot"> runIdentity ::</span> a }
-
-<span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Identity</span> <span class="kw">where</span>
-    fmap f (<span class="dt">Identity</span> x) <span class="fu">=</span> <span class="dt">Identity</span> (f x)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">modifyI ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify' ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-<span class="ot">&gt;</span> modify' getter setter k <span class="fu">=</span>
-<span class="ot">&gt;</span>     runIdentity <span class="fu">.</span> modifyF getter setter (<span class="dt">Identity</span> <span class="fu">.</span> k)</code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">newtype</span> <span class="dt">Identity</span> a <span class="fu">=</span> <span class="dt">Identity</span> {<span class="ot"> runIdentity ::</span> a }</a>
+<a class="sourceLine" id="cb16-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb16-3" data-line-number="3"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Identity</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-4" data-line-number="4">    fmap f (<span class="dt">Identity</span> x) <span class="fu">=</span> <span class="dt">Identity</span> (f x)</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="ot">modifyI ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="ot">modify' ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s</a>
+<a class="sourceLine" id="cb18-2" data-line-number="2">modify' getter setter k <span class="fu">=</span></a>
+<a class="sourceLine" id="cb18-3" data-line-number="3">    runIdentity <span class="fu">.</span> modifyF getter setter (<span class="dt">Identity</span> <span class="fu">.</span> k)</a></code></pre></div>
 <p>We wrap the field value with <code>Identity</code> value after applying <code>k</code> and unwrap the final result after applying the setter. Since <code>Identity</code> does nothing interesting to the wrapped values, the overall result boils down to our original <code>modify</code>. If you have found this definition confusing, I suggest that you, as an exercise, rewrite it in pointful style and substitute the definition of <code>modifyF</code>.</p>
 <p>We managed to get <code>modify</code> back with little trouble, which is rather interesting. However, what is truly surprising is that we can reconstruct not only the modifier but also the getter! To pull that off, we will use <code>Const</code>, which is a very quaint functor.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Const</span> a b <span class="fu">=</span> <span class="dt">Const</span> {<span class="ot"> getConst ::</span> a }
-
-<span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Const</span> a) <span class="kw">where</span>
-    fmap _ (<span class="dt">Const</span> y) <span class="fu">=</span> <span class="dt">Const</span> y</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">modifyC ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Const</span> r a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> r s</code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" data-line-number="1"><span class="kw">newtype</span> <span class="dt">Const</span> a b <span class="fu">=</span> <span class="dt">Const</span> {<span class="ot"> getConst ::</span> a }</a>
+<a class="sourceLine" id="cb19-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb19-3" data-line-number="3"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Const</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb19-4" data-line-number="4">    fmap _ (<span class="dt">Const</span> y) <span class="fu">=</span> <span class="dt">Const</span> y</a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" data-line-number="1"><span class="ot">modifyC ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">Const</span> r a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> r s</a></code></pre></div>
 <p>If functors were really containers, <code>Const</code> would be an Acme product. A <code>Const a b</code> value does not contain anything of type <code>b</code>; what it does contain is an <code>a</code> value that we cannot even modify, given that <code>fmap f</code> is <code>id</code> regardless of what <code>f</code> is. As a consequence, if, given a field of type <code>a</code>, we pick <code>Const a</code> as the functor to use with <code>modifyF</code> and use the modifying function to wrap the field value with <code>Const</code>, then the value will not be affected by the setter, and we will be able to recover it later. That suffices for recovering the getter.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; get ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a
-<span class="ot">&gt;</span> get getter setter <span class="fu">=</span> getConst <span class="fu">.</span> modifyF getter setter <span class="dt">Const</span>
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; getBar ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-<span class="ot">&gt;</span> getBar <span class="fu">=</span> get bar setBar</code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb21-1" data-line-number="1"><span class="ot">get ::</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb21-2" data-line-number="2">get getter setter <span class="fu">=</span> getConst <span class="fu">.</span> modifyF getter setter <span class="dt">Const</span></a>
+<a class="sourceLine" id="cb21-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb21-4" data-line-number="4"><span class="ot">getBar ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb21-5" data-line-number="5">getBar <span class="fu">=</span> get bar setBar</a></code></pre></div>
 <h2 id="the-grand-unification">The Grand Unification</h2>
 <p>Given a getter and a setter, <code>modifyF</code> gets us a corresponding functorial modifier. From it, by choosing the appropriate functors, we can recover the getter and a plain modifier; the latter, in turn, allows us to recover the setter. We can highlight the correspondence by redefining once more the recovered getters and modifiers, this time in terms of the functorial modifier.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s)
-                     <span class="ot">-&gt;</span> ((a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modify'' ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-<span class="ot">&gt;</span> modify'' modifier k <span class="fu">=</span> runIdentity <span class="fu">.</span> modifier (<span class="dt">Identity</span> <span class="fu">.</span> k)
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; modifyBar'' ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> modifyBar'' <span class="fu">=</span> modify'' modifyBarF
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; set ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s
-<span class="ot">&gt;</span> set modifier x y <span class="fu">=</span> modify'' modifier (const y) x
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; setBar'' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span>
-<span class="ot">&gt;</span> setBar'' <span class="fu">=</span> set modifyBarF
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; get' ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Const</span> a a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> a s) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a)
-<span class="ot">&gt;</span> get' modifier <span class="fu">=</span> getConst <span class="fu">.</span> modifier <span class="dt">Const</span>
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; getBar' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-<span class="ot">&gt;</span> getBar' <span class="fu">=</span> get' modifyBarF</code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="ot">modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s)</a>
+<a class="sourceLine" id="cb22-2" data-line-number="2">                     <span class="ot">-&gt;</span> ((a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s)</a></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb23-1" data-line-number="1"><span class="ot">modify'' ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s</a>
+<a class="sourceLine" id="cb23-2" data-line-number="2">modify'' modifier k <span class="fu">=</span> runIdentity <span class="fu">.</span> modifier (<span class="dt">Identity</span> <span class="fu">.</span> k)</a>
+<a class="sourceLine" id="cb23-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb23-4" data-line-number="4"><span class="ot">modifyBar'' ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span></a>
+<a class="sourceLine" id="cb23-5" data-line-number="5">modifyBar'' <span class="fu">=</span> modify'' modifyBarF</a>
+<a class="sourceLine" id="cb23-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb23-7" data-line-number="7"><span class="ot">set ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> s) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s</a>
+<a class="sourceLine" id="cb23-8" data-line-number="8">set modifier x y <span class="fu">=</span> modify'' modifier (const y) x</a>
+<a class="sourceLine" id="cb23-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb23-10" data-line-number="10"><span class="ot">setBar'' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Foo</span></a>
+<a class="sourceLine" id="cb23-11" data-line-number="11">setBar'' <span class="fu">=</span> set modifyBarF</a>
+<a class="sourceLine" id="cb23-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb23-13" data-line-number="13"><span class="ot">get' ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Const</span> a a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> a s) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a)</a>
+<a class="sourceLine" id="cb23-14" data-line-number="14">get' modifier <span class="fu">=</span> getConst <span class="fu">.</span> modifier <span class="dt">Const</span></a>
+<a class="sourceLine" id="cb23-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb23-16" data-line-number="16"><span class="ot">getBar' ::</span> <span class="dt">Foo</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb23-17" data-line-number="17">getBar' <span class="fu">=</span> get' modifyBarF</a></code></pre></div>
 <p>The bottom line is that given <code>modifyBarF</code> we can get by without <code>modifyBar</code>, <code>setBar</code> and <code>bar</code>, as <code>modify''</code>, <code>set</code> and <code>get'</code> allow us to reconstruct them whenever necessary. While our first version of <code>get</code> was, in effect, just a specialised <code>const</code> with a wacky implementation, <code>get'</code> is genuinely useful because it cuts the number of separate field manipulation functions we have to deal with by a third.</p>
 <h2 id="expanding-horizons">Expanding Horizons</h2>
 <p>Even after all of the work so far we can still generalise further! Let’s have a second look at <code>modifyF</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s)
-                     <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s
-modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb24-1" data-line-number="1"><span class="ot">modifyF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s)</a>
+<a class="sourceLine" id="cb24-2" data-line-number="2">                     <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f s</a>
+<a class="sourceLine" id="cb24-3" data-line-number="3">modifyF getter setter k x <span class="fu">=</span> fmap (setter x) <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</a></code></pre></div>
 <p>The type of <code>setter</code> is <code>(s -&gt; a -&gt; s)</code>; however, nothing in the implementation forces the first argument and the result to have the same type. Furthermore, with a different signature <code>k</code> could have a more general type, <code>(a -&gt; f b)</code>, as long as the type of <code>setter</code> was adjusted accordingly. We can thus give <code>modifyF</code> a more general type.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyGenF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> t)
-<span class="ot">&gt;</span>                         <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t
-<span class="ot">&gt;</span> modifyGenF getter setter k x <span class="fu">=</span> fmap (setter x) <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb25-1" data-line-number="1"><span class="ot">modifyGenF ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (s <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> t)</a>
+<a class="sourceLine" id="cb25-2" data-line-number="2">                        <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</a>
+<a class="sourceLine" id="cb25-3" data-line-number="3">modifyGenF getter setter k x <span class="fu">=</span> fmap (setter x) <span class="fu">.</span> k <span class="fu">.</span> getter <span class="fu">$</span> x</a></code></pre></div>
 <p>For the sake of completeness, here are the generalised recovery functions. <code>get</code> is not included because the generalisation does not affect it.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; modifyGen ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> t) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> t
-<span class="ot">&gt;</span> modifyGen modifier k <span class="fu">=</span> runIdentity <span class="fu">.</span> modifier (<span class="dt">Identity</span> <span class="fu">.</span> k)
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; setGen ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> t) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> t
-<span class="ot">&gt;</span> setGen modifier x y <span class="fu">=</span> modifyGen modifier (const y) x</code></pre></div>
-<p>By now, it is clear that our getters and setters need not be ways to manipulate fields in a record. In a broader sense, a getter is anything that produces a value from another; in other words, any function can be a getter. By the same token, any binary function can be a setter, as all that is required is that it combines one value with another producing a third; the initial and final values do not even need to have the same type.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> That is a long way from the toy data type we started with!</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb26-1" data-line-number="1"><span class="ot">modifyGen ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> t) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> t</a>
+<a class="sourceLine" id="cb26-2" data-line-number="2">modifyGen modifier k <span class="fu">=</span> runIdentity <span class="fu">.</span> modifier (<span class="dt">Identity</span> <span class="fu">.</span> k)</a>
+<a class="sourceLine" id="cb26-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb26-4" data-line-number="4"><span class="ot">setGen ::</span> ((a <span class="ot">-&gt;</span> <span class="dt">Identity</span> b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> t) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> t</a>
+<a class="sourceLine" id="cb26-5" data-line-number="5">setGen modifier x y <span class="fu">=</span> modifyGen modifier (const y) x</a></code></pre></div>
+<p>By now, it is clear that our getters and setters need not be ways to manipulate fields in a record. In a broader sense, a getter is anything that produces a value from another; in other words, any function can be a getter. By the same token, any binary function can be a setter, as all that is required is that it combines one value with another producing a third; the initial and final values do not even need to have the same type.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> That is a long way from the toy data type we started with!</p>
 <h2 id="the-reveal">The Reveal</h2>
 <p>If we look at <code>modifyGenF</code> as a function of two arguments, its result type becomes:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb28-1" data-line-number="1"><span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</a></code></pre></div>
 <p>Now, let’s take a peek at <a href="http://hackage.haskell.org/package/lens-4.1.2/docs/Control-Lens-Lens.html#t:Lens">Control.Lens.Lens</a>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Lens</span> s t a b <span class="fu">=</span> forall f<span class="fu">.</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</code></pre></div>
-<p>It is the same type! We have reached our destination.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> A lens is what we might have called a generalised functorial modifier; furthermore, sans implementation details we have that:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb29-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Lens</span> s t a b <span class="fu">=</span> forall f<span class="fu">.</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> f t</a></code></pre></div>
+<p>It is the same type! We have reached our destination.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> A lens is what we might have called a generalised functorial modifier; furthermore, sans implementation details we have that:</p>
 <ul>
 <li>The <code>lens</code> function is <code>modifyGenF</code>;</li>
-<li><code>modifyF</code> is <code>lens</code> specialised to produce simple lenses;<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></li>
+<li><code>modifyF</code> is <code>lens</code> specialised to produce simple lenses;<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></li>
 <li><code>modifyBarF</code> is a lens with type <code>Lens Foo Foo Int Int</code>;</li>
 <li><code>(^.)</code> is flipped <code>get'</code>;</li>
 <li><code>set</code> is <code>setGen</code>;</li>
-<li><code>over</code> is <code>modifyGen</code> further generalised.<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a></li>
+<li><code>over</code> is <code>modifyGen</code> further generalised.<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a></li>
 </ul>
 <p><code>lens</code> uses type synonyms liberally, so those correspondences are not immediately obvious form the signatures in the documentation. Digging a little deeper, however, shows that in</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">set ::</span> <span class="dt">ASetter</span> s t a b <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> t</code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb30-1" data-line-number="1"><span class="ot">set ::</span> <span class="dt">ASetter</span> s t a b <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> t</a></code></pre></div>
 <p><code>ASetter</code> is merely</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ASetter</span> s t a b <span class="fu">=</span> (a <span class="ot">-&gt;</span> <span class="dt">Identity</span> b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> t</code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb31-1" data-line-number="1"><span class="kw">type</span> <span class="dt">ASetter</span> s t a b <span class="fu">=</span> (a <span class="ot">-&gt;</span> <span class="dt">Identity</span> b) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Identity</span> t</a></code></pre></div>
 <p>Analogously, we have</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(^.) ::</span> s <span class="ot">-&gt;</span> <span class="dt">Getting</span> a s a <span class="ot">-&gt;</span> a
-
-<span class="kw">type</span> <span class="dt">Getting</span> r s a <span class="fu">=</span> (a <span class="ot">-&gt;</span> <span class="dt">Const</span> r a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> r s</code></pre></div>
-<p>Behind the plethora of type synonyms - <code>ASetter</code>, <code>Getting</code>, <code>Fold</code>, <code>Traversal</code>, <code>Prism</code>, <code>Iso</code> and so forth - there are different choices of functors,<a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a> which make it possible to capture many different concepts as variations on lenses. The variations may be more general or less general than lenses; occasionally they are neither, as the overlap is just partial. The fact that we can express so much through parametrization of functors is key to the extraordinary breadth of <code>lens</code>.</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb32-1" data-line-number="1"><span class="ot">(^.) ::</span> s <span class="ot">-&gt;</span> <span class="dt">Getting</span> a s a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb32-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb32-3" data-line-number="3"><span class="kw">type</span> <span class="dt">Getting</span> r s a <span class="fu">=</span> (a <span class="ot">-&gt;</span> <span class="dt">Const</span> r a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">Const</span> r s</a></code></pre></div>
+<p>Behind the plethora of type synonyms - <code>ASetter</code>, <code>Getting</code>, <code>Fold</code>, <code>Traversal</code>, <code>Prism</code>, <code>Iso</code> and so forth - there are different choices of functors,<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a> which make it possible to capture many different concepts as variations on lenses. The variations may be more general or less general than lenses; occasionally they are neither, as the overlap is just partial. The fact that we can express so much through parametrization of functors is key to the extraordinary breadth of <code>lens</code>.</p>
 <h2 id="going-forward">Going Forward</h2>
 <p>This exposition is primarily concerned with building lenses, and so very little was said about how to use them. In any case, we have seen enough to understand why lenses are also known as functional references. By unifying getters and setters, lenses provide a completely general vocabulary to point at parts of a whole.</p>
 <p>Finally, a few words about composition of lenses are unavoidable. One of the great things about lenses is that they are just functions; even better, they are functions with signatures tidy enough for them to compose cleanly with <code>(.)</code>. That makes it possible to compose lenses independently of whether you intend to get, set or modify their targets. Here is a quick demonstration using the tuple lenses from <code>lens</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>m
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>m <span class="fu">+</span><span class="dt">Control.Lens</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> ((<span class="dv">1</span>,<span class="dv">2</span>),(<span class="dv">3</span>,<span class="dv">4</span>)) <span class="fu">^.</span> _1 <span class="fu">.</span> _2
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="dv">2</span>
-<span class="dt">GHCi</span><span class="fu">&gt;</span> set (_1 <span class="fu">.</span> _2) <span class="dv">0</span> ((<span class="dv">1</span>,<span class="dv">2</span>),(<span class="dv">3</span>,<span class="dv">4</span>))
-<span class="dt">GHCi</span><span class="fu">&gt;</span> ((<span class="dv">1</span>,<span class="dv">0</span>),(<span class="dv">3</span>,<span class="dv">4</span>))</code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb33-1" data-line-number="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>m</a>
+<a class="sourceLine" id="cb33-2" data-line-number="2"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>m <span class="fu">+</span><span class="dt">Control.Lens</span></a>
+<a class="sourceLine" id="cb33-3" data-line-number="3"><span class="dt">GHCi</span><span class="fu">&gt;</span> ((<span class="dv">1</span>,<span class="dv">2</span>),(<span class="dv">3</span>,<span class="dv">4</span>)) <span class="fu">^.</span> _1 <span class="fu">.</span> _2</a>
+<a class="sourceLine" id="cb33-4" data-line-number="4"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="dv">2</span></a>
+<a class="sourceLine" id="cb33-5" data-line-number="5"><span class="dt">GHCi</span><span class="fu">&gt;</span> set (_1 <span class="fu">.</span> _2) <span class="dv">0</span> ((<span class="dv">1</span>,<span class="dv">2</span>),(<span class="dv">3</span>,<span class="dv">4</span>))</a>
+<a class="sourceLine" id="cb33-6" data-line-number="6"><span class="dt">GHCi</span><span class="fu">&gt;</span> ((<span class="dv">1</span>,<span class="dv">0</span>),(<span class="dv">3</span>,<span class="dv">4</span>))</a></code></pre></div>
 <p>A perennial topic in discussions about <code>lens</code> is the order of composition of lenses. They are often said to compose backwards; that is, backwards with respect to composition of record accessors and similar getters. For instance, the getter corresponding to the <code>_1 . _2</code> lens is <code>snd . fst</code>. The claim that lenses compose backwards, or in the “wrong order”, however, are only defensible when talking about style, and not about semantics. That becomes clear after placing the signatures of a getter and its corresponding lens side by side.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t fst
-fst<span class="ot"> ::</span> (a, b) <span class="ot">-&gt;</span> a
-<span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t<span class="ot"> _1 ::</span> <span class="dt">Lens'</span> (a, b) a
-<span class="ot">_1 ::</span> <span class="dt">Lens'</span> (a, b) a
-<span class="ot"> ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> (a, b) <span class="ot">-&gt;</span> f (a, b)</code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb34-1" data-line-number="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t fst</a>
+<a class="sourceLine" id="cb34-2" data-line-number="2">fst<span class="ot"> ::</span> (a, b) <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb34-3" data-line-number="3"><span class="dt">GHCi</span><span class="fu">&gt;</span> <span class="fu">:</span>t<span class="ot"> _1 ::</span> <span class="dt">Lens'</span> (a, b) a</a>
+<a class="sourceLine" id="cb34-4" data-line-number="4"><span class="ot">_1 ::</span> <span class="dt">Lens'</span> (a, b) a</a>
+<a class="sourceLine" id="cb34-5" data-line-number="5"><span class="ot"> ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> (a, b) <span class="ot">-&gt;</span> f (a, b)</a></code></pre></div>
 <p>The getter takes a value of the source type and produces a value of the target type. The lens, however, takes a function from the target type and produces a function from the source type. Therefore, it is no surprise that the order of composition differs, and the order for lenses is entirely natural. That ties in closely to what we have seen while implementing lenses. While we can squeeze lenses until they give back getters, it is much easier to think of them as generalised modifiers.</p>
 <section class="footnotes">
 <hr />
 <ol>
 <li id="fn1"><p>We are not quite as free when it comes to pairing getters and setters. Beyond the obvious need for getter and setter to start from values of the same type, they should behave sanely when composed. In particular, the following should hold:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">get' modifier (setGen modifier y x) ≡ y
-
-setGen modifier (get' modifier x) x ≡ x
-
-setGen modifier z (setGen modifier y x) ≡ setGen modifier z x</code></pre></div>
-<a href="#fnref1">↩</a></li>
-<li id="fn2"><p>“What about the <code>forall</code>?” you might ask. Are we cheating? Not quite. The <code>forall</code> is there to control how <code>f</code> is specialised when lens combinators are used. The underlying issue does not affect our reasoning here. If you are into type system subtleties, there were a few interesting comments about it in the <a href="http://www.reddit.com/r/haskell/comments/241aec/lenses_you_can_make_at_home/ch2rbgp">reddit thread</a> for this post.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p><code>Lens' s a</code> or <code>Lens s s a a</code>, as opposed to <code>Lens s t a b</code>.<a href="#fnref3">↩</a></p></li>
-<li id="fn4"><p>Yes, even further; from taking modifying functions to taking modifying <a href="https://www.fpcomplete.com/user/liyang/profunctors">profunctors</a>. The difference need not worry us now.<a href="#fnref4">↩</a></p></li>
-<li id="fn5"><p>And in some cases of profunctors to replace the function type constructor.<a href="#fnref5">↩</a></p></li>
+<div class="sourceCode" id="cb27"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb27-1" data-line-number="1">get' modifier (setGen modifier y x) ≡ y</a>
+<a class="sourceLine" id="cb27-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb27-3" data-line-number="3">setGen modifier (get' modifier x) x ≡ x</a>
+<a class="sourceLine" id="cb27-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb27-5" data-line-number="5">setGen modifier z (setGen modifier y x) ≡ setGen modifier z x</a></code></pre></div>
+<a href="#fnref1" class="footnote-back">↩</a></li>
+<li id="fn2"><p>“What about the <code>forall</code>?” you might ask. Are we cheating? Not quite. The <code>forall</code> is there to control how <code>f</code> is specialised when lens combinators are used. The underlying issue does not affect our reasoning here. If you are into type system subtleties, there were a few interesting comments about it in the <a href="http://www.reddit.com/r/haskell/comments/241aec/lenses_you_can_make_at_home/ch2rbgp">reddit thread</a> for this post.<a href="#fnref2" class="footnote-back">↩</a></p></li>
+<li id="fn3"><p><code>Lens' s a</code> or <code>Lens s s a a</code>, as opposed to <code>Lens s t a b</code>.<a href="#fnref3" class="footnote-back">↩</a></p></li>
+<li id="fn4"><p>Yes, even further; from taking modifying functions to taking modifying <a href="https://www.fpcomplete.com/user/liyang/profunctors">profunctors</a>. The difference need not worry us now.<a href="#fnref4" class="footnote-back">↩</a></p></li>
+<li id="fn5"><p>And in some cases of profunctors to replace the function type constructor.<a href="#fnref5" class="footnote-back">↩</a></p></li>
 </ol>
 </section>
 
-<div id="comment-nav" class="pure-g-r">
-  <div class="pure-u-1-5">
+<div id="comment-nav" class="pure-g-r no-print">
+  <div class="pure-u-1-4">
     
       <div class="reddit-button">
 <script type="text/javascript" src="//www.reddit.com/static/button/button1.js">
@@ -211,14 +212,14 @@ setGen modifier z (setGen modifier y x) ≡ setGen modifier z x</code></pre></di
 
     
   </div>
-  <div class="pure-u-1-5">
+  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/1">Comment on GitHub</a>
 
     
       
     
   </div>
-  <div class="pure-u-3-5">
+  <div class="pure-u-3-4">
   </div>
 </div>
 
@@ -240,7 +241,7 @@ setGen modifier z (setGen modifier y x) ≡ setGen modifier z x</code></pre></di
 
 
           </div>
-          <div id="footer">
+          <div id="footer" class="no-print">
             <p>Powered by <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
           </div>
         </div>

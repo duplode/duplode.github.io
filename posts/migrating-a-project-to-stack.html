@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Migrating a Project to stack - The Life Monadic</title>
         <link rel="stylesheet" href="//cdn.jsdelivr.net/pure/0.4.2/pure-min.css" />
         <link rel="stylesheet" type="text/css" href="../css/skin.css" />
@@ -10,8 +11,8 @@
     </head>
     <body class="pure-skin-duplode">
       <div class="pure-g-r">
-        <div class="pure-u-1-5">
-          <div id="navigation">
+        <div class="pure-u-1-4">
+          <div id="navigation" class="no-print">
             <div class="pure-menu pure-menu-open">
               <a class="pure-menu-heading menu-title">
                 The Life<br>
@@ -27,21 +28,21 @@
             </div>
           </div>
         </div>
-        <div class="pure-u-4-5">
+        <div class="pure-u-3-4">
           <div id="content">
             <h1>Migrating a Project to stack</h1>
 
             <p><em>July 27, 2015</em></p>
 
 <p>This post consists of notes on how I converted one of my Haskell projects to stack. It provides a small illustration of how flexible stack can be in accomodating project organisation quirks on the way towards predictable builds.<!--more--> If you want to see the complete results, here are links to the <a href="https://bitbucket.org/duplode/stunts-cartography">Bitbucket repository</a> of Stunts Cartography, the example project I am using, and specifically to the <a href="https://bitbucket.org/duplode/stunts-cartography/src/3eb07c44f6e2eed19591f765b14fc5fbe2b8f946">source tree immediately after the migration</a>.</p>
-<p>The first decision to make when migrating a project is which Stackage snapshot to pick. It had been a while since I last updated my project, and building it with the latest versions of all its dependencies would require a few adjustments. That being so, I chose to migrate to stack before any further patches. Since one of the main dependencies was <code>diagrams</code> 1.2, I went for <a href="https://www.stackage.org/lts-2.19"><code>lts-2.19</code></a>, the most recent LTS snapshot with that version of <code>diagrams</code> <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>.</p>
+<p>The first decision to make when migrating a project is which Stackage snapshot to pick. It had been a while since I last updated my project, and building it with the latest versions of all its dependencies would require a few adjustments. That being so, I chose to migrate to stack before any further patches. Since one of the main dependencies was <code>diagrams</code> 1.2, I went for <a href="https://www.stackage.org/lts-2.19"><code>lts-2.19</code></a>, the most recent LTS snapshot with that version of <code>diagrams</code> <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>.</p>
 <pre><code>$ stack init --resolver lts-2.19</code></pre>
 <p><code>stack init</code> creates a <code>stack.yaml</code> file based on an existing cabal file in the current directory. The <code>--resolver</code> option can be used to pick a specific snapshot.</p>
 <p>One complicating factor in the conversion to stack was that two of the extra dependencies, <code>threepenny-gui-0.5.0.0</code> (one major version behind the current one) and <code>zip-conduit</code>, wouldn’t build with the LTS snapshot plus current Hackage without version bumps in their cabal files. Fortunately, stack deals very well with situations like this, in which minor changes to some dependency are needed. I simply forked the dependencies on GitHub, pushed the version bumps to my forks and referenced the commits in the <em>remote</em> GitHub repository in <code>stack.yaml</code>. A typical entry for a Git commit in the <code>packages</code> section looks like this:</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">-</span> <span class="fu">location:</span>
-    <span class="fu">git:</span><span class="at"> https://github.com/duplode/zip-conduit</span>
-    <span class="fu">commit:</span><span class="at"> 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d</span>
-  <span class="fu">extra-dep:</span><span class="at"> true</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">-</span> <span class="fu">location:</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">    <span class="fu">git:</span><span class="at"> https://github.com/duplode/zip-conduit</span></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">    <span class="fu">commit:</span><span class="at"> 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">  <span class="fu">extra-dep:</span><span class="at"> true</span></a></code></pre></div>
 <p>Keeping customised dependencies in public remote repositories is an excellent solution. It enables users to build the package without further intervention without requiring developers to clumsily bundle the source tree of the dependencies with the project, or waiting for a pull request to be accepted upstream and reach Hackage.</p>
 <p>With the two tricky extra dependencies being offloaded to Git repositories, the next step was using <code>stack solver</code> to figure out the rest of them:</p>
 <pre><code>$ stack solver --modify-stack-yaml
@@ -54,24 +55,24 @@ extra-deps:
 - websockets-snap-0.9.2.0
 Updated /home/duplode/Development/stunts/diagrams/stack.yaml</code></pre>
 <p>Here is the final <code>stack.yaml</code>:</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">flags:</span>
-  <span class="fu">stunts-cartography:</span>
-    <span class="fu">repldump2carto:</span><span class="at"> true</span>
-<span class="fu">packages:</span>
-<span class="kw">-</span> <span class="st">'.'</span>
-<span class="kw">-</span> <span class="fu">location:</span>
-    <span class="fu">git:</span><span class="at"> https://github.com/duplode/zip-conduit</span>
-    <span class="fu">commit:</span><span class="at"> 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d</span>
-  <span class="fu">extra-dep:</span><span class="at"> true</span>
-<span class="kw">-</span> <span class="fu">location:</span>
-    <span class="fu">git:</span><span class="at"> https://github.com/duplode/threepenny-gui</span>
-    <span class="fu">commit:</span><span class="at"> 2dd88e893f09e8e31378f542a9cd253cc009a2c5</span>
-  <span class="fu">extra-dep:</span><span class="at"> true</span>
-<span class="fu">extra-deps:</span>
-<span class="kw">-</span> parsec-permutation-0.1.2.0
-<span class="kw">-</span> websockets-snap-0.9.2.0
-<span class="fu">resolver:</span><span class="at"> lts-2.19</span></code></pre></div>
-<p><code>repldump2carto</code> is a flag defined in the cabal file. It is used to build a secondary executable. Beyond demonstrating how the <code>flags</code> section of <code>stack.yaml</code> works, I added it because <code>stack ghci</code> expects all possible build targets to have been built <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="fu">flags:</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">  <span class="fu">stunts-cartography:</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">    <span class="fu">repldump2carto:</span><span class="at"> true</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="fu">packages:</span></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="kw">-</span> <span class="st">'.'</span></a>
+<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="kw">-</span> <span class="fu">location:</span></a>
+<a class="sourceLine" id="cb4-7" data-line-number="7">    <span class="fu">git:</span><span class="at"> https://github.com/duplode/zip-conduit</span></a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">    <span class="fu">commit:</span><span class="at"> 1eefc8bd91d5f38b760bce1fb8dd16d6e05a671d</span></a>
+<a class="sourceLine" id="cb4-9" data-line-number="9">  <span class="fu">extra-dep:</span><span class="at"> true</span></a>
+<a class="sourceLine" id="cb4-10" data-line-number="10"><span class="kw">-</span> <span class="fu">location:</span></a>
+<a class="sourceLine" id="cb4-11" data-line-number="11">    <span class="fu">git:</span><span class="at"> https://github.com/duplode/threepenny-gui</span></a>
+<a class="sourceLine" id="cb4-12" data-line-number="12">    <span class="fu">commit:</span><span class="at"> 2dd88e893f09e8e31378f542a9cd253cc009a2c5</span></a>
+<a class="sourceLine" id="cb4-13" data-line-number="13">  <span class="fu">extra-dep:</span><span class="at"> true</span></a>
+<a class="sourceLine" id="cb4-14" data-line-number="14"><span class="fu">extra-deps:</span></a>
+<a class="sourceLine" id="cb4-15" data-line-number="15"><span class="kw">-</span> parsec-permutation-0.1.2.0</a>
+<a class="sourceLine" id="cb4-16" data-line-number="16"><span class="kw">-</span> websockets-snap-0.9.2.0</a>
+<a class="sourceLine" id="cb4-17" data-line-number="17"><span class="fu">resolver:</span><span class="at"> lts-2.19</span></a></code></pre></div>
+<p><code>repldump2carto</code> is a flag defined in the cabal file. It is used to build a secondary executable. Beyond demonstrating how the <code>flags</code> section of <code>stack.yaml</code> works, I added it because <code>stack ghci</code> expects all possible build targets to have been built <a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>.</p>
 <p>As I have GHC 7.10.1 from my Linux distribution and the LTS 2.19 snapshot is made for GHC 7.8.4, I needed <code>stack setup</code> as an additional step. That command locally installs (in <code>~/.stack</code>) the GHC version required by the chosen snapshot.</p>
 <p>That pretty much concludes the migration. All that is left is demonstrating: <code>stack build</code> to compile the project…</p>
 <pre><code>$ stack build
@@ -90,29 +91,29 @@ stunts-cartography-0.4.0.3: build
 stunts-cartography-0.4.0.3: install
 Completed all 64 actions.</code></pre>
 <p>… <code>stack ghci</code> to play with it in GHCi…</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">$</span> stack ghci
-<span class="dt">Configuring</span> <span class="dt">GHCi</span> with the following packages<span class="fu">:</span> stunts<span class="fu">-</span>cartography
-<span class="dt">GHCi</span>, version <span class="fl">7.8</span><span class="fu">.</span><span class="dv">4</span><span class="fu">:</span> http<span class="fu">://</span>www<span class="fu">.</span>haskell<span class="fu">.</span>org<span class="fu">/</span>ghc<span class="fu">/</span>  <span class="fu">:?</span> for help
-<span class="dt">Loading</span> package ghc<span class="fu">-</span>prim <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span>
-<span class="dt">Loading</span> package integer<span class="fu">-</span>gmp <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span>
-<span class="dt">Loading</span> package base <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span>
-<span class="co">-- etc.</span>
-<span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">GameState</span>, <span class="dt">Annotation</span>, <span class="dt">Types.Diagrams</span>, <span class="dt">Pics</span>,
-<span class="dt">Pics.MM</span>, <span class="dt">Annotation.Flipbook</span>, <span class="dt">Annotation.LapTrace</span>,
-<span class="dt">Annotation.LapTrace.Vec</span>, <span class="dt">Annotation.LapTrace.Parser.Simple</span>,
-<span class="dt">Annotation.Parser</span>, <span class="dt">Types.CartoM</span>, <span class="dt">Parameters</span>, <span class="dt">Composition</span>, <span class="dt">Track</span>,
-<span class="dt">Util.Misc</span>, <span class="dt">Pics.Palette</span>, <span class="dt">Output</span>, <span class="dt">Util.ByteString</span>, <span class="dt">Util.ZipConduit</span>,
-<span class="dt">Replay</span>, <span class="dt">Paths</span>, <span class="dt">Util.Reactive.Threepenny</span>, <span class="dt">Util.Threepenny.Alertify</span>,
-<span class="dt">Widgets.BoundedInput</span><span class="fu">.</span>
-<span class="fu">*</span><span class="dt">GameState</span><span class="fu">&gt;</span> <span class="fu">:</span>l src<span class="fu">/</span>Viewer.hs <span class="co">-- The Main module.</span>
-<span class="co">-- etc.</span>
-<span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> <span class="fu">:</span>main
-<span class="dt">Welcome</span> to <span class="dt">Stunts</span> <span class="dt">Cartography</span><span class="fu">.</span>
-<span class="dt">Open</span> your web browser and navigate to localhost<span class="fu">:</span><span class="dv">10000</span> to begin<span class="fu">.</span>
-
-<span class="dt">Listening</span> on http<span class="fu">://</span><span class="fl">127.0</span><span class="fu">.</span><span class="fl">0.1</span><span class="fu">:</span><span class="dv">10000</span><span class="fu">/</span>
-[<span class="dv">27</span><span class="fu">/</span><span class="dt">Jul</span><span class="fu">/</span><span class="dv">2015</span><span class="fu">:</span><span class="dv">00</span><span class="fu">:</span><span class="dv">55</span><span class="fu">:</span><span class="dv">11</span> <span class="fu">-</span><span class="dv">0300</span>] Server.httpServe<span class="fu">:</span> <span class="dt">START</span>, binding to
-[http<span class="fu">://</span><span class="fl">127.0</span><span class="fu">.</span><span class="fl">0.1</span><span class="fu">:</span><span class="dv">10000</span><span class="fu">/</span>]</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="fu">$</span> stack ghci</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="dt">Configuring</span> <span class="dt">GHCi</span> with the following packages<span class="fu">:</span> stunts<span class="fu">-</span>cartography</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="dt">GHCi</span>, version <span class="fl">7.8</span><span class="fu">.</span><span class="dv">4</span><span class="fu">:</span> http<span class="fu">://</span>www<span class="fu">.</span>haskell<span class="fu">.</span>org<span class="fu">/</span>ghc<span class="fu">/</span>  <span class="fu">:?</span> for help</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="dt">Loading</span> package ghc<span class="fu">-</span>prim <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="dt">Loading</span> package integer<span class="fu">-</span>gmp <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span></a>
+<a class="sourceLine" id="cb6-6" data-line-number="6"><span class="dt">Loading</span> package base <span class="fu">...</span> linking <span class="fu">...</span> done<span class="fu">.</span></a>
+<a class="sourceLine" id="cb6-7" data-line-number="7"><span class="co">-- etc.</span></a>
+<a class="sourceLine" id="cb6-8" data-line-number="8"><span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">GameState</span>, <span class="dt">Annotation</span>, <span class="dt">Types.Diagrams</span>, <span class="dt">Pics</span>,</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9"><span class="dt">Pics.MM</span>, <span class="dt">Annotation.Flipbook</span>, <span class="dt">Annotation.LapTrace</span>,</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10"><span class="dt">Annotation.LapTrace.Vec</span>, <span class="dt">Annotation.LapTrace.Parser.Simple</span>,</a>
+<a class="sourceLine" id="cb6-11" data-line-number="11"><span class="dt">Annotation.Parser</span>, <span class="dt">Types.CartoM</span>, <span class="dt">Parameters</span>, <span class="dt">Composition</span>, <span class="dt">Track</span>,</a>
+<a class="sourceLine" id="cb6-12" data-line-number="12"><span class="dt">Util.Misc</span>, <span class="dt">Pics.Palette</span>, <span class="dt">Output</span>, <span class="dt">Util.ByteString</span>, <span class="dt">Util.ZipConduit</span>,</a>
+<a class="sourceLine" id="cb6-13" data-line-number="13"><span class="dt">Replay</span>, <span class="dt">Paths</span>, <span class="dt">Util.Reactive.Threepenny</span>, <span class="dt">Util.Threepenny.Alertify</span>,</a>
+<a class="sourceLine" id="cb6-14" data-line-number="14"><span class="dt">Widgets.BoundedInput</span><span class="fu">.</span></a>
+<a class="sourceLine" id="cb6-15" data-line-number="15"><span class="fu">*</span><span class="dt">GameState</span><span class="fu">&gt;</span> <span class="fu">:</span>l src<span class="fu">/</span>Viewer.hs <span class="co">-- The Main module.</span></a>
+<a class="sourceLine" id="cb6-16" data-line-number="16"><span class="co">-- etc.</span></a>
+<a class="sourceLine" id="cb6-17" data-line-number="17"><span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> <span class="fu">:</span>main</a>
+<a class="sourceLine" id="cb6-18" data-line-number="18"><span class="dt">Welcome</span> to <span class="dt">Stunts</span> <span class="dt">Cartography</span><span class="fu">.</span></a>
+<a class="sourceLine" id="cb6-19" data-line-number="19"><span class="dt">Open</span> your web browser and navigate to localhost<span class="fu">:</span><span class="dv">10000</span> to begin<span class="fu">.</span></a>
+<a class="sourceLine" id="cb6-20" data-line-number="20"></a>
+<a class="sourceLine" id="cb6-21" data-line-number="21"><span class="dt">Listening</span> on http<span class="fu">://</span><span class="fl">127.0</span><span class="fu">.</span><span class="fl">0.1</span><span class="fu">:</span><span class="dv">10000</span><span class="fu">/</span></a>
+<a class="sourceLine" id="cb6-22" data-line-number="22">[<span class="dv">27</span><span class="fu">/</span><span class="dt">Jul</span><span class="fu">/</span><span class="dv">2015</span><span class="fu">:</span><span class="dv">00</span><span class="fu">:</span><span class="dv">55</span><span class="fu">:</span><span class="dv">11</span> <span class="fu">-</span><span class="dv">0300</span>] Server.httpServe<span class="fu">:</span> <span class="dt">START</span>, binding to</a>
+<a class="sourceLine" id="cb6-23" data-line-number="23">[http<span class="fu">://</span><span class="fl">127.0</span><span class="fu">.</span><span class="fl">0.1</span><span class="fu">:</span><span class="dv">10000</span><span class="fu">/</span>]</a></code></pre></div>
 <p>… and looking at the build output in the depths of <code>.stack-work</code>:</p>
 <pre><code>$ .stack-work/dist/x86_64-linux/Cabal-1.18.1.5/build/sc-trk-viewer/sc-trk-viewer
 Welcome to Stunts Cartography 0.4.0.3.
@@ -126,13 +127,13 @@ Listening on http://127.0.0.1:10000/
 <section class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p>As a broader point, it just seems polite to, when possible, pick a LTS snapshot over than a nightly for a public project. It is more likely that those interested in building your project already have a specific LTS rather than an arbitrary nightly.<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>That being so, a more natural arrangement would be treating <code>repldump2carto</code> as a full-blown subproject by giving it its own cabal file and adding it to the <code>packages</code> section. I would then be able to load only the main project in GHCi with <code>stack ghci stunts-cartography</code>.<a href="#fnref2">↩</a></p></li>
+<li id="fn1"><p>As a broader point, it just seems polite to, when possible, pick a LTS snapshot over than a nightly for a public project. It is more likely that those interested in building your project already have a specific LTS rather than an arbitrary nightly.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn2"><p>That being so, a more natural arrangement would be treating <code>repldump2carto</code> as a full-blown subproject by giving it its own cabal file and adding it to the <code>packages</code> section. I would then be able to load only the main project in GHCi with <code>stack ghci stunts-cartography</code>.<a href="#fnref2" class="footnote-back">↩</a></p></li>
 </ol>
 </section>
 
-<div id="comment-nav" class="pure-g-r">
-  <div class="pure-u-1-5">
+<div id="comment-nav" class="pure-g-r no-print">
+  <div class="pure-u-1-4">
     
       <div class="reddit-button">
 <script type="text/javascript" src="//www.reddit.com/static/button/button1.js">
@@ -143,14 +144,14 @@ Listening on http://127.0.0.1:10000/
 
     
   </div>
-  <div class="pure-u-1-5">
+  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/7">Comment on GitHub</a>
 
     
       
     
   </div>
-  <div class="pure-u-3-5">
+  <div class="pure-u-3-4">
   </div>
 </div>
 
@@ -172,7 +173,7 @@ Listening on http://127.0.0.1:10000/
 
 
           </div>
-          <div id="footer">
+          <div id="footer" class="no-print">
             <p>Powered by <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
           </div>
         </div>
