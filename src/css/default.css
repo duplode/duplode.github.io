@@ -1,6 +1,7 @@
 body {
     color: black;
     font-size: 16px;
+    font-size: 1.0rem;
     max-width: 960px;
 }
 
@@ -11,6 +12,11 @@ div#header {
     padding: 12px 0px 12px 0px;
 }
 */
+div#content {
+    margin-right: 1em;
+    max-width: 720px;
+    max-width: 45rem;
+}
 
 div#navigation {
     text-align: right;
@@ -96,3 +102,30 @@ div.info {
     font-style: italic;
 }
 */
+
+@media print {
+    .no-print {
+        display: none;
+    }
+
+    div#content {
+        position: absolute;
+    }
+}
+
+@media (max-width: 767px) {
+    div#navigation {
+        position: static;
+        text-align: center;
+    }
+
+    div#navigation > .pure-menu.pure-menu-open > ul > li {
+        display: inline-block;
+        zoom: 1;
+        *display: inline;
+    }
+
+    div#content {
+        margin-left: 1em;
+    }
+}
