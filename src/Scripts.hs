@@ -16,7 +16,7 @@ import Turtle
 
 deploy :: SiteBuilders -> H.Configuration -> IO ExitCode
 deploy builders conf =
-    echoOK "Rebuilding and deploying site...\n"
+    echoOK "Rebuilding and deploying site..."
     -- Builds the site and creates issue-threads.
     .&&. withArgs ["rebuild"]
        (liftA2 (>>) theSiteRules ghIssuesRules builders
