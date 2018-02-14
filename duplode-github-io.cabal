@@ -21,15 +21,16 @@ executable duplode-github-io
                      , IssueThread
   -- other-extensions:    
   build-depends:       base >= 4.8 && < 5
-                     , hakyll >= 4.9 && < 4.10
+                     , hakyll >= 4.9 && < 4.11
                      , pandoc
                      , skylighting
                      , filepath >= 1.4
-                     , turtle >= 1.3 && < 1.4
+                     , turtle >= 1.3 && < 1.6
                      , managed
                      , binary >= 0.7
-                     , github >= 0.15 && < 0.16
+                     , github >= 0.15 && < 0.19
                      , mtl
                      , vector
   hs-source-dirs:      src
   default-language:    Haskell2010
+

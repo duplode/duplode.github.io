@@ -5,6 +5,7 @@
 module Main where
 
 import System.FilePath (takeFileName)
+import qualified GHC.IO.Encoding as E
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe, isNothing)
 import Control.Monad (filterM)
@@ -27,11 +28,8 @@ hakyllConfig = defaultConfiguration
         , Scr.ghIssuesRules = ghIssues
         }
 
-ourPandocWriterOptions :: WriterOptions
-ourPandocWriterOptions = defaultHakyllWriterOptions{ writerHtml5 = True }
-
 tocPandocWriterOptions :: WriterOptions
-tocPandocWriterOptions = ourPandocWriterOptions
+tocPandocWriterOptions = defaultHakyllWriterOptions
     { writerTableOfContents = True
     , writerTemplate = Just ("$toc$\n$body$")
     }
@@ -42,7 +40,7 @@ processWithPandoc = processWithPandoc' False
 processWithPandoc' :: Bool -> Item String -> Compiler (Item String)
 processWithPandoc' withToc =
     renderPandocWith defaultHakyllReaderOptions
-        (if withToc then tocPandocWriterOptions else ourPandocWriterOptions)
+        (if withToc then tocPandocWriterOptions else defaultHakyllWriterOptions)
 
 pandocCompilerOfOurs :: Compiler (Item String)
 pandocCompilerOfOurs = pandocCompilerOfOurs' False
@@ -50,7 +48,7 @@ pandocCompilerOfOurs = pandocCompilerOfOurs' False
 pandocCompilerOfOurs' :: Bool -> Compiler (Item String)
 pandocCompilerOfOurs' withToc =
     pandocCompilerWith defaultHakyllReaderOptions $
-        if withToc then tocPandocWriterOptions else ourPandocWriterOptions
+        if withToc then tocPandocWriterOptions else defaultHakyllWriterOptions
 
 rssConfig :: FeedConfiguration
 rssConfig = FeedConfiguration
@@ -113,7 +111,9 @@ allPosts = (plainPosts .||. literatePosts)
 
 --------------------------------------------------------------------------------
 main :: IO ()
-main = hakyllWith hakyllConfig theSite
+main = do
+    E.setLocaleEncoding E.utf8
+    hakyllWith hakyllConfig theSite
 
 theSite :: Rules ()
 theSite = do

@@ -15,3 +15,5 @@ cabal.config
 .stack-work
 
 #*#
+
+*.exe
