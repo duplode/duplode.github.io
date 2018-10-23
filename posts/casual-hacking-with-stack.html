@@ -60,11 +60,11 @@ Lib.hs
 ./test:
 Spec.hs</code></pre>
 <p>Of particular interest is the <code>stack.yaml</code> file, which holds the settings for the local stack environment. We will talk more about it soon.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="fu">packages:</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">-</span> <span class="st">'.'</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="fu">extra-deps:</span><span class="at"> </span><span class="kw">[]</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="fu">resolver:</span><span class="at"> nightly-2015-07-19</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="fu">packages:</span></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="kw">-</span> <span class="st">'.'</span></a>
+<a class="sourceLine" id="cb3-4" title="4"><span class="fu">extra-deps:</span><span class="at"> </span><span class="kw">[]</span></a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="fu">resolver:</span><span class="at"> nightly-2015-07-19</span></a></code></pre></div>
 <p>As for the default <code>new-template.cabal</code> file, you can use its <code>build-depends</code> section to keep track of what you are installing. That will make <code>stack build</code> (the command which builds the current project without installing it) to download and install any dependencies you add to the cabal file automatically. Besides that, having the installed packages noted down may prove useful in case you need to reproduce your configuration elsewhere <a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>. If your experiments become a real project, you can clean up the <code>build-depends</code> without losing track of the packages you installed for testing purposes by moving their entries to a second cabal file, kept in a subdirectory:</p>
 <pre><code>$ mkdir xp
 $ cp new-template.cabal xp/xp.cabal
@@ -73,9 +73,9 @@ $ cd xp
 $ vi Dummy.hs # module Dummy where &lt;END OF FILE&gt;
 $ vi xp.cabal # Adjust accordingly, and list your extra deps.</code></pre>
 <p>You also need to tell stack about this fake subproject. All it takes is adding an entry for the subdirectory in <code>stack.yaml</code>:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="fu">packages:</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="kw">-</span> <span class="st">'.'</span> <span class="co"># The default entry.</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">-</span> <span class="st">'xp'</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" title="1"><span class="fu">packages:</span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="kw">-</span> <span class="st">'.'</span> <span class="co"># The default entry.</span></a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="kw">-</span> <span class="st">'xp'</span></a></code></pre></div>
 <p>With the initial setup done, we use <code>stack build</code> to compile the projects:</p>
 <pre><code>$ stack build
 new-template-0.1.0.0: configure
@@ -91,34 +91,34 @@ xp-0.1.0.0: install
 Completed all 3 actions.</code></pre>
 <p>In this test run, I added <code>fmlist</code> as a dependency of the fake package <code>xp</code>, and so it was automatically installed by stack. The output of <code>stack build</code> goes to a <code>.stack-work</code> subdirectory.</p>
 <p>With the packages built, we can use GHCi in the stack environment with <code>stack ghci</code>. It loads the library source files of the current project by default:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="fu">$</span> stack ghci</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="dt">Configuring</span> <span class="dt">GHCi</span> with the following packages<span class="fu">:</span> new<span class="fu">-</span>template, xp</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="dt">GHCi</span>, version <span class="fl">7.10</span><span class="fu">.</span><span class="dv">1</span><span class="fu">:</span> http<span class="fu">://</span>www<span class="fu">.</span>haskell<span class="fu">.</span>org<span class="fu">/</span>ghc<span class="fu">/</span>  <span class="fu">:?</span> for help</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (</a>
-<a class="sourceLine" id="cb7-5" data-line-number="5"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>src<span class="fu">/</span>Lib.hs, interpreted )</a>
-<a class="sourceLine" id="cb7-6" data-line-number="6">[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Dummy</span>            (</a>
-<a class="sourceLine" id="cb7-7" data-line-number="7"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>xp<span class="fu">/</span>Dummy.hs, interpreted )</a>
-<a class="sourceLine" id="cb7-8" data-line-number="8"><span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Dummy</span>, <span class="dt">Lib</span><span class="fu">.</span></a>
-<a class="sourceLine" id="cb7-9" data-line-number="9"><span class="fu">*</span><span class="dt">Lib</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.FMList</span> <span class="kw">as</span> <span class="dt">F</span> <span class="co">-- Which we have just installed.</span></a>
-<a class="sourceLine" id="cb7-10" data-line-number="10"><span class="fu">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="fu">&gt;</span> <span class="co">-- We can also load executables specified in the cabal file.</span></a>
-<a class="sourceLine" id="cb7-11" data-line-number="11"><span class="fu">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="fu">&gt;</span> <span class="fu">:</span>l <span class="dt">Main</span></a>
-<a class="sourceLine" id="cb7-12" data-line-number="12">[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (</a>
-<a class="sourceLine" id="cb7-13" data-line-number="13"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>src<span class="fu">/</span>Lib.hs, interpreted )</a>
-<a class="sourceLine" id="cb7-14" data-line-number="14">[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Main</span>             (</a>
-<a class="sourceLine" id="cb7-15" data-line-number="15"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>app<span class="fu">/</span>Main.hs, interpreted )</a>
-<a class="sourceLine" id="cb7-16" data-line-number="16"><span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Lib</span>, <span class="dt">Main</span><span class="fu">.</span></a>
-<a class="sourceLine" id="cb7-17" data-line-number="17"><span class="fu">*</span><span class="dt">Main</span> <span class="dt">F</span><span class="fu">&gt;</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="fu">$</span> stack ghci</a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="dt">Configuring</span> <span class="dt">GHCi</span> with the following packages<span class="fu">:</span> new<span class="fu">-</span>template, xp</a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="dt">GHCi</span>, version <span class="fl">7.10</span><span class="fu">.</span><span class="dv">1</span><span class="fu">:</span> http<span class="fu">://</span>www<span class="fu">.</span>haskell<span class="fu">.</span>org<span class="fu">/</span>ghc<span class="fu">/</span>  <span class="fu">:?</span> for help</a>
+<a class="sourceLine" id="cb7-4" title="4">[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (</a>
+<a class="sourceLine" id="cb7-5" title="5"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>src<span class="fu">/</span>Lib.hs, interpreted )</a>
+<a class="sourceLine" id="cb7-6" title="6">[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Dummy</span>            (</a>
+<a class="sourceLine" id="cb7-7" title="7"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>xp<span class="fu">/</span>Dummy.hs, interpreted )</a>
+<a class="sourceLine" id="cb7-8" title="8"><span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Dummy</span>, <span class="dt">Lib</span><span class="fu">.</span></a>
+<a class="sourceLine" id="cb7-9" title="9"><span class="fu">*</span><span class="dt">Lib</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.FMList</span> <span class="kw">as</span> <span class="dt">F</span> <span class="co">-- Which we have just installed.</span></a>
+<a class="sourceLine" id="cb7-10" title="10"><span class="fu">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="fu">&gt;</span> <span class="co">-- We can also load executables specified in the cabal file.</span></a>
+<a class="sourceLine" id="cb7-11" title="11"><span class="fu">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="fu">&gt;</span> <span class="fu">:</span>l <span class="dt">Main</span></a>
+<a class="sourceLine" id="cb7-12" title="12">[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (</a>
+<a class="sourceLine" id="cb7-13" title="13"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>src<span class="fu">/</span>Lib.hs, interpreted )</a>
+<a class="sourceLine" id="cb7-14" title="14">[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Main</span>             (</a>
+<a class="sourceLine" id="cb7-15" title="15"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>app<span class="fu">/</span>Main.hs, interpreted )</a>
+<a class="sourceLine" id="cb7-16" title="16"><span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Lib</span>, <span class="dt">Main</span><span class="fu">.</span></a>
+<a class="sourceLine" id="cb7-17" title="17"><span class="fu">*</span><span class="dt">Main</span> <span class="dt">F</span><span class="fu">&gt;</span></a></code></pre></div>
 <p>Dependencies not in Stackage have to be specified in <code>stack.yaml</code> as well as in the cabal files, so that stack can manage them too. Alternative sources of packages include source trees in subdirectories of the project, Hackage and remote Git repositories <a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="fu">packages:</span></a>
-<a class="sourceLine" id="cb8-3" data-line-number="3"><span class="kw">-</span> <span class="st">'.'</span></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="kw">-</span> <span class="st">'xp'</span></a>
-<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="kw">-</span> <span class="fu">location:</span><span class="at"> deps/acme-missiles-0.3 </span><span class="co"># Sources in a subdirectory.</span></a>
-<a class="sourceLine" id="cb8-6" data-line-number="6">  <span class="fu">extra-dep:</span><span class="at"> true </span><span class="co"># Mark as dep, i.e. not part of the project proper.</span></a>
-<a class="sourceLine" id="cb8-7" data-line-number="7"><span class="fu">extra-deps:</span></a>
-<a class="sourceLine" id="cb8-8" data-line-number="8"><span class="kw">-</span> acme-safe-0.1.0.0 <span class="co"># From Hackage.</span></a>
-<a class="sourceLine" id="cb8-9" data-line-number="9"><span class="kw">-</span> acme-dont-1.1 <span class="co"># Also from Hackage, dependency of acme-safe.</span></a>
-<a class="sourceLine" id="cb8-10" data-line-number="10"><span class="fu">resolver:</span><span class="at"> nightly-2015-07-19</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb8-1" title="1"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span></a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="fu">packages:</span></a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="kw">-</span> <span class="st">'.'</span></a>
+<a class="sourceLine" id="cb8-4" title="4"><span class="kw">-</span> <span class="st">'xp'</span></a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="kw">-</span> <span class="fu">location:</span><span class="at"> deps/acme-missiles-0.3 </span><span class="co"># Sources in a subdirectory.</span></a>
+<a class="sourceLine" id="cb8-6" title="6">  <span class="fu">extra-dep:</span><span class="at"> </span><span class="ch">true</span><span class="at"> </span><span class="co"># Mark as dep, i.e. not part of the project proper.</span></a>
+<a class="sourceLine" id="cb8-7" title="7"><span class="fu">extra-deps:</span></a>
+<a class="sourceLine" id="cb8-8" title="8"><span class="kw">-</span> acme-safe-0.1.0.0 <span class="co"># From Hackage.</span></a>
+<a class="sourceLine" id="cb8-9" title="9"><span class="kw">-</span> acme-dont-1.1 <span class="co"># Also from Hackage, dependency of acme-safe.</span></a>
+<a class="sourceLine" id="cb8-10" title="10"><span class="fu">resolver:</span><span class="at"> nightly-2015-07-19</span></a></code></pre></div>
 <p><code>stack build</code> will then install the extra dependencies to <code>.stack-work/install</code>. You can use <code>stack solver</code> to chase the indirect dependencies introduced by them. For instance, this is its output after commenting the <code>acme-dont</code> line in the <code>stack.yaml</code> just above:</p>
 <pre><code>$ stack solver --no-modify-stack-yaml
 This command is not guaranteed to give you a perfect build plan

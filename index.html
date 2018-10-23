@@ -90,10 +90,10 @@
 
     
       <p>It is widely agreed that the laws of the <code>Applicative</code> class are not pretty to look at.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1">pure id <span class="fu">&lt;*&gt;</span> v <span class="fu">=</span> v                            <span class="co">-- identity</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">pure f <span class="fu">&lt;*&gt;</span> pure x <span class="fu">=</span> pure (f x)               <span class="co">-- homomorphism</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">u <span class="fu">&lt;*&gt;</span> pure y <span class="fu">=</span> pure (<span class="fu">$</span> y) <span class="fu">&lt;*&gt;</span> u              <span class="co">-- interchange</span></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">pure (<span class="fu">.</span>) <span class="fu">&lt;*&gt;</span> u <span class="fu">&lt;*&gt;</span> v <span class="fu">&lt;*&gt;</span> w <span class="fu">=</span> u <span class="fu">&lt;*&gt;</span> (v <span class="fu">&lt;*&gt;</span> w) <span class="co">-- composition</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">pure</span> <span class="fu">id</span> <span class="fu">&lt;*&gt;</span> v <span class="fu">=</span> v                            <span class="co">-- identity</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="fu">pure</span> f <span class="fu">&lt;*&gt;</span> <span class="fu">pure</span> x <span class="fu">=</span> <span class="fu">pure</span> (f x)               <span class="co">-- homomorphism</span></a>
+<a class="sourceLine" id="cb1-3" title="3">u <span class="fu">&lt;*&gt;</span> <span class="fu">pure</span> y <span class="fu">=</span> <span class="fu">pure</span> (<span class="fu">$</span> y) <span class="fu">&lt;*&gt;</span> u              <span class="co">-- interchange</span></a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="fu">pure</span> (<span class="fu">.</span>) <span class="fu">&lt;*&gt;</span> u <span class="fu">&lt;*&gt;</span> v <span class="fu">&lt;*&gt;</span> w <span class="fu">=</span> u <span class="fu">&lt;*&gt;</span> (v <span class="fu">&lt;*&gt;</span> w) <span class="co">-- composition</span></a></code></pre></div>
 <p>Monad laws, in comparison, not only look less odd to begin with but can also be stated in a much more elegant way in terms of Kleisli composition <code>(&lt;=&lt;)</code>. Shouldn’t there be an analogous nice presentation for <code>Applicative</code> as well? That became a static question in my mind while I was studying applicative functors many moons ago. After finding surprisingly little commentary on this issue, I decided to try figuring it out by myself. 
     
 
