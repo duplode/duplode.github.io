@@ -20,10 +20,7 @@ The site is generated using [Hakyll](http://jaspervdj.be/hakyll/).
 Build commands and scripts (all should be ran from the `sources` root
 directory):
 
-    # Installs Hakyll and other Haskell dependencies.
-    cabal install --only-dependencies
-
-    # Compiles the Hakyll executable and copies it to the sources root.
+    # Compiles the Hakyll executable.
     ./build-hs.sh
 
     # Compiles the Hakyll executable and rebuilds the site from scratch.
@@ -32,7 +29,7 @@ directory):
 
     # After compiling the Hakyll executable, builds the site incrementally.
     # See the Hakyll documentation for other commands.
-    ./duplode-github-io build
+    cabal new-run . -- build
 
     # Transfers the built site to the master root using rsync.
     # Afterwards, you should commit the updates at the master clone.
@@ -42,7 +39,7 @@ directory):
     # there and publishes to GitHub.
     # Uses a [`turtle`](https://hackage.haskell.org/package/turtle) script
     # defined in `Scripts.hs`.
-    ./duplode.github.io deploy
+    cabal new-run . -- deploy
 
 Repository layout
 -----------------
