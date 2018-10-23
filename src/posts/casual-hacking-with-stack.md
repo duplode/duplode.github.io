@@ -2,7 +2,7 @@
 title: Casual Hacking With stack
 published: 2015-07-22T23:30:00-03:00
 license: CC-BY-SA
-reddit: true
+reddit: 3e9xkn
 gh-issue: 6
 retired: true
 ---

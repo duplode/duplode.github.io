@@ -2,7 +2,7 @@
 title: "What's in a Fold: The Basic Catamorphism in recursion-schemes"
 published: 2017-03-10T06:00:00Z
 license: CC-BY-SA
-reddit: true
+reddit: 5ykjyl
 gh-issue: 12
 ---
 

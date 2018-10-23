@@ -2,7 +2,7 @@
 title: What Does fmap Preserve?
 published: 2014-06-02T06:00:00Z
 license: CC-BY-SA
-reddit: true
+reddit: 2dmfvx
 gh-issue: 2
 ---
 

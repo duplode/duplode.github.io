@@ -2,7 +2,7 @@
 title: Applicative Archery
 published: 2015-07-06T17:00:00-03:00
 license: CC-BY-SA
-reddit: true
+reddit: 3ccglr
 gh-issue: 5
 ---
 

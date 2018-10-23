@@ -2,7 +2,7 @@
 title: Migrating a Project to stack
 published: 2015-07-27T03:00:00-03:00
 license: CC-BY-SA
-reddit: true
+reddit: 3fm8vp
 gh-issue: 7
 ---
 

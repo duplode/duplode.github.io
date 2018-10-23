@@ -2,7 +2,7 @@
 title: "Traversable: A Remix"
 published: 2017-05-19T07:30:00Z
 license: CC-BY-SA
-reddit: true
+reddit: 6c2819
 gh-issue: 13
 ---
 

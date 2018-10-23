@@ -2,7 +2,7 @@
 title: Lenses You Can Make at Home
 published: 2014-04-26T12:00:00Z
 license: CC-BY-SA
-reddit: true
+reddit: 241aec
 gh-issue: 1
 ---
 

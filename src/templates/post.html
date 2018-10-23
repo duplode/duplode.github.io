@@ -2,17 +2,17 @@ $body$
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    $if(reddit-alt)$
-    $else$
-      $reddit-button$
-    $endif$
-  </div>
-  <div class="pure-u-1-4">
     $gh-comments-button$
     $if(reddit)$
       $if(reddit-alt)$
         (see <a href="$reddit-alt$#comment-nav">the full post</a> for a reddit link)
       $endif$
+    $endif$
+  </div>
+  <div class="pure-u-1-4">
+    $if(reddit-alt)$
+    $else$
+      $reddit-button$
     $endif$
   </div>
   <div class="pure-u-3-4">

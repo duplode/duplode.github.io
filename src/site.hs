@@ -73,10 +73,18 @@ licenseInfoCtx = field "license-info" $ \it -> do
         Just "CC-BY-SA" -> loadBody "fragments/cc-by-sa.html"
         _               -> return ""
 
+-- TODO: Abstract these two.
 redditCtx :: Context String
 redditCtx = field "reddit-button" $ \it -> do
-    redd <- itemIdentifier it `getMetadataField` "reddit"
-    maybe (return "") (const $ loadBody "fragments/reddit.html") redd
+    mRedd <- itemIdentifier it `getMetadataField` "reddit"
+    maybe (return "") redditFragment mRedd
+    where
+    redditBasePath = "https://reddit.com/r/haskell/comments/"
+    redditFragment redd = fmap itemBody $
+        load "fragments/reddit.html"
+        >>= applyAsTemplate (redditLinkCtx redd)
+    redditLink redd = redditBasePath ++ redd
+    redditLinkCtx redd = constField "reddit-link" $ redditLink redd
 
 ghCommentsCtx :: Context String
 ghCommentsCtx = field "gh-comments-button" $ \it -> do

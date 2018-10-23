@@ -64,16 +64,26 @@ span.inline-centered {
     text-align: center;
 }
 
-
+/* Rule for the old button. */
+/*
 div.reddit-button {
     padding-top: 0.2em;
     margin-right: 1em;
     vertical-align: middle;
 }
+*/
 
 a#gh-comments-button {
     color: white;
     background-color: #6cc644;
+    border-radius: 4px;
+    font-size: x-small;
+    font-weight: bold;
+}
+
+a#reddit-discussion-button {
+    color: white;
+    background-color: #5f99cf;
     border-radius: 4px;
     font-size: x-small;
     font-weight: bold;
