@@ -176,16 +176,16 @@
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    
-    
-  </div>
-  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/13">Comment on GitHub</a>
 
     
       
         (see <a href="posts/traversable-a-remix.html#comment-nav">the full post</a> for a reddit link)
       
+    
+  </div>
+  <div class="pure-u-1-4">
+    
     
   </div>
   <div class="pure-u-3-4">
@@ -488,16 +488,16 @@
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    
-    
-  </div>
-  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/12">Comment on GitHub</a>
 
     
       
         (see <a href="posts/whats-in-a-fold.html#comment-nav">the full post</a> for a reddit link)
       
+    
+  </div>
+  <div class="pure-u-1-4">
+    
     
   </div>
   <div class="pure-u-3-4">
@@ -613,16 +613,12 @@
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    
-    
-  </div>
-  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/9">Comment on GitHub</a>
 
     
-      
-        (see <a href="posts/casual-hacking-with-stack-reloaded.html#comment-nav">the full post</a> for a reddit link)
-      
+  </div>
+  <div class="pure-u-1-4">
+    
     
   </div>
   <div class="pure-u-3-4">
@@ -751,16 +747,16 @@ Listening on http://127.0.0.1:10000/
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    
-    
-  </div>
-  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/7">Comment on GitHub</a>
 
     
       
         (see <a href="posts/migrating-a-project-to-stack.html#comment-nav">the full post</a> for a reddit link)
       
+    
+  </div>
+  <div class="pure-u-1-4">
+    
     
   </div>
   <div class="pure-u-3-4">
@@ -898,16 +894,16 @@ extra-deps:
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    
-    
-  </div>
-  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/6">Comment on GitHub</a>
 
     
       
         (see <a href="posts/casual-hacking-with-stack.html#comment-nav">the full post</a> for a reddit link)
       
+    
+  </div>
+  <div class="pure-u-1-4">
+    
     
   </div>
   <div class="pure-u-3-4">
@@ -1033,16 +1029,16 @@ extra-deps:
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    
-    
-  </div>
-  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/5">Comment on GitHub</a>
 
     
       
         (see <a href="posts/applicative-archery.html#comment-nav">the full post</a> for a reddit link)
       
+    
+  </div>
+  <div class="pure-u-1-4">
+    
     
   </div>
   <div class="pure-u-3-4">
@@ -1171,16 +1167,16 @@ extra-deps:
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    
-    
-  </div>
-  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/2">Comment on GitHub</a>
 
     
       
         (see <a href="posts/what-does-fmap-preserve.html#comment-nav">the full post</a> for a reddit link)
       
+    
+  </div>
+  <div class="pure-u-1-4">
+    
     
   </div>
   <div class="pure-u-3-4">
@@ -1377,16 +1373,16 @@ extra-deps:
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
-    
-    
-  </div>
-  <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/1">Comment on GitHub</a>
 
     
       
         (see <a href="posts/lenses-you-can-make-at-home.html#comment-nav">the full post</a> for a reddit link)
       
+    
+  </div>
+  <div class="pure-u-1-4">
+    
     
   </div>
   <div class="pure-u-3-4">
