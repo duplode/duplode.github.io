@@ -73,18 +73,27 @@ licenseInfoCtx = field "license-info" $ \it -> do
         Just "CC-BY-SA" -> loadBody "fragments/cc-by-sa.html"
         _               -> return ""
 
--- TODO: Abstract these two.
+-- If the reddit metadata parameter is defined, link to a specific
+-- comment thread. Otherwise, rely on reddit's automagic links to
+-- submissions, which can be used to submit a post if that wasn't done
+-- yet.
 redditCtx :: Context String
 redditCtx = field "reddit-button" $ \it -> do
     mRedd <- itemIdentifier it `getMetadataField` "reddit"
-    maybe (return "") redditFragment mRedd
+    redditFragment it mRedd
     where
-    redditBasePath = "https://reddit.com/r/haskell/comments/"
-    redditFragment redd = fmap itemBody $
-        load "fragments/reddit.html"
-        >>= applyAsTemplate (redditLinkCtx redd)
-    redditLink redd = redditBasePath ++ redd
-    redditLinkCtx redd = constField "reddit-link" $ redditLink redd
+    redditFixedBasePath = "https://reddit.com/r/haskell/comments/"
+    redditBasePath = "https://reddit.com/"
+    -- Ideally this wouldn't be hardcoded.
+    blogBasePath = "https://duplode.github.io/"
+    redditFragment it mRedd = fmap itemBody $ do
+        frag <- load "fragments/reddit.html"
+        -- Copied from the urlField source code.
+        pageUrl <- fmap (maybe "" toUrl) . getRoute . itemIdentifier $ it
+        let targetUrl = case mRedd of
+                Just redd -> redditFixedBasePath ++ redd
+                Nothing -> redditBasePath ++ blogBasePath ++ pageUrl
+        applyAsTemplate (constField "reddit-link" targetUrl) frag
 
 ghCommentsCtx :: Context String
 ghCommentsCtx = field "gh-comments-button" $ \it -> do
