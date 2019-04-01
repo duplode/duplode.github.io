@@ -1,12 +1,9 @@
 ---
 title: "Idempotent Applicatives, Parametricity, and a Puzzle"
 license: CC-BY-SA
----
-
-<!--
-published: 2017-12-01T23:30:00Z
+published: 2019-04-01T02:30:00-03:00
 gh-issue: 14
--->
+---
 
 Some applicative functors are idempotent, in the sense that repeating an
 effect is the same as having it just once. An example and a
