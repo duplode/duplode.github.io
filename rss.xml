@@ -7,8 +7,247 @@
         <description><![CDATA[Haskell amusements]]></description>
         <atom:link href="http://duplode.github.io/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Fri, 19 May 2017 07:30:00 UT</lastBuildDate>
+        <lastBuildDate>Mon, 01 Apr 2019 05:30:00 UT</lastBuildDate>
         <item>
+    <title>Idempotent Applicatives, Parametricity, and a Puzzle</title>
+    <link>http://duplode.github.io/posts/idempotent-applicatives-parametricity-and-a-puzzle.html</link>
+    <description><![CDATA[<p>Some applicative functors are idempotent, in the sense that repeating an effect is the same as having it just once. An example and a counterexample are <code>Maybe</code> and <code>IO</code>, respectively (contrast <code>Just 3 *&gt; Just 3</code> with <code>print 3 *&gt; print 3</code>). More precisely, idempotency means that <code>f &lt;$&gt; u &lt;*&gt; u = (\x -&gt; f x x) &lt;$&gt; u</code>. Given the informal description I began with, though, one might wonder whether the simpler property <code>u *&gt; u = u</code>, which seems to capture the intuition about repeated effects, is equivalent to the usual idempotency property. In this post, I will tell how I went about exploring this conjecture, as well as a few things I learnt about parametricity along the way.</p>
+<div>
+
+</div>
+<!--more-->
+<p>Before I begin, a few remarks about this notion of idempotency. The earliest mention of it that I know of is in <em>Combining Monads</em>, a paper by King and Wadler <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. There, idempotent monads are presented alongside the most widely known concept of commutative monads (<code>f &lt;$&gt; u &lt;*&gt; v = flip f &lt;$&gt; v &lt;*&gt; u</code>). Both properties generalise straightforwardly to applicative functors, which has the neat side-effect of allowing myself to skirt the ambiguity of the phrase “idempotent monad” (in category theory, that usually means a monad that, in Haskell parlance, has a <code>join</code> that is an isomorphism – a meaning that mostly doesn’t show up in Haskell). Lastly, I knew of the conjecture about idempotency amounting to <code>u *&gt; u = u</code> through a Stack Overflow comment by David Feuer, and so I thank him for inspiring this post.</p>
+<h2 id="prolegomena">Prolegomena</h2>
+<p>Given we are looking into a general claim about applicatives, our first port of call are the applicative laws. Since the laws written in terms of <code>(&lt;*&gt;)</code> can be rather clunky to wield, I will switch to <a href="http://blog.ezyang.com/2012/08/applicative-functors">the monoidal presentation of <code>Applicative</code></a>:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="co">-- fzip and unit are equivalent in power to (&lt;*&gt;) and pure.</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="ot">fzip ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (f a, f b) <span class="ot">-&gt;</span> f (a, b)</a>
+<a class="sourceLine" id="cb1-3" title="3">fzip (u, v) <span class="fu">=</span> (,) <span class="fu">&lt;$&gt;</span> u <span class="fu">&lt;*&gt;</span> v</a>
+<a class="sourceLine" id="cb1-4" title="4"></a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="ot">unit ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> f ()</a>
+<a class="sourceLine" id="cb1-6" title="6">unit <span class="fu">=</span> <span class="fu">pure</span> ()</a></code></pre></div>
+<p>Note I am using an uncurried version of <code>fzip</code>, as I feel it makes what follows slightly easier to explain. I will also introduce a couple teensy little combinators so that the required tuple shuffling becomes easier on the eye:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">app ::</span> (a <span class="ot">-&gt;</span> b, a) <span class="ot">-&gt;</span> b</a>
+<a class="sourceLine" id="cb2-2" title="2">app (f, x) <span class="fu">=</span> f x</a>
+<a class="sourceLine" id="cb2-3" title="3"></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="ot">dup ::</span> a <span class="ot">-&gt;</span> (a, a)</a>
+<a class="sourceLine" id="cb2-5" title="5">dup x <span class="fu">=</span> (x, x)</a>
+<a class="sourceLine" id="cb2-6" title="6"></a>
+<a class="sourceLine" id="cb2-7" title="7"><span class="co">{-</span></a>
+<a class="sourceLine" id="cb2-8" title="8"><span class="co">I will also use the Bifunctor methods for pairs, which amount to:</span></a>
+<a class="sourceLine" id="cb2-9" title="9"></a>
+<a class="sourceLine" id="cb2-10" title="10"><span class="co">bimap f g (x, y) = (f x, g y)</span></a>
+<a class="sourceLine" id="cb2-11" title="11"><span class="co">first f = bimap f id</span></a>
+<a class="sourceLine" id="cb2-12" title="12"><span class="co">second g = bimap id g</span></a>
+<a class="sourceLine" id="cb2-13" title="13"><span class="co">-}</span></a>
+<a class="sourceLine" id="cb2-14" title="14"><span class="co">--</span></a></code></pre></div>
+<p>The converse definitions of <code>pure</code> and <code>(&lt;*&gt;)</code> in terms of <code>unit</code> and <code>fzip</code> would be:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1">u <span class="fu">&lt;*&gt;</span> v <span class="fu">=</span> app <span class="fu">&lt;$&gt;</span> fzip (u, v)</a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="fu">pure</span> x <span class="fu">=</span> <span class="fu">const</span> x <span class="fu">&lt;$&gt;</span> unit</a></code></pre></div>
+<p>Using that vocabulary, the applicative laws become:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="co">-- &quot;~&quot; here means &quot;the same up to a relevant isomorphism&quot;</span></a>
+<a class="sourceLine" id="cb4-2" title="2">fzip (u, unit) <span class="fu">~</span> u <span class="co">-- up to pairing with ()</span></a>
+<a class="sourceLine" id="cb4-3" title="3">fzip (unit, u) <span class="fu">~</span> u <span class="co">-- up to pairing with ()</span></a>
+<a class="sourceLine" id="cb4-4" title="4">fzip (fzip (u, v), w) <span class="fu">~</span> fzip (u, fzip (v, w)) <span class="co">-- up to reassociating pairs</span></a></code></pre></div>
+<p>As for the idempotency property, it can be expressed as:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1">fzip (u, u) <span class="fu">=</span> dup <span class="fu">&lt;$&gt;</span> u <span class="co">-- fzip . dup = fmap dup</span></a></code></pre></div>
+<p><code>(*&gt;)</code> and its sibling <code>(&lt;*)</code> become:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1">u <span class="fu">&lt;*</span> v <span class="fu">=</span> <span class="fu">fst</span> <span class="fu">&lt;$&gt;</span> fzip (u, v)</a>
+<a class="sourceLine" id="cb6-2" title="2">u <span class="fu">*&gt;</span> v <span class="fu">=</span> <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (u, v)</a></code></pre></div>
+<p>(Proofs of the claims just above can be found at the appendix at the end of this post.)</p>
+<p>Finally, the conjecture amounts to:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (u, u) <span class="fu">=</span> u <span class="co">-- u *&gt; u = u</span></a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="co">-- Is equivalent to...</span></a>
+<a class="sourceLine" id="cb7-3" title="3">fzip (u, u) <span class="fu">=</span> dup <span class="fu">&lt;$&gt;</span> u <span class="co">-- idempotency</span></a></code></pre></div>
+<p>That <code>fzip (u, u) = dup &lt;$&gt; u</code> implies <code>snd &lt;$&gt; fzip (u, u)</code> is immediate, as <code>snd . dup = id</code>. Our goal, then, is getting <code>fzip (u, u) = dup &lt;$&gt; u</code> out of <code>snd &lt;$&gt; fzip (u, u) = u</code>.</p>
+<h2 id="drawing-relations">Drawing relations</h2>
+<p>How might we get from <code>snd &lt;$&gt; fzip (u, u) = u</code> to <code>fzip (u, u) = dup &lt;$&gt; u</code>? It appears we have to take a fact about the second components of the pairs in <code>fzip (u, u)</code> (note that mapping <code>snd</code> discards the first components) and squeeze something about the first components out of it (namely, that they are equal to the second components everywhere). At first glance, it doesn’t appear the applicative laws connect the components in any obviously exploitable way. The one glimmer of hope lies in how, in the associativity law…</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1">fzip (fzip (u, v), w) <span class="fu">~</span> fzip (u, fzip (v, w)) <span class="co">-- up to reassociating pairs</span></a></code></pre></div>
+<p>… whatever values originally belonging to <code>v</code> must show up as second components of pairs on the left hand side, and as first components on the right hand side. While that, on its own, is too vague to be actionable, there is a seemingly innocuous observation we can make use of: <code>snd &lt;$&gt; fzip (u, u) = u</code> tells us we can turn <code>fzip (u, u)</code> into <code>u</code> using <code>fmap</code> (informally, we can say that they have the same shape), and that they can be <em>related</em> using <code>snd</code> while making use of a free theorem <a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. For our current purposes, that means we can borrow the types involved in the left side of the associativity law and use them to draw the following diagram…</p>
+<pre><code>                  fzip
+(F (a, b), F c) --------&gt; F ((a, b), c)
+     |      |                  |     |
+     |      |                  |     |
+  snd|      |id             snd|     |id 
+     |      |                  |     |
+     v      v                  v     v
+(F   b, F   c ) --------&gt; F (  b,    c)
+                  fzip</code></pre>
+<p>… such that we get the same result by following either path from the top left corner to the bottom right one. Omitting the occurrences of <code>id</code>, we can state that through this equation:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="fu">fmap</span> (first <span class="fu">snd</span>) <span class="fu">.</span> fzip <span class="fu">=</span> fzip <span class="fu">.</span> first (<span class="fu">fmap</span> <span class="fu">snd</span>)</a></code></pre></div>
+<p>In words, it doesn’t matter whether we use <code>snd</code> after or before using <code>fzip</code>. <code>fmap</code> and <code>first</code>, left implicit in the diagram, are used to lift <code>snd</code> across the applicative layer and the pairs, respectively. This is just one specific instance of the free theorem; instead of <code>snd</code> and <code>id</code>, we could have any functions – or, more generally, any relations <a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>– between the involved types. Free theorems tell us about relations being preserved; in this case, <code>snd</code> sets up a relation on the left side of the diagram, and <code>fzip</code> preserves it.</p>
+<p>We can get back to our problem by slipping in suitable concrete values in the equation. For an arbitrary <code>u :: F A</code>, we have…</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1">first <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (fzip (u, u), u) <span class="fu">=</span> fzip (<span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (u, u), u)</a></code></pre></div>
+<p>… and, thanks to our <code>snd &lt;$&gt; fzip (u, u) = u</code> premise:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1">first <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (fzip (u, u), u) <span class="fu">=</span> fzip (u, u)</a></code></pre></div>
+<p>Now, why should we restrict ourselves to the left side of the associativity law? We can get a very similar diagram to work with from the right side:</p>
+<pre><code>                  fzip
+(F a, F (b, c)) --------&gt; F (a, (b, c))
+   |      |                  |    |
+   |      |                  |    |
+ id|      |snd             id|    |snd
+   |      |                  |    |
+   v      v                  v    v
+(F a, F   c   ) --------&gt; F (a,   c   )
+                  fzip</code></pre>
+<p>Or, as an equation:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="fu">fmap</span> (second <span class="fu">snd</span>) <span class="fu">.</span> fzip <span class="fu">=</span> fzip <span class="fu">.</span> second (<span class="fu">fmap</span> <span class="fu">snd</span>)</a></code></pre></div>
+<p>Proceeding just like before, we get:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1">second <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (u, fzip (u, u)) <span class="fu">=</span> fzip (u, <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (u, u))</a>
+<a class="sourceLine" id="cb15-2" title="2">second <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (u, fzip (u, u)) <span class="fu">=</span> fzip (u, u)</a></code></pre></div>
+<p>Since <code>fzip (u, fzip (u, u)) ~ fzip (fzip (u, u), u)</code> (associativity), we can shuffle that into:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="co">-- Both first fst and second snd get rid of the value in the middle.</span></a>
+<a class="sourceLine" id="cb16-2" title="2">first <span class="fu">fst</span> <span class="fu">&lt;$&gt;</span> fzip (fzip (u, u), u) <span class="fu">=</span> fzip (u, u)</a></code></pre></div>
+<p>The equations we squeezed out of the diagrams…</p>
+<pre><code>first snd &lt;$&gt; fzip (fzip (u, u), u) = fzip (u, u)
+first fst &lt;$&gt; fzip (fzip (u, u), u) = fzip (u, u)</code></pre>
+<p>… can be combined into:</p>
+<pre><code>fzip (fzip (u, u), u) = first dup &lt;$&gt; fzip (u, u)</code></pre>
+<p>This kind of looks like idempotency, except for the extra occurrence of <code>u</code> tagging along for the ride. We might have a go at getting rid of it by sketching a diagram of a slightly different nature, which shows how the relations play out across the specific values that appear in the equation above:</p>
+<pre><code>                                        fzip 
+          (u, u) :: (F   a   , F a) -----------&gt; F (  a   , a)
+                         |       |                    |     |
+                         |       |                    |     |
+                        R|      S|               {dup}| {id}|
+                         |       |                    |     |
+                         |       |      fzip          |     |
+(fzip (u, u), u) :: (F (a, a), F a) -----------&gt; F ((a, a), a)</code></pre>
+<p><code>dup</code> can be used to relate <code>fzip (u, u)</code> and <code>fzip (fzip (u, u), u)</code> on the right of the diagram. That this diagram involves specific values leads to a subtle yet crucial difference from the previous ones: the relation on the right side is not necessarily the function <code>dup</code>, but some relation that happens to agree with <code>dup</code> <em>for the specific values we happen to be using here</em> (that is what I have attempted to suggest by adding the curly brackets as ad hoc notation and dropping the arrow tips from the vertical connectors). This is important because, given how <code>fzip</code> preserves relations, we might be tempted to work backwards and identify <code>R</code> on the left side with <code>dup</code>, giving us a proof – <code>dup &lt;$&gt; u = fzip (u, u)</code> would be an immediate consequence. We can’t do that, though, as <code>R</code> only must agree with <code>dup</code> for those values which show up in a relevant way on the right side. More explicitly, consider some element <code>x :: a</code> of <code>u</code>. If <code>x</code> shows up as a first component anywhere in <code>fzip (u, u)</code>, then the corresponding element of <code>fzip (u, u)</code> must have its first and second components equal to each other (because <code>dup</code> agrees with <code>R</code> on <code>x</code>, and <code>R</code> in turn relates <code>u</code> and <code>fzip (u, u)</code>), and to <code>x</code> (since <code>snd &lt;$&gt; fzip (u, u) = u</code>). If that held for all elements of <code>u</code>, we would have <code>fzip (u, u) = dup &lt;$&gt; u</code>. However if <code>x</code> <em>doesn’t</em> show up as a first component in <code>fzip (u, u)</code>, there are no guarantees (as the right side offers no evidence on what <code>x</code> is related to through <code>R</code>), and so we don’t have grounds for the ultimate claim.</p>
+<p>Close, but no cigar.</p>
+<h2 id="something-twisted">Something twisted</h2>
+<p>While those parametricity tricks gave us no proof, we did learn something interesting: the conjecture holds as long as all elements from <code>u</code> show up as first components in <code>fzip (u, u)</code>. That sounds like a decent lead for a counterexample, so let’s switch course and look for one instead. To begin with, here is an inoffensive length-two vector/homogeneous pair type:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" title="1"><span class="ot">{-# LANGUAGE DeriveFunctor #-}</span></a>
+<a class="sourceLine" id="cb20-2" title="2"></a>
+<a class="sourceLine" id="cb20-3" title="3"><span class="kw">data</span> <span class="dt">Good</span> a <span class="fu">=</span> <span class="dt">Good</span> a a</a>
+<a class="sourceLine" id="cb20-4" title="4">    <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Ord</span>, <span class="dt">Functor</span>)</a></code></pre></div>
+<p>Here is its <code>Applicative</code> instance, specified in terms of the monoidal presentation:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb21-1" title="1">unit <span class="fu">=</span> <span class="dt">Good</span> () ()</a>
+<a class="sourceLine" id="cb21-2" title="2"></a>
+<a class="sourceLine" id="cb21-3" title="3">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Good</span> (x1, y1) (x2, y2)</a></code></pre></div>
+<p><code>Good</code>, like any other applicative with a single shape, is idempotent – as there is just one shape, it can’t help but be preserved <a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>. That means we need a second constructor:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb22-1" title="1"><span class="kw">data</span> <span class="dt">Twisted</span> a <span class="fu">=</span> <span class="dt">Evil</span> a a <span class="fu">|</span> <span class="dt">Good</span> a a</a>
+<a class="sourceLine" id="cb22-2" title="2">    <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Ord</span>, <span class="dt">Functor</span>)</a></code></pre></div>
+<p><code>unit</code> can remain the same…</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb23-1" title="1">unit <span class="fu">=</span> <span class="dt">Good</span> () ()</a></code></pre></div>
+<p>… which means the <code>Good</code>-and-<code>Good</code> case <em>must</em> remain the same: the identity effect has to be idempotent <a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb24-1" title="1">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Good</span> (x1, y1) (x2, y2)</a>
+<a class="sourceLine" id="cb24-2" title="2">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> _</a>
+<a class="sourceLine" id="cb24-3" title="3">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> _</a>
+<a class="sourceLine" id="cb24-4" title="4">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> _</a></code></pre></div>
+<p>The twist comes in the <code>Evil</code>-and-<code>Evil</code> case: we repeat our pick of a first element of the vector, and thus discard one of the first elements. (We can’t do the same with the second element, as we want <code>snd &lt;$&gt; fzip (u, u) = u</code> to hold.)</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb25-1" title="1">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Good</span> (x1, y1) (x2, y2)</a>
+<a class="sourceLine" id="cb25-2" title="2">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y1) (x1, y2)</a>
+<a class="sourceLine" id="cb25-3" title="3">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> _</a>
+<a class="sourceLine" id="cb25-4" title="4">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> _</a></code></pre></div>
+<p>The <code>Evil</code>-and-<code>Good</code> case is determined by the right identity law…</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb26-1" title="1">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Good</span> (x1, y1) (x2, y2)</a>
+<a class="sourceLine" id="cb26-2" title="2">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y2) (x2, y2)</a>
+<a class="sourceLine" id="cb26-3" title="3">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y1) (x2, y2)</a>
+<a class="sourceLine" id="cb26-4" title="4">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> _</a></code></pre></div>
+<p>… while associativity forces our hand in the <code>Good</code>-and-<code>Evil</code> case (consider what would happen in a <code>Good</code>-<code>Evil</code>-<code>Evil</code> chain):</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb27-1" title="1">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Good</span> (x1, y1) (x2, y2)</a>
+<a class="sourceLine" id="cb27-2" title="2">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y1) (x1, y2)</a>
+<a class="sourceLine" id="cb27-3" title="3">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y1) (x2, y2)</a>
+<a class="sourceLine" id="cb27-4" title="4">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y1) (x1, y2)</a></code></pre></div>
+<p><code>Evil</code> spreads, leaving a trail of repeated picks of first elements to the left of its rightmost occurrence in an applicative chain.</p>
+<p>Getting an actual <code>Applicative</code> instance from those definitions is easy: fill <code>unit</code> with something, and take away the commas from <code>fzip</code>:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb28-1" title="1"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Twisted</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb28-2" title="2">    <span class="fu">pure</span> x <span class="fu">=</span> <span class="dt">Good</span> x x</a>
+<a class="sourceLine" id="cb28-3" title="3"></a>
+<a class="sourceLine" id="cb28-4" title="4">    <span class="dt">Good</span> x1 x2 <span class="fu">&lt;*&gt;</span> <span class="dt">Good</span> y1 y2 <span class="fu">=</span> <span class="dt">Good</span> (x1 y1) (x2 y2)</a>
+<a class="sourceLine" id="cb28-5" title="5">    <span class="dt">Evil</span> x1 x2 <span class="fu">&lt;*&gt;</span> <span class="dt">Evil</span> y1 y2 <span class="fu">=</span> <span class="dt">Evil</span> (x1 y1) (x1 y2)</a>
+<a class="sourceLine" id="cb28-6" title="6">    <span class="dt">Evil</span> x1 x2 <span class="fu">&lt;*&gt;</span> <span class="dt">Good</span> y1 y2 <span class="fu">=</span> <span class="dt">Evil</span> (x1 y1) (x2 y2)</a>
+<a class="sourceLine" id="cb28-7" title="7">    <span class="dt">Good</span> x1 x2 <span class="fu">&lt;*&gt;</span> <span class="dt">Evil</span> y1 y2 <span class="fu">=</span> <span class="dt">Evil</span> (x1 y1) (x1 y2) </a></code></pre></div>
+<p>And there it is:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb29-1" title="1"><span class="dt">GHCi</span><span class="fu">&gt;</span> test <span class="fu">=</span> <span class="dt">Evil</span> <span class="dv">1</span> <span class="dv">2</span></a>
+<a class="sourceLine" id="cb29-2" title="2"><span class="dt">GHCi</span><span class="fu">&gt;</span> test <span class="fu">*&gt;</span> test</a>
+<a class="sourceLine" id="cb29-3" title="3"><span class="dt">Evil</span> <span class="dv">1</span> <span class="dv">2</span></a>
+<a class="sourceLine" id="cb29-4" title="4"><span class="dt">GHCi</span><span class="fu">&gt;</span> dup <span class="fu">&lt;$&gt;</span> test</a>
+<a class="sourceLine" id="cb29-5" title="5"><span class="dt">Evil</span> (<span class="dv">1</span>,<span class="dv">1</span>) (<span class="dv">2</span>,<span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb29-6" title="6"><span class="dt">GHCi</span><span class="fu">&gt;</span> fzip (test, test)</a>
+<a class="sourceLine" id="cb29-7" title="7"><span class="dt">Evil</span> (<span class="dv">1</span>,<span class="dv">1</span>) (<span class="dv">1</span>,<span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb29-8" title="8"><span class="dt">GHCi</span><span class="fu">&gt;</span> (\x <span class="ot">-&gt;</span> x <span class="fu">+</span> x) <span class="fu">&lt;$&gt;</span> test</a>
+<a class="sourceLine" id="cb29-9" title="9"><span class="dt">Evil</span> <span class="dv">2</span> <span class="dv">4</span></a>
+<a class="sourceLine" id="cb29-10" title="10"><span class="dt">GHCi</span><span class="fu">&gt;</span> (<span class="fu">+</span>) <span class="fu">&lt;$&gt;</span> test <span class="fu">&lt;*&gt;</span> test</a>
+<a class="sourceLine" id="cb29-11" title="11"><span class="dt">Evil</span> <span class="dv">2</span> <span class="dv">3</span></a></code></pre></div>
+<p>The conjecture is thus refuted. While parametricity isn’t truly necessary to bring out this counterexample, I am far from sure I would have thought of it without having explored it under the light of parametricity. On another note, it is rather interesting that there are biased applicatives like <code>Twisted</code>. I wonder whether less contrived cases can be found out there in the wild.</p>
+<h2 id="appendix">Appendix</h2>
+<p>Below are some derivations that might distract from the main thrust of the post.</p>
+<h3 id="alternative-presentation-of-the-idempotency-property">Alternative presentation of the idempotency property</h3>
+<p>One direction of the equivalency between the two formulations of the idempotency property follows from a straightforward substitution…</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb30-1" title="1">f <span class="fu">&lt;$&gt;</span> u <span class="fu">&lt;*&gt;</span> u <span class="fu">=</span> (\x <span class="ot">-&gt;</span> f x x) <span class="fu">&lt;$&gt;</span> u</a>
+<a class="sourceLine" id="cb30-2" title="2">(,) <span class="fu">&lt;$&gt;</span> u <span class="fu">&lt;*&gt;</span> u <span class="fu">=</span> (\x <span class="ot">-&gt;</span> (,) x x) <span class="fu">&lt;$&gt;</span> u</a>
+<a class="sourceLine" id="cb30-3" title="3">fzip (u, u) <span class="fu">=</span> dup <span class="fu">&lt;$&gt;</span> u</a></code></pre></div>
+<p>… while the other one calls for a small dose of parametricity:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb31-1" title="1">fzip (u, u) <span class="fu">=</span> dup <span class="fu">&lt;$&gt;</span> u</a>
+<a class="sourceLine" id="cb31-2" title="2">first f <span class="fu">&lt;$&gt;</span> fzip (u, u) <span class="fu">=</span> first f <span class="fu">&lt;$&gt;</span> dup <span class="fu">&lt;$&gt;</span> u</a>
+<a class="sourceLine" id="cb31-3" title="3"><span class="co">-- g &lt;$&gt; f &lt;$&gt; u = g . f &lt;$&gt; u</span></a>
+<a class="sourceLine" id="cb31-4" title="4">first f <span class="fu">&lt;$&gt;</span> fzip (u, u) <span class="fu">=</span> (\x <span class="ot">-&gt;</span> (f x, x)) <span class="fu">&lt;$&gt;</span> u</a>
+<a class="sourceLine" id="cb31-5" title="5"><span class="co">-- Parametricity: first f &lt;$&gt; fzip (u, v) = fzip (f &lt;$&gt; u, v)</span></a>
+<a class="sourceLine" id="cb31-6" title="6">fzip (f <span class="fu">&lt;$&gt;</span> u, u) <span class="fu">=</span> (\x <span class="ot">-&gt;</span> (f x, x)) <span class="fu">&lt;$&gt;</span> u</a>
+<a class="sourceLine" id="cb31-7" title="7">app <span class="fu">&lt;$&gt;</span> fzip (f <span class="fu">&lt;$&gt;</span> u, u) <span class="fu">=</span> app <span class="fu">&lt;$&gt;</span> (\x <span class="ot">-&gt;</span> (f x, x)) <span class="fu">&lt;$&gt;</span> u</a>
+<a class="sourceLine" id="cb31-8" title="8">f <span class="fu">&lt;$&gt;</span> u <span class="fu">&lt;*&gt;</span> u <span class="fu">=</span> (\x <span class="ot">-&gt;</span> f x x) <span class="fu">&lt;$&gt;</span> u</a></code></pre></div>
+<h3 id="alternative-definitions-of-and">Alternative definitions of <code>(&lt;*)</code> and <code>(*&gt;)</code></h3>
+<p>Starting from…</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb32-1" title="1">u <span class="fu">&lt;*</span> v <span class="fu">=</span> <span class="fu">const</span> <span class="fu">&lt;$&gt;</span> u <span class="fu">&lt;*&gt;</span> v</a>
+<a class="sourceLine" id="cb32-2" title="2">u <span class="fu">*&gt;</span> v <span class="fu">=</span> <span class="fu">flip</span> <span class="fu">const</span> <span class="fu">&lt;$&gt;</span> u <span class="fu">&lt;*&gt;</span> v</a></code></pre></div>
+<p>… we can switch to the monoidal presentation:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb33-1" title="1">u <span class="fu">&lt;*</span> v <span class="fu">=</span> app <span class="fu">&lt;$&gt;</span> fzip (<span class="fu">const</span> <span class="fu">&lt;$&gt;</span> u, v)</a>
+<a class="sourceLine" id="cb33-2" title="2">u <span class="fu">*&gt;</span> v <span class="fu">=</span> app <span class="fu">&lt;$&gt;</span> fzip (<span class="fu">flip</span> <span class="fu">const</span> <span class="fu">&lt;$&gt;</span> u, v)</a></code></pre></div>
+<p>It follows from parametricity that…</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb34-1" title="1"><span class="co">-- Parametricity: first f &lt;$&gt; fzip (u, v) = fzip (f &lt;$&gt; u, v)</span></a>
+<a class="sourceLine" id="cb34-2" title="2">u <span class="fu">&lt;*</span> v <span class="fu">=</span> app <span class="fu">.</span> first <span class="fu">const</span> <span class="fu">&lt;$&gt;</span> fzip (u, v)</a>
+<a class="sourceLine" id="cb34-3" title="3">u <span class="fu">*&gt;</span> v <span class="fu">=</span> app <span class="fu">.</span> first (<span class="fu">flip</span> <span class="fu">const</span>) <span class="fu">&lt;$&gt;</span> fzip (u, v)</a></code></pre></div>
+<p>… which amount to…</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb35-1" title="1">u <span class="fu">&lt;*</span> v <span class="fu">=</span> (\(x, y) <span class="ot">-&gt;</span> <span class="fu">const</span> x y) <span class="fu">&lt;$&gt;</span> fzip (u, v)</a>
+<a class="sourceLine" id="cb35-2" title="2">u <span class="fu">*&gt;</span> v <span class="fu">=</span> (\(x, y) <span class="ot">-&gt;</span> <span class="fu">flip</span> <span class="fu">const</span> x y) <span class="fu">&lt;$&gt;</span> fzip (u, v)</a></code></pre></div>
+<p>… or simply:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb36-1" title="1">u <span class="fu">&lt;*</span> v <span class="fu">=</span> <span class="fu">fst</span> <span class="fu">&lt;$&gt;</span> fzip (u, v)</a>
+<a class="sourceLine" id="cb36-2" title="2">u <span class="fu">*&gt;</span> v <span class="fu">=</span> <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (u, v)</a></code></pre></div>
+<section class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>One of <a href="http://homepages.inf.ed.ac.uk/wadler/topics/monads.html">Philip Wadler’s papers about monads</a>.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn2"><p>For a gentle initial illustration of the underlying theme of parametricity, see <a href="../posts/what-does-fmap-preserve.html"><em>What Does fmap Preserve?</em></a>. For a more thorough introduction, see <a href="https://bartoszmilewski.com/2014/09/22/parametricity-money-for-nothing-and-theorems-for-free"><em>Parametricity: Money for Nothing and Theorems for Free</em></a>, by Bartosz Milewski.<a href="#fnref2" class="footnote-back">↩</a></p></li>
+<li id="fn3"><p>A relation is a set of pairs; or, if you will, of associations between values. As an arbitrary example, we can have a less-than relation on integers which includes all pairs of integers <code>(x, y)</code> such that <code>x &lt; y</code>. In particular, functions are relations: seen as a relation, a function <code>f</code> seen in this way includes all pairs <code>(x, f x)</code>, there being exactly one pair for each possible value of the first component.<a href="#fnref3" class="footnote-back">↩</a></p></li>
+<li id="fn4"><p>One way to prove that is by using parametricity in tandem with the identity laws, analogously to how we used associativity in the previous section, while exploiting how there being only one shape means any applicative value can be related to <code>unit</code>.<a href="#fnref4" class="footnote-back">↩</a></p></li>
+<li id="fn5"><p>See the previous note about relating things to <code>unit</code>.<a href="#fnref5" class="footnote-back">↩</a></p></li>
+</ol>
+</section>
+
+<div id="comment-nav" class="pure-g-r no-print">
+  <div class="pure-u-1-4">
+    <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/14">Comment on GitHub</a>
+
+    
+  </div>
+  <div class="pure-u-1-4">
+    
+    
+  </div>
+  <div class="pure-u-3-4">
+  </div>
+</div>
+
+<div><div class="license">
+  <p>
+    <span class="inline-centered">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <img alt="Creative Commons License" style="border-width:0" src="//i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+    </span>
+    <span class="inline-centered">
+      Post licensed under a
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+    </span>
+  </p>
+</div>
+
+</div>
+]]></description>
+    <pubDate>Mon, 01 Apr 2019 05:30:00 UT</pubDate>
+    <guid>http://duplode.github.io/posts/idempotent-applicatives-parametricity-and-a-puzzle.html</guid>
+    <dc:creator>Daniel Mlot</dc:creator>
+</item>
+<item>
     <title>Traversable: A Remix</title>
     <link>http://duplode.github.io/posts/traversable-a-remix.html</link>
     <description><![CDATA[<p><code>Traversable</code> is a fun type class. It lies at a crossroad, where many basic Haskell concepts meet, and it can be presented in multiple ways that provide complementary intuitions. In this post, <code>Traversable</code> will be described from a slightly unusual point of view, or at least one that is not put into foreground all that often. We will suspend for a moment the picture of walking across a container while using an effectful function, and instead start by considering what can be done with effectful functions.</p>
