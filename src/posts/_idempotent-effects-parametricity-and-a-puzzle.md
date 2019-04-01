@@ -1,5 +1,5 @@
 ---
-title: "Idempotent Effects, Parametricity, and a Puzzle"
+title: "Idempotent Applicatives, Parametricity, and a Puzzle"
 license: CC-BY-SA
 ---
 
@@ -8,36 +8,43 @@ published: 2017-12-01T23:30:00Z
 gh-issue: 14
 -->
 
-Some applicative functors have idempotent effects, in the sense that
-repeating an effect is the same as having it just once. `Maybe` and
-`ZipList` are two examples. This property can be expressed as `f <$>
-u <*> u = (\x -> f x x) <$> u`. In a Stack Overflow comment, David Feuer
-conjectured that it might be possible to express it as simply `x *>
-x = x`. Does that conjecture hold? In this post, I will explain how
-I went about solving this problem, while telling a few things I learnt
-about paramtericity in the process.
+Some applicative functors are idempotent, in the sense that repeating an
+effect is the same as having it just once. An example and a
+counterexample are `Maybe` and `IO`, respectively (contrast `Just 3 *>
+Just 3` with `print 3 *> print 3`). More precisely, idempotency means
+that `f <$> u <*> u = (\x -> f x x) <$> u`. Given the informal
+description I began with, though, one might wonder whether the simpler
+property `u *> u = u`, which seems to capture the intuition about
+repeated effects, is equivalent to the usual idempotency property. In
+this post, I will tell how I went about exploring this conjecture, as
+well as a few things I learnt about parametricity along the way.
 
 <div></div><!--more-->
 
-Before I begin, a brief historical note. The earliest mention of
-idempotency of effects I know of is in *Combining Monads*, a paper by
-King and Wadler [^wadler-monads]. There, monads with that property are
-referred to as "idempotent monads", which are presented alongside the
-most widely known notion of "commutative monads" (`f <$> u <*> v = flip
-f <$> v <*> u`). I am using different terminology because the property
-generalises straightforwardly to applicative functors, and also because
-"idempotent monad" usually means something else in category theory (a
-monad that, in Haskell parlance, has a `join` that is an isomorphism).
+Before I begin, a few remarks about this notion of idempotency. The
+earliest mention of it that I know of is in *Combining Monads*, a paper
+by King and Wadler [^wadler-monads]. There, idempotent monads are
+presented alongside the most widely known concept of commutative monads
+(`f <$> u <*> v = flip f <$> v <*> u`). Both properties generalise
+straightforwardly to applicative functors, which has the neat
+side-effect of allowing myself to skirt the ambiguity of the phrase
+"idempotent monad" (in category theory, that usually means a monad that,
+in Haskell parlance, has a `join` that is an isomorphism -- a meaning
+that mostly doesn't show up in Haskell). Lastly, I knew of the
+conjecture about idempotency amounting to `u *> u = u` through a Stack
+Overflow comment by David Feuer, and so I thank him for inspiring this
+post.
 
 [^wadler-monads]: One of [Philip Wadler's papers about
 monads](http://homepages.inf.ed.ac.uk/wadler/topics/monads.html).
 
 ## Prolegomena
 
-In a bid to reduce clutter in what follows, I will mostly stick to the
-[the monoidal presentation of
-`Applicative`](http://blog.ezyang.com/2012/08/applicative-functors/),
-and make use of a handful of pair manipulation functions:
+Given we are looking into a general claim about applicatives, our first
+port of call are the applicative laws. Since the laws written in terms
+of `(<*>)` can be rather clunky to wield, I will switch to [the monoidal
+presentation of
+`Applicative`](http://blog.ezyang.com/2012/08/applicative-functors):
 
 ``` haskell
 -- fzip and unit are equivalent in power to (<*>) and pure.
@@ -47,7 +54,14 @@ fzip (u, v) = (,) <$> u <*> v
 unit :: Applicative f => f ()
 unit = pure ()
 
--- Two teensy little combinators.
+```
+
+Note I am using an uncurried version of `fzip`, as I feel it makes what
+follows slightly easier to explain. I will also introduce a couple
+teensy little combinators so that the required tuple shuffling becomes
+easier on the eye:
+
+``` haskell
 app :: (a -> b, a) -> b
 app (f, x) = f x
 
@@ -55,11 +69,6 @@ dup :: a -> (a, a)
 dup x = (x, x)
 
 {-
-The converse definitions of (<*>) and pure would be:
-
-u <*> v = app <$> fzip (u, v)
-pure x = const x <$> unit
-
 I will also use the Bifunctor methods for pairs, which amount to:
 
 bimap f g (x, y) = (f x, g y)
@@ -67,6 +76,14 @@ first f = bimap f id
 second g = bimap id g
 -}
 --
+```
+
+The converse definitions of `pure` and `(<*>)` in terms of `unit` and
+`fzip` would be:
+
+``` haskell
+u <*> v = app <$> fzip (u, v)
+pure x = const x <$> unit
 ```
 
 Using that vocabulary, the applicative laws become:
@@ -78,13 +95,13 @@ fzip (unit, u) ~ u -- up to pairing with ()
 fzip (fzip (u, v), w) ~ fzip (u, fzip (v, w)) -- up to reassociating pairs
 ```
 
-In terms of `fzip`, the idempotency property can be expressed as...
+As for the idempotency property, it can be expressed as:
 
 ``` haskell
 fzip (u, u) = dup <$> u -- fzip . dup = fmap dup
 ```
 
-... and `(*>)` and its sibling `(<*)` can be defined as:
+`(*>)` and its sibling `(<*)` become:
 
 ``` haskell
 u <* v = fst <$> fzip (u, v)
@@ -94,29 +111,43 @@ u *> v = snd <$> fzip (u, v)
 (Proofs of the claims just above can be found at the appendix at
 the end of this post.)
 
-The conjecture then becomes "`snd <$> fzip (u, u) = u` is equivalent to
-`fzip (u, u) = dup <$> u`" [^conjecture-symmetry]. That `fzip (u, u) =
-dup <$> u` implies `snd <$> fzip (u, u)` is immediate, as `snd . dup =
-id`. Our goal, then, is getting `fzip (u, u) = dup <$> u` out of `snd
-<$> fzip (u, u) = u`.
+Finally, the conjecture amounts to:
 
-[^conjecture-symmetry]: We might as well have chosen to work with `fst
-<$> fzip (u, u) = u` instead, and nothing of any significance would
-change -- if we can prove the conjecture for `(*>)`, we can do the same
-for the symmetrical conjecture involving `(<*)`.
+``` haskell
+snd <$> fzip (u, u) = u -- u *> u = u
+-- Is equivalent to...
+fzip (u, u) = dup <$> u -- idempotency
+```
 
-## A free theorem
+That `fzip (u, u) = dup <$> u` implies `snd <$> fzip (u, u)` is
+immediate, as `snd . dup = id`. Our goal, then, is getting `fzip (u, u)
+= dup <$> u` out of `snd <$> fzip (u, u) = u`.
+
+## Drawing relations
 
 How might we get from `snd <$> fzip (u, u) = u` to `fzip (u, u) = dup
-<$> u`? It appears we have to deduce something about the first
-components of the pairs in `fzip (u, u)` from a fact about the second
-components. At first glance, the applicative laws do not suggest any
-connection between the components we might exploit. However, `snd <$>
-fzip (u, u) = u` also tells us something else: that we can turn `fzip
-(u, u)` into `u` using `fmap`; informally, we can say that they have the
-same shape. That means `fzip (u, u)` and `u` can be *related* using
-`fmap snd` when applying a free theorem. Let's now have a brief look at
-what this means in the case of `fzip` [^parametricity].
+<$> u`? It appears we have to take a fact about the second components of
+the pairs in `fzip (u, u)` (note that mapping `snd` discards the first
+components) and squeeze something about the first components out of it
+(namely, that they are equal to the second components everywhere). At
+first glance, it doesn't appear the applicative laws connect the
+components in any obviously exploitable way. The one glimmer of hope
+lies in how, in the associativity law...
+
+``` haskell
+fzip (fzip (u, v), w) ~ fzip (u, fzip (v, w)) -- up to reassociating pairs
+```
+
+... whatever values originally belonging to `v` must show up as second
+components of pairs on the left hand side, and as first components on
+the right hand side. While that, on its own, is too vague to be
+actionable, there is a seemingly innocuous observation we can make use
+of: `snd <$> fzip (u, u) = u` tells us we can turn `fzip (u, u)` into
+`u` using `fmap` (informally, we can say that they have the same shape),
+and that they can be *related* using `snd` while making use of a free
+theorem [^parametricity]. For our current purposes, that means we can
+borrow the types involved in the left side of the associativity law and
+use them to draw the following diagram... 
 
 [^parametricity]: For a gentle initial illustration of the underlying
 theme of parametricity, see [*What Does fmap
@@ -125,8 +156,34 @@ introduction, see [*Parametricity: Money for Nothing and Theorems for
 Free*](https://bartoszmilewski.com/2014/09/22/parametricity-money-for-nothing-and-theorems-for-free),
 by Bartosz Milewski.
 
-The free theorem for `fzip` tells us that `fzip` preserves relations
-[^relations], in the sense indicated by this diagram:
+```
+                  fzip
+(F (a, b), F c) --------> F ((a, b), c)
+     |      |                  |     |
+     |      |                  |     |
+  snd|      |id             snd|     |id 
+     |      |                  |     |
+     v      v                  v     v
+(F   b, F   c ) --------> F (  b,    c)
+                  fzip
+```
+
+... such that we get the same result by following either path from the
+top left corner to the bottom right one. Omitting the occurrences of
+`id`, we can state that through this equation:
+
+``` haskell
+fmap (first snd) . fzip = fzip . first (fmap snd)
+```
+
+In words, it doesn't matter whether we use `snd` after or before using
+`fzip`. `fmap` and `first`, left implicit in the diagram, are used to
+lift `snd` across the applicative layer and the pairs, respectively.
+This is just one specific instance of the free theorem; instead of `snd`
+and `id`, we could have any functions -- or, more generally, any
+relations [^relations]-- between the involved types. Free theorems tell
+us about relations being preserved; in this case, `snd` sets up a
+relation on the left side of the diagram, and `fzip` preserves it.
 
 [^relations]: A relation is a set of pairs; or, if you will, of
 associations between values. As an arbitrary example, we can have a
@@ -136,66 +193,22 @@ relation, a function `f` seen in this way includes all pairs `(x, f x)`,
 there being exactly one pair for each possible value of the first
 component.
 
-```
-              fzip
-(F a, F b) ----------> F (a, b)
-   |    |                 |  |
-   |    |                 |  |
-  R|    |S               R|  |S
-   |    |                 |  |
-   |    |                 |  |
-(F c, F d) ----------> F (c, d)
-              fzip
-```
+We can get back to our problem by slipping in suitable concrete values
+in the equation. For an arbitrary `u :: F A`, we have...
 
-Here, `a`, `b`, `c` and `d` stand for arbitrary types, and `F` is an
-arbitrary applicative functor. `R` is an arbitrary relation between `a`
-values and `c` values, and `S` is an arbitrary relation between `b`
-values and `d` values. They are lifted across the applicative layer `F`
-(so that, informally speaking, values in matching positions of
-applicative values with matching shapes are related -- if the relations
-are functions, `fmap` can perform that kind of lifting) and across pairs
-(so that values taken from matching components of the pairs are related
--- for functions, that is what `first` and `second`, or `bimap`, do). In
-what follows, we will use the free theorem by picking relations `R` and
-`S` such that the resulting diagram tells us something relevant to our
-problem.
-
-## Drawing relations
-
-Having `snd <$> fzip (u, u) = u` as a premise suggests plugging in `snd`
-as a relation in the free theorem. The other piece of knowledge we have
-right now are the laws; in particular, the associativity law appears
-relevant to what we are trying to do. Consider this diagram:
-
-```
-                  fzip
-(F (a, b), F c) --------> F ((a, b), c)
-     |      |                  |     |
-     |      |                  |     |
-  snd|      |id             snd|     |id
-     |      |                  |     |
-     v      v                  v     v
-(F   b, F   c ) --------> F (  b,    c)
-                  fzip
-
-fmap (first snd) . fzip = fzip . first (fmap snd)
-```
-
-In particular, for an arbitrary `u :: F A`...
-
-```
+``` haskell
 first snd <$> fzip (fzip (u, u), u) = fzip (snd <$> fzip (u, u), u)
 ```
 
 ... and, thanks to our `snd <$> fzip (u, u) = u` premise:
 
-```
+``` haskell
 first snd <$> fzip (fzip (u, u), u) = fzip (u, u)
 ```
 
-Now, we can get a very similar diagram to work with by nesting the pairs
-the other way around:
+Now, why should we restrict ourselves to the left side of the
+associativity law? We can get a very similar diagram to work with from
+the right side:
 
 ```
                   fzip
@@ -207,21 +220,25 @@ the other way around:
    v      v                  v    v
 (F a, F   c   ) --------> F (a,   c   )
                   fzip
+```
 
+Or, as an equation:
+
+``` haskell
 fmap (second snd) . fzip = fzip . second (fmap snd)
 ```
 
 Proceeding just like before, we get:
 
-```
+``` haskell
 second snd <$> fzip (u, fzip (u, u)) = fzip (u, snd <$> fzip (u, u))
 second snd <$> fzip (u, fzip (u, u)) = fzip (u, u)
 ```
 
 Since `fzip (u, fzip (u, u)) ~ fzip (fzip (u, u), u)` (associativity),
-we can shuffle the above into:
+we can shuffle that into:
 
-```
+``` haskell
 -- Both first fst and second snd get rid of the value in the middle.
 first fst <$> fzip (fzip (u, u), u) = fzip (u, u)
 ```
@@ -239,9 +256,11 @@ first fst <$> fzip (fzip (u, u), u) = fzip (u, u)
 fzip (fzip (u, u), u) = first dup <$> fzip (u, u)
 ```
 
-At this point, we might have a go at sketching a diagram of a slightly
-different nature, which shows relations across the specific values that
-appear in the equation above:
+This kind of looks like idempotency, except for the extra occurrence of
+`u` tagging along for the ride. We might have a go at getting rid of it
+by sketching a diagram of a slightly different nature, which shows how
+the relations play out across the specific values that appear in the
+equation above:
 
 ```
                                         fzip 
@@ -252,51 +271,41 @@ appear in the equation above:
                          |       |                    |     |
                          |       |      fzip          |     |
 (fzip (u, u), u) :: (F (a, a), F a) -----------> F ((a, a), a)
-
 ```
 
 `dup` can be used to relate `fzip (u, u)` and `fzip (fzip (u, u), u)` on
 the right of the diagram. That this diagram involves specific values
-leads to a subtle yet crucial difference from the ones we were working
-with up to this point: the relation on the right side is not necessarily
-the function `dup`, but some relation that happens to agree with `dup`
-*for the specific values we happen to be using here* (that is what I
-have attempted to suggest by adding the curly brackets as ad hoc
-notation and dropping the arrow tips from the vertical connectors). This
-is important, given how `fzip` preserves relations, we
-might be tempted to work backwards and identify `R` on the left side
-with `dup`, which would give us our proof right there -- `dup <$> u =
-fzip (u, u)` would be an immediate consequence. We can't do that,
-though, as `R` only has to agree with `dup` for those values which show
-up at the relevant places on the right side. In other words, consider
-some element `x :: a` of `u`. If `x` shows up as the first component of
-any element of `fzip (u, u)`, then the corresponding element of `fzip
-(u, u)` must have its first and second components equal to each other
-and (since `snd <$> fzip (u, u) = u`) to `x`. If that held for all
+leads to a subtle yet crucial difference from the previous ones: the
+relation on the right side is not necessarily the function `dup`, but
+some relation that happens to agree with `dup` *for the specific values
+we happen to be using here* (that is what I have attempted to suggest by
+adding the curly brackets as ad hoc notation and dropping the arrow tips
+from the vertical connectors). This is important because, given how
+`fzip` preserves relations, we might be tempted to work backwards and
+identify `R` on the left side with `dup`, giving us a proof -- `dup <$>
+u = fzip (u, u)` would be an immediate consequence. We can't do that,
+though, as `R` only must agree with `dup` for those values which show up
+in a relevant way on the right side. More explicitly, consider some
+element `x :: a` of `u`. If `x` shows up as a first component anywhere
+in `fzip (u, u)`, then the corresponding element of `fzip (u, u)` must
+have its first and second components equal to each other (because `dup`
+agrees with `R` on `x`, and `R` in turn relates `u` and `fzip (u, u)`),
+and to `x` (since `snd <$> fzip (u, u) = u`). If that held for all
 elements of `u`, we would have `fzip (u, u) = dup <$> u`. However if `x`
 *doesn't* show up as a first component in `fzip (u, u)`, there are no
-guarantees, and so we don't have enough grounds.
+guarantees (as the right side offers no evidence on what `x` is related
+to through `R`), and so we don't have grounds for the ultimate claim.
 
- <!-- (Divergence.)
+Close, but no cigar.
 
-Slipping `fmap (first snd)` in both sides leads to (as `snd . dup =
-id`):
+## Something twisted
 
-```
-first snd <$> fzip (fzip (u, u), u) = fzip (u, u)
-```
-
--->
-
-Something twisted
-----
-
-While those parametricity tricks did not lead to a proof, we did learn
+While those parametricity tricks gave us no proof, we did learn
 something interesting: the conjecture holds as long as all elements from
 `u` show up as first components in `fzip (u, u)`. That sounds like a
-decent lead for a counterexample, so let's look for one instead. To
-begin with, here is an inoffensive length-two vector type (or an
-homogeneous pair):
+decent lead for a counterexample, so let's switch course and look for
+one instead. To begin with, here is an inoffensive length-two
+vector/homogeneous pair type:
 
 ``` haskell
 {-# LANGUAGE DeriveFunctor #-}
@@ -305,8 +314,8 @@ data Good a = Good a a
     deriving (Eq, Show, Ord, Functor)
 ```
 
-The `Applicative` instance is straightforward. Here is its specification
-in terms of the monoidal presentation:
+Here is its `Applicative` instance, specified in terms of the monoidal
+presentation:
 
 ``` haskell
 unit = Good () ()
@@ -346,10 +355,10 @@ fzip (Evil x1 x2, Good y1 y2) = _
 fzip (Good x1 x2, Evil y1 y2) = _
 ```
 
-The twist comes in the `Evil`-and-`Evil` case: we can repeat our pick of
-the first element of the vector, and thus leave off one of the first
-elements. (We can't do the same with the second element, as we want `snd
-<$> fzip (u, u) = u` to hold.)
+The twist comes in the `Evil`-and-`Evil` case: we repeat our pick of a
+first element of the vector, and thus discard one of the first elements.
+(We can't do the same with the second element, as we want `snd <$> fzip
+(u, u) = u` to hold.)
 
 ``` haskell
 fzip (Good x1 x2, Good y1 y2) = Good (x1, y1) (x2, y2)
@@ -377,7 +386,6 @@ fzip (Evil x1 x2, Good y1 y2) = Evil (x1, y1) (x2, y2)
 fzip (Good x1 x2, Evil y1 y2) = Evil (x1, y1) (x1, y2)
 ```
 
-
 `Evil` spreads, leaving a trail of repeated picks of first elements to
 the left of its rightmost occurrence in an applicative chain.
 
@@ -391,7 +399,7 @@ instance Applicative Twisted where
     Good x1 x2 <*> Good y1 y2 = Good (x1 y1) (x2 y2)
     Evil x1 x2 <*> Evil y1 y2 = Evil (x1 y1) (x1 y2)
     Evil x1 x2 <*> Good y1 y2 = Evil (x1 y1) (x2 y2)
-    Good x1 x2 <*> Evil y1 y2 = Evil (x1 y1) (x1 y2)
+    Good x1 x2 <*> Evil y1 y2 = Evil (x1 y1) (x1 y2) 
 ```
 
 And there it is:
@@ -410,8 +418,14 @@ GHCi> (+) <$> test <*> test
 Evil 2 3
 ```
 
-Appendix
-----
+The conjecture is thus refuted. While parametricity isn't truly
+necessary to bring out this counterexample, I am far from sure I would
+have thought of it without having explored it under the light of
+parametricity. On another note, it is rather interesting that there are
+biased applicatives like `Twisted`. I wonder whether less contrived
+cases can be found out there in the wild. 
+
+## Appendix
 
 Below are some derivations that might distract from the main thrust of
 the post.
@@ -427,18 +441,7 @@ f <$> u <*> u = (\x -> f x x) <$> u
 fzip (u, u) = dup <$> u
 ```
 
-... while the other calls for a small dose of parametricity.
-Parametricity ensures that `fzip` is not affected by using `fmap` and
-`bimap` to change values through the `Applicative` layer and the pairs
-
-``` haskell
--- fmap (bimap f g) (fzip (u, v)) = fzip (bimap (fmap f) (fmap g) (u, v))
-bimap f g <$> fzip (u, v) = fzip (f <$> u, g <$> v)
--- In particular:
-first f <$> fzip (u, v) = fzip (f <$> u, v)
-```
-
-That being so, we have:
+... while the other one calls for a small dose of parametricity:
 
 ``` haskell
 fzip (u, u) = dup <$> u
@@ -453,14 +456,14 @@ f <$> u <*> u = (\x -> f x x) <$> u
 
 ### Alternative definitions of `(<*)` and `(*>)`
 
-We can start from...
+Starting from...
 
 ``` haskell
 u <* v = const <$> u <*> v
 u *> v = flip const <$> u <*> v
 ```
 
-... we get:
+... we can switch to the monoidal presentation:
 
 ``` haskell
 u <* v = app <$> fzip (const <$> u, v)
@@ -470,6 +473,7 @@ u *> v = app <$> fzip (flip const <$> u, v)
 It follows from parametricity that...
 
 ``` haskell
+-- Parametricity: first f <$> fzip (u, v) = fzip (f <$> u, v)
 u <* v = app . first const <$> fzip (u, v)
 u *> v = app . first (flip const) <$> fzip (u, v)
 ```
@@ -487,3 +491,4 @@ u *> v = (\(x, y) -> flip const x y) <$> fzip (u, v)
 u <* v = fst <$> fzip (u, v)
 u *> v = snd <$> fzip (u, v)
 ```
+
