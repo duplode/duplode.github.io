@@ -242,14 +242,14 @@ first fst <$> fzip (fzip (u, u), u) = fzip (u, u)
 
 The equations we squeezed out of the diagrams...
 
-```
+``` haskell
 first snd <$> fzip (fzip (u, u), u) = fzip (u, u)
 first fst <$> fzip (fzip (u, u), u) = fzip (u, u)
 ```
 
 ... can be combined into:
 
-```
+``` haskell
 fzip (fzip (u, u), u) = first dup <$> fzip (u, u)
 ```
 

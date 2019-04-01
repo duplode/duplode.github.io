@@ -85,7 +85,8 @@ redditCtx = field "reddit-button" $ \it -> do
     redditFixedBasePath = "https://reddit.com/r/haskell/comments/"
     redditBasePath = "https://reddit.com/"
     -- Ideally this wouldn't be hardcoded.
-    blogBasePath = "https://duplode.github.io/"
+    -- Note the inconsistent use of slashes.
+    blogBasePath = "https://duplode.github.io"
     redditFragment it mRedd = fmap itemBody $ do
         frag <- load "fragments/reddit.html"
         -- Copied from the urlField source code.
