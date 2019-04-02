@@ -44,7 +44,7 @@ presentation of
 `Applicative`](http://blog.ezyang.com/2012/08/applicative-functors):
 
 ``` haskell
--- fzip and unit are equivalent in power to (<*>) and pure.
+-- fzip and unit correspond to (<*>) and pure, respectively.
 fzip :: Applicative f => (f a, f b) -> f (a, b)
 fzip (u, v) = (,) <$> u <*> v
 
@@ -374,7 +374,11 @@ fzip (Good x1 x2, Evil y1 y2) = _
 ```
 
 ... while associativity forces our hand in the `Good`-and-`Evil` case
-(consider what would happen in a `Good`-`Evil`-`Evil` chain):
+(consider what would happen in a `Good`-`Evil`-`Evil` chain
+[^twisted-is-lawful]):
+
+[^twisted-is-lawful]: The appendix includes a proof of the lawfulness of
+`Twisted`.
 
 ``` haskell
 fzip (Good x1 x2, Good y1 y2) = Good (x1, y1) (x2, y2)
@@ -487,5 +491,96 @@ u *> v = (\(x, y) -> flip const x y) <$> fzip (u, v)
 ``` haskell
 u <* v = fst <$> fzip (u, v)
 u *> v = snd <$> fzip (u, v)
+```
+
+### Lawfulness of `Twisted` as an applicative functor
+
+Right identity:
+
+``` haskell
+fzip (u, unit) ~ u
+-- Case: u = Good x1 x2 
+fzip (Good x1 x2, Good () ()) -- LHS
+Good (x1, ()) (x2, ()) -- LHS ~ RHS
+-- Note that Twisted behaves like an ordinary length-two vector as
+-- long as only Good is involved. That being so, it would have been
+-- fine to skip the Good-only cases here and elsewhere.
+-- Case: u = Evil x1 x2
+fzip (Evil x1 x2, Good () ()) -- LHS
+Evil (x1, ()) (x2, ()) -- LHS ~ RHS
+```
+
+Left identity:
+
+``` haskell
+fzip (unit, u) ~ u
+-- Case: u = Good x1 x2 
+fzip (Good () (), Good y1 y2)
+Evil ((), y1) ((), y2) -- LHS ~ RHS
+-- Case: u = Evil x1 x2 
+fzip (Good () (), Evil y1 y2)
+Evil ((), y1) ((), y2) -- LHS ~ RHS
+```
+
+Associativity:
+
+``` haskell
+fzip (fzip (u, v), w) ~ fzip (u, fzip (v, w))
+-- Good/Good/Good case: holds.
+fzip (fzip (Good x1 x2, Good y1 y2), Good z1, z2) -- LHS
+fzip (Good (x1, y1) (x2, y2), Good z1, z2)
+Good ((x1, y1), z1) ((x2, y2), z2)
+fzip (Good x1 x2, fzip (Good y1 y2, Good z1 z2)) -- RHS
+fzip (Good x1 x2, Good (y1, z1) (y2, z2))
+Good (x1, (y1, z1)) (x2, (y2, z2)) -- LHS ~ RHS
+-- Evil/Evil/Evil case:
+fzip (fzip (Evil x1 x2, Evil y1 y2), Evil z1, z2) -- LHS
+fzip (Evil (x1, y1) (x1, y2), Evil z1, z2)
+Evil ((x1, y1), z1) ((x1, y1), z2)
+fzip (Evil x1 x2, fzip (Evil y1 y2, Evil z1 z2)) -- RHS
+fzip (Evil x1 x2, Evil (y1, z1) (y1, z2))
+Evil (x1, (y1, z1)) (x1, (y1, z2)) -- LHS ~ RHS
+-- Good/Evil/Evil case:
+fzip (fzip (Good x1 x2, Evil y1 y2), Evil z1, z2) -- LHS
+fzip (Good (x1, y1) (x2, y2), Evil z1, z2)
+Evil ((x1, y1), z1) ((x1, y1), z2)
+fzip (Good x1 x2, fzip (Evil y1 y2, Evil z1 z2)) -- RHS
+fzip (Good x1 x2, Evil (y1, z1) (y1, z2))
+Evil (x1, (y1, z1)) (x1, (y1, z2)) -- LHS ~ RHS
+-- Evil/Good/Evil case:
+fzip (fzip (Evil x1 x2, Good y1 y2), Evil z1, z2) -- LHS
+fzip (Evil (x1, y1) (x2, y2), Evil z1, z2)
+Evil ((x1, y1), z1) ((x1, y1), z2)
+fzip (Evil x1 x2, fzip (Good y1 y2, Evil z1 z2)) -- RHS
+fzip (Evil x1 x2, Evil (y1, z1) (y1, z2))
+Evil (x1, (y1, z1)) (x1, (y1, z2)) -- LHS ~ RHS
+-- Evil/Evil/Good case:
+fzip (fzip (Evil x1 x2, Evil y1 y2), Good z1, z2) -- LHS
+fzip (Evil (x1, y1) (x1, y2), Good z1, z2)
+Evil ((x1, y1), z1) ((x1, y2), z2)
+fzip (Evil x1 x2, fzip (Evil y1 y2, Good z1 z2)) -- RHS
+fzip (Evil x1 x2, Evil (y1, z1) (y2, z2))
+Evil (x1, (y1, z1)) (x1, (y2, z2)) -- LHS ~ RHS
+-- Evil/Good/Good case:
+fzip (fzip (Evil x1 x2, Good y1 y2), Good z1, z2) -- LHS
+fzip (Evil (x1, y1) (x2, y2), Good z1, z2)
+Evil ((x1, y1), z1) ((x2, y2), z2)
+fzip (Evil x1 x2, fzip (Good y1 y2, Good z1 z2)) -- RHS
+fzip (Evil x1 x2, Good (y1, z1) (y2, z2))
+Evil (x1, (y1, z1)) (x2, (y2, z2)) -- LHS ~ RHS
+-- Good/Evil/Good case:
+fzip (fzip (Good x1 x2, Evil y1 y2), Good z1, z2) -- LHS
+fzip (Evil (x1, y1) (x1, y2), Good z1, z2)
+Evil ((x1, y1), z1) ((x1, y2), z2)
+fzip (Good x1 x2, fzip (Evil y1 y2, Good z1 z2)) -- RHS
+fzip (Good x1 x2, Evil (y1, z1) (y2, z2))
+Evil (x1, (y1, z1)) (x1, (y2, z2)) -- LHS ~ RHS
+-- Good/Good/Evil case:
+fzip (fzip (Good x1 x2, Good y1 y2), Evil z1, z2) -- LHS
+fzip (Good (x1, y1) (x2, y2), Evil z1, z2)
+Evil ((x1, y1), z1) ((x1, y1), z2)
+fzip (Good x1 x2, fzip (Good y1 y2, Evil z1 z2)) -- RHS
+fzip (Good x1 x2, Evil (y1, z1) (y1, z2))
+Evil (x1, (y1, z1)) (x1, (y1, z2)) -- LHS ~ RHS
 ```
 
