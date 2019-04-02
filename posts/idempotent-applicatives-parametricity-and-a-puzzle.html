@@ -42,7 +42,7 @@
 <p>Before I begin, a few remarks about this notion of idempotency. The earliest mention of it that I know of is in <em>Combining Monads</em>, a paper by King and Wadler <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. There, idempotent monads are presented alongside the most widely known concept of commutative monads (<code>f &lt;$&gt; u &lt;*&gt; v = flip f &lt;$&gt; v &lt;*&gt; u</code>). Both properties generalise straightforwardly to applicative functors, which has the neat side-effect of allowing myself to skirt the ambiguity of the phrase “idempotent monad” (in category theory, that usually means a monad that, in Haskell parlance, has a <code>join</code> that is an isomorphism – a meaning that mostly doesn’t show up in Haskell). Lastly, I knew of the conjecture about idempotency amounting to <code>u *&gt; u = u</code> through a Stack Overflow comment by David Feuer, and so I thank him for inspiring this post.</p>
 <h2 id="prolegomena">Prolegomena</h2>
 <p>Given we are looking into a general claim about applicatives, our first port of call are the applicative laws. Since the laws written in terms of <code>(&lt;*&gt;)</code> can be rather clunky to wield, I will switch to <a href="http://blog.ezyang.com/2012/08/applicative-functors">the monoidal presentation of <code>Applicative</code></a>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="co">-- fzip and unit are equivalent in power to (&lt;*&gt;) and pure.</span></a>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="co">-- fzip and unit correspond to (&lt;*&gt;) and pure, respectively.</span></a>
 <a class="sourceLine" id="cb1-2" title="2"><span class="ot">fzip ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (f a, f b) <span class="ot">-&gt;</span> f (a, b)</a>
 <a class="sourceLine" id="cb1-3" title="3">fzip (u, v) <span class="fu">=</span> (,) <span class="fu">&lt;$&gt;</span> u <span class="fu">&lt;*&gt;</span> v</a>
 <a class="sourceLine" id="cb1-4" title="4"></a>
@@ -166,7 +166,7 @@
 <a class="sourceLine" id="cb26-2" title="2">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y2) (x2, y2)</a>
 <a class="sourceLine" id="cb26-3" title="3">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y1) (x2, y2)</a>
 <a class="sourceLine" id="cb26-4" title="4">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> _</a></code></pre></div>
-<p>… while associativity forces our hand in the <code>Good</code>-and-<code>Evil</code> case (consider what would happen in a <code>Good</code>-<code>Evil</code>-<code>Evil</code> chain):</p>
+<p>… while associativity forces our hand in the <code>Good</code>-and-<code>Evil</code> case (consider what would happen in a <code>Good</code>-<code>Evil</code>-<code>Evil</code> chain <a href="#fn6" class="footnote-ref" id="fnref6"><sup>6</sup></a>):</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb27-1" title="1">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Good</span> (x1, y1) (x2, y2)</a>
 <a class="sourceLine" id="cb27-2" title="2">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y1) (x1, y2)</a>
 <a class="sourceLine" id="cb27-3" title="3">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> y1 y2) <span class="fu">=</span> <span class="dt">Evil</span> (x1, y1) (x2, y2)</a>
@@ -226,6 +226,84 @@
 <p>… or simply:</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb36-1" title="1">u <span class="fu">&lt;*</span> v <span class="fu">=</span> <span class="fu">fst</span> <span class="fu">&lt;$&gt;</span> fzip (u, v)</a>
 <a class="sourceLine" id="cb36-2" title="2">u <span class="fu">*&gt;</span> v <span class="fu">=</span> <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> fzip (u, v)</a></code></pre></div>
+<h3 id="lawfulness-of-twisted-as-an-applicative-functor">Lawfulness of <code>Twisted</code> as an applicative functor</h3>
+<p>Right identity:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb37-1" title="1">fzip (u, unit) <span class="fu">~</span> u</a>
+<a class="sourceLine" id="cb37-2" title="2"><span class="co">-- Case: u = Good x1 x2 </span></a>
+<a class="sourceLine" id="cb37-3" title="3">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> () ()) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb37-4" title="4"><span class="dt">Good</span> (x1, ()) (x2, ()) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb37-5" title="5"><span class="co">-- Note that Twisted behaves like an ordinary length-two vector as</span></a>
+<a class="sourceLine" id="cb37-6" title="6"><span class="co">-- long as only Good is involved. That being so, it would have been</span></a>
+<a class="sourceLine" id="cb37-7" title="7"><span class="co">-- fine to skip the Good-only cases here and elsewhere.</span></a>
+<a class="sourceLine" id="cb37-8" title="8"><span class="co">-- Case: u = Evil x1 x2</span></a>
+<a class="sourceLine" id="cb37-9" title="9">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> () ()) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb37-10" title="10"><span class="dt">Evil</span> (x1, ()) (x2, ()) <span class="co">-- LHS ~ RHS</span></a></code></pre></div>
+<p>Left identity:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb38-1" title="1">fzip (unit, u) <span class="fu">~</span> u</a>
+<a class="sourceLine" id="cb38-2" title="2"><span class="co">-- Case: u = Good x1 x2 </span></a>
+<a class="sourceLine" id="cb38-3" title="3">fzip (<span class="dt">Good</span> () (), <span class="dt">Good</span> y1 y2)</a>
+<a class="sourceLine" id="cb38-4" title="4"><span class="dt">Evil</span> ((), y1) ((), y2) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb38-5" title="5"><span class="co">-- Case: u = Evil x1 x2 </span></a>
+<a class="sourceLine" id="cb38-6" title="6">fzip (<span class="dt">Good</span> () (), <span class="dt">Evil</span> y1 y2)</a>
+<a class="sourceLine" id="cb38-7" title="7"><span class="dt">Evil</span> ((), y1) ((), y2) <span class="co">-- LHS ~ RHS</span></a></code></pre></div>
+<p>Associativity:</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb39-1" title="1">fzip (fzip (u, v), w) <span class="fu">~</span> fzip (u, fzip (v, w))</a>
+<a class="sourceLine" id="cb39-2" title="2"><span class="co">-- Good/Good/Good case: holds.</span></a>
+<a class="sourceLine" id="cb39-3" title="3">fzip (fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> y1 y2), <span class="dt">Good</span> z1, z2) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb39-4" title="4">fzip (<span class="dt">Good</span> (x1, y1) (x2, y2), <span class="dt">Good</span> z1, z2)</a>
+<a class="sourceLine" id="cb39-5" title="5"><span class="dt">Good</span> ((x1, y1), z1) ((x2, y2), z2)</a>
+<a class="sourceLine" id="cb39-6" title="6">fzip (<span class="dt">Good</span> x1 x2, fzip (<span class="dt">Good</span> y1 y2, <span class="dt">Good</span> z1 z2)) <span class="co">-- RHS</span></a>
+<a class="sourceLine" id="cb39-7" title="7">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> (y1, z1) (y2, z2))</a>
+<a class="sourceLine" id="cb39-8" title="8"><span class="dt">Good</span> (x1, (y1, z1)) (x2, (y2, z2)) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb39-9" title="9"><span class="co">-- Evil/Evil/Evil case:</span></a>
+<a class="sourceLine" id="cb39-10" title="10">fzip (fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> y1 y2), <span class="dt">Evil</span> z1, z2) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb39-11" title="11">fzip (<span class="dt">Evil</span> (x1, y1) (x1, y2), <span class="dt">Evil</span> z1, z2)</a>
+<a class="sourceLine" id="cb39-12" title="12"><span class="dt">Evil</span> ((x1, y1), z1) ((x1, y1), z2)</a>
+<a class="sourceLine" id="cb39-13" title="13">fzip (<span class="dt">Evil</span> x1 x2, fzip (<span class="dt">Evil</span> y1 y2, <span class="dt">Evil</span> z1 z2)) <span class="co">-- RHS</span></a>
+<a class="sourceLine" id="cb39-14" title="14">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> (y1, z1) (y1, z2))</a>
+<a class="sourceLine" id="cb39-15" title="15"><span class="dt">Evil</span> (x1, (y1, z1)) (x1, (y1, z2)) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb39-16" title="16"><span class="co">-- Good/Evil/Evil case:</span></a>
+<a class="sourceLine" id="cb39-17" title="17">fzip (fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> y1 y2), <span class="dt">Evil</span> z1, z2) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb39-18" title="18">fzip (<span class="dt">Good</span> (x1, y1) (x2, y2), <span class="dt">Evil</span> z1, z2)</a>
+<a class="sourceLine" id="cb39-19" title="19"><span class="dt">Evil</span> ((x1, y1), z1) ((x1, y1), z2)</a>
+<a class="sourceLine" id="cb39-20" title="20">fzip (<span class="dt">Good</span> x1 x2, fzip (<span class="dt">Evil</span> y1 y2, <span class="dt">Evil</span> z1 z2)) <span class="co">-- RHS</span></a>
+<a class="sourceLine" id="cb39-21" title="21">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> (y1, z1) (y1, z2))</a>
+<a class="sourceLine" id="cb39-22" title="22"><span class="dt">Evil</span> (x1, (y1, z1)) (x1, (y1, z2)) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb39-23" title="23"><span class="co">-- Evil/Good/Evil case:</span></a>
+<a class="sourceLine" id="cb39-24" title="24">fzip (fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> y1 y2), <span class="dt">Evil</span> z1, z2) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb39-25" title="25">fzip (<span class="dt">Evil</span> (x1, y1) (x2, y2), <span class="dt">Evil</span> z1, z2)</a>
+<a class="sourceLine" id="cb39-26" title="26"><span class="dt">Evil</span> ((x1, y1), z1) ((x1, y1), z2)</a>
+<a class="sourceLine" id="cb39-27" title="27">fzip (<span class="dt">Evil</span> x1 x2, fzip (<span class="dt">Good</span> y1 y2, <span class="dt">Evil</span> z1 z2)) <span class="co">-- RHS</span></a>
+<a class="sourceLine" id="cb39-28" title="28">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> (y1, z1) (y1, z2))</a>
+<a class="sourceLine" id="cb39-29" title="29"><span class="dt">Evil</span> (x1, (y1, z1)) (x1, (y1, z2)) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb39-30" title="30"><span class="co">-- Evil/Evil/Good case:</span></a>
+<a class="sourceLine" id="cb39-31" title="31">fzip (fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> y1 y2), <span class="dt">Good</span> z1, z2) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb39-32" title="32">fzip (<span class="dt">Evil</span> (x1, y1) (x1, y2), <span class="dt">Good</span> z1, z2)</a>
+<a class="sourceLine" id="cb39-33" title="33"><span class="dt">Evil</span> ((x1, y1), z1) ((x1, y2), z2)</a>
+<a class="sourceLine" id="cb39-34" title="34">fzip (<span class="dt">Evil</span> x1 x2, fzip (<span class="dt">Evil</span> y1 y2, <span class="dt">Good</span> z1 z2)) <span class="co">-- RHS</span></a>
+<a class="sourceLine" id="cb39-35" title="35">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Evil</span> (y1, z1) (y2, z2))</a>
+<a class="sourceLine" id="cb39-36" title="36"><span class="dt">Evil</span> (x1, (y1, z1)) (x1, (y2, z2)) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb39-37" title="37"><span class="co">-- Evil/Good/Good case:</span></a>
+<a class="sourceLine" id="cb39-38" title="38">fzip (fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> y1 y2), <span class="dt">Good</span> z1, z2) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb39-39" title="39">fzip (<span class="dt">Evil</span> (x1, y1) (x2, y2), <span class="dt">Good</span> z1, z2)</a>
+<a class="sourceLine" id="cb39-40" title="40"><span class="dt">Evil</span> ((x1, y1), z1) ((x2, y2), z2)</a>
+<a class="sourceLine" id="cb39-41" title="41">fzip (<span class="dt">Evil</span> x1 x2, fzip (<span class="dt">Good</span> y1 y2, <span class="dt">Good</span> z1 z2)) <span class="co">-- RHS</span></a>
+<a class="sourceLine" id="cb39-42" title="42">fzip (<span class="dt">Evil</span> x1 x2, <span class="dt">Good</span> (y1, z1) (y2, z2))</a>
+<a class="sourceLine" id="cb39-43" title="43"><span class="dt">Evil</span> (x1, (y1, z1)) (x2, (y2, z2)) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb39-44" title="44"><span class="co">-- Good/Evil/Good case:</span></a>
+<a class="sourceLine" id="cb39-45" title="45">fzip (fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> y1 y2), <span class="dt">Good</span> z1, z2) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb39-46" title="46">fzip (<span class="dt">Evil</span> (x1, y1) (x1, y2), <span class="dt">Good</span> z1, z2)</a>
+<a class="sourceLine" id="cb39-47" title="47"><span class="dt">Evil</span> ((x1, y1), z1) ((x1, y2), z2)</a>
+<a class="sourceLine" id="cb39-48" title="48">fzip (<span class="dt">Good</span> x1 x2, fzip (<span class="dt">Evil</span> y1 y2, <span class="dt">Good</span> z1 z2)) <span class="co">-- RHS</span></a>
+<a class="sourceLine" id="cb39-49" title="49">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> (y1, z1) (y2, z2))</a>
+<a class="sourceLine" id="cb39-50" title="50"><span class="dt">Evil</span> (x1, (y1, z1)) (x1, (y2, z2)) <span class="co">-- LHS ~ RHS</span></a>
+<a class="sourceLine" id="cb39-51" title="51"><span class="co">-- Good/Good/Evil case:</span></a>
+<a class="sourceLine" id="cb39-52" title="52">fzip (fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Good</span> y1 y2), <span class="dt">Evil</span> z1, z2) <span class="co">-- LHS</span></a>
+<a class="sourceLine" id="cb39-53" title="53">fzip (<span class="dt">Good</span> (x1, y1) (x2, y2), <span class="dt">Evil</span> z1, z2)</a>
+<a class="sourceLine" id="cb39-54" title="54"><span class="dt">Evil</span> ((x1, y1), z1) ((x1, y1), z2)</a>
+<a class="sourceLine" id="cb39-55" title="55">fzip (<span class="dt">Good</span> x1 x2, fzip (<span class="dt">Good</span> y1 y2, <span class="dt">Evil</span> z1 z2)) <span class="co">-- RHS</span></a>
+<a class="sourceLine" id="cb39-56" title="56">fzip (<span class="dt">Good</span> x1 x2, <span class="dt">Evil</span> (y1, z1) (y1, z2))</a>
+<a class="sourceLine" id="cb39-57" title="57"><span class="dt">Evil</span> (x1, (y1, z1)) (x1, (y1, z2)) <span class="co">-- LHS ~ RHS</span></a></code></pre></div>
 <section class="footnotes">
 <hr />
 <ol>
@@ -234,6 +312,7 @@
 <li id="fn3"><p>A relation is a set of pairs; or, if you will, of associations between values. As an arbitrary example, we can have a less-than relation on integers which includes all pairs of integers <code>(x, y)</code> such that <code>x &lt; y</code>. In particular, functions are relations: seen as a relation, a function <code>f</code> seen in this way includes all pairs <code>(x, f x)</code>, there being exactly one pair for each possible value of the first component.<a href="#fnref3" class="footnote-back">↩</a></p></li>
 <li id="fn4"><p>One way to prove that is by using parametricity in tandem with the identity laws, analogously to how we used associativity in the previous section, while exploiting how there being only one shape means any applicative value can be related to <code>unit</code>.<a href="#fnref4" class="footnote-back">↩</a></p></li>
 <li id="fn5"><p>See the previous note about relating things to <code>unit</code>.<a href="#fnref5" class="footnote-back">↩</a></p></li>
+<li id="fn6"><p>The appendix includes a proof of the lawfulness of <code>Twisted</code>.<a href="#fnref6" class="footnote-back">↩</a></p></li>
 </ol>
 </section>
 
