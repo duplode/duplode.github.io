@@ -8,6 +8,15 @@
         <link rel="stylesheet" type="text/css" href="../css/skin.css" />
         <link rel="stylesheet" type="text/css" href="../css/default.css" />
         <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+
+        <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+        <link rel="manifest" href="../site.webmanifest">
+        <link rel="mask-icon" href="../safari-pinned-tab.svg" color="#5bbad5">
+        <meta name="msapplication-TileColor" content="#603cba">
+        <meta name="theme-color" content="#f1e7f6">
+
     </head>
     <body class="pure-skin-duplode">
       <div class="pure-g-r">
@@ -124,7 +133,7 @@
 <section class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p>There is a reasonably well-known alternative formulation of <code>Applicative</code>: the <code>Monoidal</code> class as featured in <a href="http://blog.ezyang.com/2012/08/applicative-functors">this post by Edward Z. Yang</a>. While the laws in this formulation are much easier to grasp, <code>Monoidal</code> feels a little alien from the perspective of a Haskeller, as it shifts the focus from function shuffling to tuple shuffling.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn1"><p>There is a reasonably well-known alternative formulation of <code>Applicative</code>: the <code>Monoidal</code> class as featured in <a href="http://blog.ezyang.com/2012/08/applicative-functors">this post by Edward Z. Yang</a>. It is quite handy to work with when it comes to checking whether an instance follows the laws.<a href="#fnref1" class="footnote-back">↩</a></p></li>
 <li id="fn2"><p>Please excuse some oddities in the manuscript, such as off-kilter terminology and weird conventions (e.g. consistently naming arguments in applicative style as <code>w &lt;*&gt; v &lt;*&gt; u</code> rather than <code>u &lt;*&gt; v &lt;*&gt; w</code> in applicative style). The most baffling choice was using <code>id</code> rather than <code>()</code> as the throwaway argument to <code>const</code>. I guess I did that because <code>($ ())</code> looks bad in handwriting.<a href="#fnref2" class="footnote-back">↩</a></p></li>
 </ol>
 </section>
