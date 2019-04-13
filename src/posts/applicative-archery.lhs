@@ -25,9 +25,8 @@ it out by myself. <!--more--> [^monoidal]
 [^monoidal]: There is a reasonably well-known alternative formulation
 of `Applicative`: the `Monoidal` class as featured in
 [this post by Edward Z. Yang](http://blog.ezyang.com/2012/08/applicative-functors).
-While the laws in this formulation are much easier to grasp, `Monoidal`
-feels a little alien from the perspective of a Haskeller, as it shifts
-the focus from function shuffling to tuple shuffling.
+It is quite handy to work with when it comes to checking whether an
+instance follows the laws.
 
 Let's cast our eye over `Applicative`:
 
