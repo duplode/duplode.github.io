@@ -1,6 +1,6 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "duplode.github.io",
+    "short_name": "duplode.github.io",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
@@ -13,7 +13,7 @@
             "type": "image/png"
         }
     ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
+    "theme_color": "#f1e7f6",
+    "background_color": "#f1e7f6",
     "display": "standalone"
 }
