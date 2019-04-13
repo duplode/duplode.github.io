@@ -139,6 +139,10 @@ theSite = do
         route   idRoute
         compile copyFileCompiler
 
+    match "favicon/*" $ do
+        route   $ customRoute $ takeFileName . toFilePath
+        compile   copyFileCompiler
+
     match "extras/**" $ do
         route   idRoute
         compile copyFileCompiler
