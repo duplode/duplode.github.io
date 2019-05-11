@@ -261,7 +261,7 @@ a b`.
 
 ``` haskell
 -- A simple demonstration of foldList in action.
-f :: ListF a b -> b
+f :: Num a => ListF a a -> a
 f = \case { Nil -> 0; Cons x y -> x + y }
 
 foldList f [1, 2, 3]
