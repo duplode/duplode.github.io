@@ -101,7 +101,7 @@ data structure (one per constructor) and the types of said arguments
 entirely suppress these differences, we have a few tricks that make it
 possible to disguise them rather well. The number of extra arguments,
 for instance, can be always be reduced to just one with sufficient
-currying:
+uncurrying:
 
 ``` haskell
 (b, a -> b -> b) -> [a] -> b
@@ -110,7 +110,7 @@ currying:
 The first argument is now a pair. We continue by making its two halves
 more like each other by converting them into unary functions: the
 first component acquires a dummy `()` argument, while the second one
-gets some more currying:
+gets some more uncurrying:
 
 ``` haskell
 (() -> b, (a, b) -> b) -> [a] -> b
