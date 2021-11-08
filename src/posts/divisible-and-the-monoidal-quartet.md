@@ -1,5 +1,5 @@
 ---
-title: "The Contravariant Hierarchy (WIP)"
+title: "Divisible and the monoidal quartet"
 license: CC-BY-SA
 published: 2021-11-06T20:00:00-03:00
 gh-issue: 15
@@ -25,14 +25,14 @@ Besides Gabriella's post, which is an excellent introduction to
 `Divisible`, I recommend as background reading Tom Ellis'
 [*`Alternatives` convert products to sums*](
 http://h2.jaguarpaw.co.uk/posts/alternatives-convert-products-to-sums/),
-which, in a very brief and accessible way, conveys intuition about
-monoidal functors that I will make use of here. There is a second Tom
-Ellis post, [*The Mysterious Incomposability of `Decidable`*](
+which conveys the core intuition about monoidal functor classes in an
+accessible manner. There is a second Tom Ellis post, [*The Mysterious
+Incomposability of `Decidable`*](
 http://h2.jaguarpaw.co.uk/posts/mysterious-incomposability-of-decidable/),
-that I will address here; I will render the main points of that one
-here, though, so there is no need to jump to it before carrying on.
-Needless to say, these notes are heavily indebted to those posts, and so
-I thank Gabriella and Tom for the spark of inspiration.
+that this article will be in constant dialogue with, in particular as a
+source of examples. From now on I will refer to it as "the *Decidable*
+post". Needless to say, these notes are heavily indebted to those posts,
+and so I thank Gabriella and Tom for the spark of inspiration.
 
 For those of you reading with GHCi on the side, here is an import list:
 
@@ -46,7 +46,7 @@ import Control.Arrow
 import Data.Void
 ```
 
-## `Applicative`
+## Applicative
 
 As I hinted at the introduction, this post is not solely about
 `Divisible`, but more broadly about monoidal functor classes. To start
@@ -95,11 +95,13 @@ post. Purely for the sake of consistency, I will try to stick to the
 `Data.Functor.Contravariant.Divisible` naming conventions for functions
 like `zipped` [^fzip-name]. Also, for the illustrative definitions here
 I will mostly use uncurried versions of those functions, as they make
-some matters clearer to the eye; when I get to more practical usage
-examples I will revert to the usual curried versions. The uncurried
-versions will have a prime at the end of the name, so that it is easier
-to elide it mentally while reading. For instance, below is the uncurried
-version of `zipped`:
+some matters clearer to the eye. For the usage examples, I will revert
+to the usual curried versions.  The uncurried versions here will have a
+prime at the end of their name versions will be distingished by a prime
+at the end of the name, the quiet notation being meant to emphasise you
+can largely disregard the difference at your convenience.  to elide it
+mentally while reading. For instance, below is the uncurried version of
+`zipped`:
 
 [^fzip-name]: Personally, my favourite prefix name for it is not
   `zipped`, but `fzip`, which I borrowed from [Justus Sagemüller](
@@ -147,18 +149,13 @@ forget :: Either a a -> a
 forget = id ||| id
 ```
 
-## `Divisible`
+## Divisible
 
-As Tom Ellis summarises at the beginning of the *Mysterious* post
-[^mysterious], while `Applicative` converts products to products
-covariantly, `Divisible` converts products to products contravariantly.
-From that vantage point, I will take `divided`, the counterpart to
-`zipped`, as the fundamental combinator of the class:
-
-[^mysterious]: That's how I will henceforth refer to [his post about
-  `Decidable`](
-  http://h2.jaguarpaw.co.uk/posts/mysterious-incomposability-of-decidable/)
-  mentioned in the introduction.
+As Tom Ellis summarises it at the beginning of the *Decidable* post,
+while `Applicative` converts products to products covariantly,
+`Divisible` converts products to products contravariantly.  From that
+vantage point, I will take `divided`, the counterpart to `zipped`, as
+the fundamental combinator of the class:
 
 ``` haskell
 divided' :: Divisible k => (k a, k b) -> k (a, b)
@@ -257,11 +254,11 @@ tdivide' f g (u, v) = f >$< u >+< g >$< v
 ```
 
 An alternative to using the projections to set up a deconstructor to be
-used with `divide` is to contra-map each projection to its
-corresponding divisible value and combine the pieces with `(>+<)`. That
-is the style favoured by Tom Ellis [^tom-style], which is where the "t"
-in `tdivide` comes from. For instance, Gabriella's example would be
-spelled as follows in this style:
+used with `divide` is to contra-map each projection to its corresponding
+divisible value and combine the pieces with `(>+<)`. That is the style
+favoured by Tom Ellis [^tom-style], which is why I have added a "t"
+prefix to `tdivide` comes from. For instance, Gabriella's example would
+be spelled as follows in this style:
 
 ``` haskell
 nonNegativeOctantT :: Predicate Point
@@ -271,11 +268,11 @@ nonNegativeOctantT =
 
 [^tom-style]: See, for instance, [this Twitter conversation](
   https://twitter.com/tomjaguarpaw/status/1451235378363609096), or the
-  `Divisible` example in the *Mysterious* post. Note that, though I'm
+  `Divisible` example in the *Decidable* post. Note that, though I'm
   using `(>$<)` here for the sake of parallelism, the examples in this
   style arguably look tidier when spelled with `contramap`.
 
-## `Alternative`
+## Alternative
 
 The `(>+<)` combinator defined above is strikingly similar to `(<|>)`
 from `Alternative`, down to its implied monoidal nature [^arrowplus]:
@@ -377,7 +374,7 @@ tcombine' f g (u, v) = f <$> u <|> g <$> v
 ```
 
 For instance, here is the `Alternative` composition example from the
-*Mysterious* post...
+*Decidable* post...
 
 ``` haskell
 alternativeCompose :: [String]
@@ -400,7 +397,7 @@ that not only reveals an underlying monoidal operaion, `(<|>)` and
 `(>+<)` respectively, but also allows for a certain flexibiliy in
 using the class combinators.
 
-## `Decidable`
+## Decidable
 
 Last, but not least, there is `Decidable` to deal with.
 `Data.Functor.Contravariant.Divisible` already provides `chosen` as the
@@ -443,7 +440,7 @@ the function splitting trick we have used for `divide` and `combine`.
 case analysis to decide whether to return `Left` or `Right` cannot be
 disentangled. This is ultimately what Tom Ellis' complaint about the
 "mysterious incomposability" of `Decidable` is about. Below is a
-paraphrased version of the `Decidable` example from the *Mysterious*
+paraphrased version of the `Decidable` example from the *Decidable*
 post:
 
 ``` haskell
@@ -476,7 +473,7 @@ counterparts to `analyse`, but that is not possible here.
 
 In the last few paragraphs, we have mentioned `Divisible`, `Alternative`
 and `Decidable`. What about `Applicative`, though? The `Applicative`
-example from the *Mysterious* post is written in the usual applicative
+example from the *Decidable* post is written in the usual applicative
 style:
 
 ``` haskell
@@ -529,6 +526,10 @@ between them that are worth pointing out:
 
 To wrap things up, here is a visual summary of the parallels between the
 four classes:
+
+![*Diagram of the four monoidal functor classes under consideration, with
+`Applicative` and `Decidable` in one diagonal, and `Alternative` and
+`Divisible` in the other.*](/images/posts/monoidal-quartet-diagram.png)
 
 To my eyes, the main takeaway of our around this diagram has to do with
 its diagonals. Thanks to a peculiar kind of duality, classes in opposite
