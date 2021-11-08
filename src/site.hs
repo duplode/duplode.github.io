@@ -12,6 +12,7 @@ import Control.Monad (filterM)
 import Hakyll
 import Skylighting (styleToCss, tango)
 import Text.Pandoc.Options
+import Text.Pandoc.Templates (compileTemplate)
 
 import qualified Scripts as Scr
 import qualified IssueThread as Iss
@@ -28,27 +29,34 @@ hakyllConfig = defaultConfiguration
         , Scr.ghIssuesRules = ghIssues
         }
 
-tocPandocWriterOptions :: WriterOptions
-tocPandocWriterOptions = defaultHakyllWriterOptions
-    { writerTableOfContents = True
-    , writerTemplate = Just ("$toc$\n$body$")
-    }
+tocPandocWriterOptions :: Compiler WriterOptions
+tocPandocWriterOptions = do
+    tmpl <- either (const Nothing) Just
+        <$> unsafeCompiler (compileTemplate "" "$toc$\n$body$")
+    return defaultHakyllWriterOptions
+        { writerTableOfContents = True
+        , writerTemplate = tmpl
+        }
 
 processWithPandoc :: Item String -> Compiler (Item String)
 processWithPandoc = processWithPandoc' False
 
 processWithPandoc' :: Bool -> Item String -> Compiler (Item String)
-processWithPandoc' withToc =
-    renderPandocWith defaultHakyllReaderOptions
-        (if withToc then tocPandocWriterOptions else defaultHakyllWriterOptions)
+processWithPandoc' withToc it = do
+    tocOpts <- tocPandocWriterOptions
+    renderPandocWith
+        defaultHakyllReaderOptions
+        (if withToc then tocOpts else defaultHakyllWriterOptions)
+        it
 
 pandocCompilerOfOurs :: Compiler (Item String)
 pandocCompilerOfOurs = pandocCompilerOfOurs' False
 
 pandocCompilerOfOurs' :: Bool -> Compiler (Item String)
-pandocCompilerOfOurs' withToc =
+pandocCompilerOfOurs' withToc = do
+    tocOpts <- tocPandocWriterOptions
     pandocCompilerWith defaultHakyllReaderOptions $
-        if withToc then tocPandocWriterOptions else defaultHakyllWriterOptions
+        if withToc then tocOpts else defaultHakyllWriterOptions
 
 rssConfig :: FeedConfiguration
 rssConfig = FeedConfiguration

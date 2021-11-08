@@ -69,15 +69,15 @@ ghIssues withIssues = do
                 (\err -> Er.throwError
                     [ "ghIssues: Last issue request failed: " ++ show err ])
                 (\mLastIssue -> do
-                    let nLastIssue = fromMaybe 0 $
+                    let nLastIssue = maybe 0 G.unIssueNumber $
                             G.issueNumber <$> mLastIssue
                     auth <- unsafeCompiler authGitHub
                     forM_ potIssues $
-                        attemptCreatingTheIssue auth nLastIssue)
+                        attemptCreatingTheIssue auth (G.IssueNumber nLastIssue))
             makeItem ()
 
 data PotentialIssue = PotentialIssue
-    { potentialIssueNumber :: Int
+    { potentialIssueNumber :: G.IssueNumber
     , potentialIssueTitle :: String
     , potentialIssuePath :: String
     } deriving (Show, Generic)
@@ -87,11 +87,11 @@ instance Binary PotentialIssue
 data PotentialIssueError = MalformedIssueNumber | NegativeIssueNumber
     deriving (Eq, Show)
 
-parsePotentialIssueNumber :: String -> Either PotentialIssueError Int
+parsePotentialIssueNumber :: String -> Either PotentialIssueError G.IssueNumber
 parsePotentialIssueNumber s = do
     nIssue <- first (const MalformedIssueNumber) $ readEither s
     when (nIssue < 1) $ Left NegativeIssueNumber
-    return nIssue
+    return (G.IssueNumber nIssue)
 
 authGitHub :: IO G.Auth
 authGitHub = G.BasicAuth
@@ -100,7 +100,7 @@ authGitHub = G.BasicAuth
 
 createTheIssue :: G.Auth -> String -> Identifier
     -> IO (Either G.Error G.Issue)
-createTheIssue auth title ident = G.createIssue auth
+createTheIssue auth title ident = G.github auth $ G.createIssueR
     "duplode" "duplode.github.io"
     (G.newIssue (fromString title))
         -- TODO: Duplicates the post route.
@@ -125,11 +125,12 @@ retrieveLatestIssue = do
 
 -- Currently unused.
 retrieveOldIssue :: Int -> IO (Either G.Error G.Issue)
-retrieveOldIssue n =  G.issue "duplode" "duplode.github.io" (G.Id n)
+retrieveOldIssue n = G.github' $
+    G.issueR "duplode" "duplode.github.io" (G.IssueNumber n)
 
 -- Creates a GitHub issue for a potential issue, but only if the issue
 -- numbers are above that of the latest existing issue.
-attemptCreatingTheIssue :: G.Auth -> Int -> Item PotentialIssue
+attemptCreatingTheIssue :: G.Auth -> G.IssueNumber -> Item PotentialIssue
     -> Compiler ()
 attemptCreatingTheIssue auth lastN (Item ident potIss) = do
     let potN = potentialIssueNumber potIss
