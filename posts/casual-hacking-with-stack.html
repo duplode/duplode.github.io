@@ -9,6 +9,7 @@
         <link rel="stylesheet" type="text/css" href="../css/default.css" />
         <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
 
+        <!-- Favicon -->
         <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
         <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
         <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -16,6 +17,11 @@
         <link rel="mask-icon" href="../safari-pinned-tab.svg" color="#5bbad5">
         <meta name="msapplication-TileColor" content="#603cba">
         <meta name="theme-color" content="#f1e7f6">
+
+        <!-- Twitter card -->
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:site" content="@duplode" />
+        <meta name="twitter:title" content="Casual Hacking With stack" />
 
     </head>
     <body class="pure-skin-duplode">
@@ -49,13 +55,13 @@
 
 </div>
 <!--more-->
-<p>I won’t dwell on the motivation and philosophy behind stack <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. Suffice it to say that, at least in the less exotic workflows, there is a centralised package database somewhere in <code>~/.stack</code> with packages pulled from a <a href="https://www.stackage.org/">Stackage</a> snapshot (and therefore known to be compatible with each other), which is supplemented by a per-project database (that is, just like cabal sandboxes) for packages not in Stackage (from Hackage or anywhere else). As that sounds like a great way to avoid headaches, we will stick to this arrangement, with only minor adjustments.</p>
-<p>Once you have installed stack <a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>, you can create a new environment for experiments with <code>stack new</code>:</p>
+<p>I won’t dwell on the motivation and philosophy behind stack <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. Suffice it to say that, at least in the less exotic workflows, there is a centralised package database somewhere in <code>~/.stack</code> with packages pulled from a <a href="https://www.stackage.org/">Stackage</a> snapshot (and therefore known to be compatible with each other), which is supplemented by a per-project database (that is, just like cabal sandboxes) for packages not in Stackage (from Hackage or anywhere else). As that sounds like a great way to avoid headaches, we will stick to this arrangement, with only minor adjustments.</p>
+<p>Once you have installed stack <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>, you can create a new environment for experiments with <code>stack new</code>:</p>
 <pre><code>$ mkdir -p Development/haskell/playground
 $ cd Development/haskell/playground
 $ stack new --prefer-nightly</code></pre>
 <p>The <code>--prefer-nightly</code> option makes stack use a nightly snapshot of Stackage, as opposed to a long term support one. As we are just playing around, it makes sense to pick as recent as possible packages from the nightly instead of the LTS. (Moreover, I use Arch Linux, which already has GHC 7.10 and <code>base</code> 4.8, while the current LTS snapshot assumes <code>base</code> 4.7.) If this is the first time you use stack, it will pick the latest nightly; otherwise it will default to whatever nightly you already have in <code>~/.stack</code>.</p>
-<p><code>stack new</code> creates a neat default project structure for you <a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>:</p>
+<p><code>stack new</code> creates a neat default project structure for you <a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>:</p>
 <pre><code>$ ls -R
 .:
 app  LICENSE  new-template.cabal  Setup.hs  src  stack.yaml  test
@@ -69,12 +75,12 @@ Lib.hs
 ./test:
 Spec.hs</code></pre>
 <p>Of particular interest is the <code>stack.yaml</code> file, which holds the settings for the local stack environment. We will talk more about it soon.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span></a>
-<a class="sourceLine" id="cb3-2" title="2"><span class="fu">packages:</span></a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="kw">-</span> <span class="st">'.'</span></a>
-<a class="sourceLine" id="cb3-4" title="4"><span class="fu">extra-deps:</span><span class="at"> </span><span class="kw">[]</span></a>
-<a class="sourceLine" id="cb3-5" title="5"><span class="fu">resolver:</span><span class="at"> nightly-2015-07-19</span></a></code></pre></div>
-<p>As for the default <code>new-template.cabal</code> file, you can use its <code>build-depends</code> section to keep track of what you are installing. That will make <code>stack build</code> (the command which builds the current project without installing it) to download and install any dependencies you add to the cabal file automatically. Besides that, having the installed packages noted down may prove useful in case you need to reproduce your configuration elsewhere <a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>. If your experiments become a real project, you can clean up the <code>build-depends</code> without losing track of the packages you installed for testing purposes by moving their entries to a second cabal file, kept in a subdirectory:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">flags</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="st">'.'</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">extra-deps</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> nightly-2015-07-19</span></span></code></pre></div>
+<p>As for the default <code>new-template.cabal</code> file, you can use its <code>build-depends</code> section to keep track of what you are installing. That will make <code>stack build</code> (the command which builds the current project without installing it) to download and install any dependencies you add to the cabal file automatically. Besides that, having the installed packages noted down may prove useful in case you need to reproduce your configuration elsewhere <a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. If your experiments become a real project, you can clean up the <code>build-depends</code> without losing track of the packages you installed for testing purposes by moving their entries to a second cabal file, kept in a subdirectory:</p>
 <pre><code>$ mkdir xp
 $ cp new-template.cabal xp/xp.cabal
 $ cp LICENSE xp # Too lazy to delete the lines from the cabal file.
@@ -82,9 +88,9 @@ $ cd xp
 $ vi Dummy.hs # module Dummy where &lt;END OF FILE&gt;
 $ vi xp.cabal # Adjust accordingly, and list your extra deps.</code></pre>
 <p>You also need to tell stack about this fake subproject. All it takes is adding an entry for the subdirectory in <code>stack.yaml</code>:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" title="1"><span class="fu">packages:</span></a>
-<a class="sourceLine" id="cb5-2" title="2"><span class="kw">-</span> <span class="st">'.'</span> <span class="co"># The default entry.</span></a>
-<a class="sourceLine" id="cb5-3" title="3"><span class="kw">-</span> <span class="st">'xp'</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="st">'.'</span><span class="co"> # The default entry.</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="st">'xp'</span></span></code></pre></div>
 <p>With the initial setup done, we use <code>stack build</code> to compile the projects:</p>
 <pre><code>$ stack build
 new-template-0.1.0.0: configure
@@ -100,34 +106,34 @@ xp-0.1.0.0: install
 Completed all 3 actions.</code></pre>
 <p>In this test run, I added <code>fmlist</code> as a dependency of the fake package <code>xp</code>, and so it was automatically installed by stack. The output of <code>stack build</code> goes to a <code>.stack-work</code> subdirectory.</p>
 <p>With the packages built, we can use GHCi in the stack environment with <code>stack ghci</code>. It loads the library source files of the current project by default:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="fu">$</span> stack ghci</a>
-<a class="sourceLine" id="cb7-2" title="2"><span class="dt">Configuring</span> <span class="dt">GHCi</span> with the following packages<span class="fu">:</span> new<span class="fu">-</span>template, xp</a>
-<a class="sourceLine" id="cb7-3" title="3"><span class="dt">GHCi</span>, version <span class="fl">7.10</span><span class="fu">.</span><span class="dv">1</span><span class="fu">:</span> http<span class="fu">://</span>www<span class="fu">.</span>haskell<span class="fu">.</span>org<span class="fu">/</span>ghc<span class="fu">/</span>  <span class="fu">:?</span> for help</a>
-<a class="sourceLine" id="cb7-4" title="4">[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (</a>
-<a class="sourceLine" id="cb7-5" title="5"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>src<span class="fu">/</span>Lib.hs, interpreted )</a>
-<a class="sourceLine" id="cb7-6" title="6">[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Dummy</span>            (</a>
-<a class="sourceLine" id="cb7-7" title="7"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>xp<span class="fu">/</span>Dummy.hs, interpreted )</a>
-<a class="sourceLine" id="cb7-8" title="8"><span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Dummy</span>, <span class="dt">Lib</span><span class="fu">.</span></a>
-<a class="sourceLine" id="cb7-9" title="9"><span class="fu">*</span><span class="dt">Lib</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.FMList</span> <span class="kw">as</span> <span class="dt">F</span> <span class="co">-- Which we have just installed.</span></a>
-<a class="sourceLine" id="cb7-10" title="10"><span class="fu">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="fu">&gt;</span> <span class="co">-- We can also load executables specified in the cabal file.</span></a>
-<a class="sourceLine" id="cb7-11" title="11"><span class="fu">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="fu">&gt;</span> <span class="fu">:</span>l <span class="dt">Main</span></a>
-<a class="sourceLine" id="cb7-12" title="12">[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (</a>
-<a class="sourceLine" id="cb7-13" title="13"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>src<span class="fu">/</span>Lib.hs, interpreted )</a>
-<a class="sourceLine" id="cb7-14" title="14">[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Main</span>             (</a>
-<a class="sourceLine" id="cb7-15" title="15"><span class="fu">/</span>home<span class="fu">/</span>duplode<span class="fu">/</span><span class="dt">Development</span><span class="fu">/</span>haskell<span class="fu">/</span>playground<span class="fu">/</span>app<span class="fu">/</span>Main.hs, interpreted )</a>
-<a class="sourceLine" id="cb7-16" title="16"><span class="dt">Ok</span>, modules loaded<span class="fu">:</span> <span class="dt">Lib</span>, <span class="dt">Main</span><span class="fu">.</span></a>
-<a class="sourceLine" id="cb7-17" title="17"><span class="fu">*</span><span class="dt">Main</span> <span class="dt">F</span><span class="fu">&gt;</span></a></code></pre></div>
-<p>Dependencies not in Stackage have to be specified in <code>stack.yaml</code> as well as in the cabal files, so that stack can manage them too. Alternative sources of packages include source trees in subdirectories of the project, Hackage and remote Git repositories <a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb8-1" title="1"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span></a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="fu">packages:</span></a>
-<a class="sourceLine" id="cb8-3" title="3"><span class="kw">-</span> <span class="st">'.'</span></a>
-<a class="sourceLine" id="cb8-4" title="4"><span class="kw">-</span> <span class="st">'xp'</span></a>
-<a class="sourceLine" id="cb8-5" title="5"><span class="kw">-</span> <span class="fu">location:</span><span class="at"> deps/acme-missiles-0.3 </span><span class="co"># Sources in a subdirectory.</span></a>
-<a class="sourceLine" id="cb8-6" title="6">  <span class="fu">extra-dep:</span><span class="at"> </span><span class="ch">true</span><span class="at"> </span><span class="co"># Mark as dep, i.e. not part of the project proper.</span></a>
-<a class="sourceLine" id="cb8-7" title="7"><span class="fu">extra-deps:</span></a>
-<a class="sourceLine" id="cb8-8" title="8"><span class="kw">-</span> acme-safe-0.1.0.0 <span class="co"># From Hackage.</span></a>
-<a class="sourceLine" id="cb8-9" title="9"><span class="kw">-</span> acme-dont-1.1 <span class="co"># Also from Hackage, dependency of acme-safe.</span></a>
-<a class="sourceLine" id="cb8-10" title="10"><span class="fu">resolver:</span><span class="at"> nightly-2015-07-19</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">$</span> stack ghci</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Configuring</span> <span class="dt">GHCi</span> with the following packages<span class="op">:</span> new<span class="op">-</span>template, xp</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="dt">GHCi</span>, version <span class="fl">7.10</span><span class="op">.</span><span class="dv">1</span><span class="op">:</span> http<span class="op">://</span>www<span class="op">.</span>haskell<span class="op">.</span>org<span class="op">/</span>ghc<span class="op">/</span>  <span class="op">:?</span> for help</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">/</span>home<span class="op">/</span>duplode<span class="op">/</span><span class="dt">Development</span><span class="op">/</span>haskell<span class="op">/</span>playground<span class="op">/</span>src<span class="op">/</span>Lib.hs, interpreted )</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Dummy</span>            (</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="op">/</span>home<span class="op">/</span>duplode<span class="op">/</span><span class="dt">Development</span><span class="op">/</span>haskell<span class="op">/</span>playground<span class="op">/</span>xp<span class="op">/</span>Dummy.hs, interpreted )</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="dt">Ok</span>, modules loaded<span class="op">:</span> <span class="dt">Dummy</span>, <span class="dt">Lib</span><span class="op">.</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="op">*</span><span class="dt">Lib</span><span class="op">&gt;</span> <span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.FMList</span> <span class="kw">as</span> <span class="dt">F</span> <span class="co">-- Which we have just installed.</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="op">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="op">&gt;</span> <span class="co">-- We can also load executables specified in the cabal file.</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="op">*</span><span class="dt">Lib</span> <span class="dt">F</span><span class="op">&gt;</span> <span class="op">:</span>l <span class="dt">Main</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Lib</span>              (</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="op">/</span>home<span class="op">/</span>duplode<span class="op">/</span><span class="dt">Development</span><span class="op">/</span>haskell<span class="op">/</span>playground<span class="op">/</span>src<span class="op">/</span>Lib.hs, interpreted )</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>[<span class="dv">2</span> <span class="kw">of</span> <span class="dv">2</span>] <span class="dt">Compiling</span> <span class="dt">Main</span>             (</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="op">/</span>home<span class="op">/</span>duplode<span class="op">/</span><span class="dt">Development</span><span class="op">/</span>haskell<span class="op">/</span>playground<span class="op">/</span>app<span class="op">/</span>Main.hs, interpreted )</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="dt">Ok</span>, modules loaded<span class="op">:</span> <span class="dt">Lib</span>, <span class="dt">Main</span><span class="op">.</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="op">*</span><span class="dt">Main</span> <span class="dt">F</span><span class="op">&gt;</span></span></code></pre></div>
+<p>Dependencies not in Stackage have to be specified in <code>stack.yaml</code> as well as in the cabal files, so that stack can manage them too. Alternative sources of packages include source trees in subdirectories of the project, Hackage and remote Git repositories <a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">flags</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="st">'.'</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="st">'xp'</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">location</span><span class="kw">:</span><span class="at"> deps/acme-missiles-0.3</span><span class="co"> # Sources in a subdirectory.</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">extra-dep</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co"> # Mark as dep, i.e. not part of the project proper.</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">extra-deps</span><span class="kw">:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> acme-safe-0.1.0.0</span><span class="co"> # From Hackage.</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> acme-dont-1.1</span><span class="co"> # Also from Hackage, dependency of acme-safe.</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> nightly-2015-07-19</span></span></code></pre></div>
 <p><code>stack build</code> will then install the extra dependencies to <code>.stack-work/install</code>. You can use <code>stack solver</code> to chase the indirect dependencies introduced by them. For instance, this is its output after commenting the <code>acme-dont</code> line in the <code>stack.yaml</code> just above:</p>
 <pre><code>$ stack solver --no-modify-stack-yaml
 This command is not guaranteed to give you a perfect build plan
@@ -139,14 +145,14 @@ extra-deps:
 <p>To conclude this tour, once you get bored of the initial Stackage snapshot all it takes to switch it is changing the <code>resolver</code> field in <code>stack.yaml</code> (with nightlies, that amounts to changing the date at the end of the snapshot name). That will cause all dependencies to be downloaded and built from the chosen snapshot when <code>stack build</code> is next ran. As of now, the previous snapshot will remain in <code>~/.stack</code> unless you go there and delete it manually; however, a command for removing unused snapshots <a href="https://github.com/commercialhaskell/stack/issues/133">is in the plans</a>.</p>
 <p>I have not tested the sketch of a workflow presented here extensively, yet what I have seen was enough to convince me stack can provide a pleasant experience for casual experiments as well as full-fledged projects. Happy hacking!</p>
 <p><strong>Update:</strong> There is now a follow-up post about the other side of the coin, <a href="../posts/migrating-a-project-to-stack.html">Migrating a Project to stack</a>.</p>
-<section class="footnotes">
+<section class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr />
 <ol>
-<li id="fn1"><p>For that, see <a href="https://www.fpcomplete.com/blog/2015/06/why-is-stack-not-cabal">Why is stack not cabal?</a>, written by a member of its development team.<a href="#fnref1" class="footnote-back">↩</a></p></li>
-<li id="fn2"><p>For installation guidance, see the <a href="https://github.com/commercialhaskell/stack/wiki/Downloads">GitHub project wiki</a>. Installing stack is easy, and there are many ways to do it (I simply got it from Hackage with <code>cabal install stack</code>).<a href="#fnref2" class="footnote-back">↩</a></p></li>
-<li id="fn3"><p>To create an environment for an existing project, with its own structure and cabal file, you would use <code>stack init</code> instead.<a href="#fnref3" class="footnote-back">↩</a></p></li>
-<li id="fn4"><p>In any case, you can also use <code>stack exec -- ghc-pkg list</code> to see all packages installed from the snapshot you are currently using. That, however, will be far messier than the <code>build-depends</code> list, as it will include indirect dependencies as well.<a href="#fnref4" class="footnote-back">↩</a></p></li>
-<li id="fn5"><p>For the latter, see <a href="https://github.com/commercialhaskell/stack/wiki/Nonstandard-project-initialization">the project wiki</a>.<a href="#fnref5" class="footnote-back">↩</a></p></li>
+<li id="fn1" role="doc-endnote"><p>For that, see <a href="https://www.fpcomplete.com/blog/2015/06/why-is-stack-not-cabal">Why is stack not cabal?</a>, written by a member of its development team.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>For installation guidance, see the <a href="https://github.com/commercialhaskell/stack/wiki/Downloads">GitHub project wiki</a>. Installing stack is easy, and there are many ways to do it (I simply got it from Hackage with <code>cabal install stack</code>).<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>To create an environment for an existing project, with its own structure and cabal file, you would use <code>stack init</code> instead.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p>In any case, you can also use <code>stack exec -- ghc-pkg list</code> to see all packages installed from the snapshot you are currently using. That, however, will be far messier than the <code>build-depends</code> list, as it will include indirect dependencies as well.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" role="doc-endnote"><p>For the latter, see <a href="https://github.com/commercialhaskell/stack/wiki/Nonstandard-project-initialization">the project wiki</a>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
