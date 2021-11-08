@@ -93,35 +93,19 @@ on when writing in applicative style become unfeasible.
 Before we continue, a few notes about naming and style choices in this
 post. Purely for the sake of consistency, I will try to stick to the
 `Data.Functor.Contravariant.Divisible` naming conventions for functions
-like `zipped` [^fzip-name]. Also, for the illustrative definitions here
-I will mostly use uncurried versions of those functions, as they make
-some matters clearer to the eye. For the usage examples, I will revert
-to the usual curried versions.  The uncurried versions here will have a
-prime at the end of their name versions will be distingished by a prime
-at the end of the name, the quiet notation being meant to emphasise you
-can largely disregard the difference at your convenience.  to elide it
-mentally while reading. For instance, below is the uncurried version of
-`zipped`:
+like `zipped` [^fzip-name].
 
 [^fzip-name]: Personally, my favourite prefix name for it is not
   `zipped`, but `fzip`, which I borrowed from [Justus Sagemüller](
   https://stackoverflow.com/a/50703828/2751851).
-
-``` haskell
-zipped' :: Applicative f => (f a, f b) -> f (a, b)
-zipped' = uncurry zipped
-```
 
 While keep ourselves away from `(<*>)` and `liftA2`, we can recover, if
 not the full flexibility, the power of applicative style with a variant
 of `liftA2` that takes an uncurried function:
 
 ``` haskell
-lizip' :: Applicative f => ((a, b) -> c) -> (f a, f b) -> f c
-lizip' f = fmap f . zipped'
-
 lizip :: Applicative f => ((a, b) -> c) -> f a -> f b -> f c
-lizip f = curry (lizip f)
+lizip f u v = fmap f (zipped u v)
 ```
 
 (That is admittedly a weird name; all the clashing naming conventions
@@ -158,9 +142,6 @@ vantage point, I will take `divided`, the counterpart to `zipped`, as
 the fundamental combinator of the class:
 
 ``` haskell
-divided' :: Divisible k => (k a, k b) -> k (a, b)
-divided' = uncurry divided
-
 -- This is the divided operator featured on Gabriella's post, which will
 -- soon be available from Data.Functor.Contravariant.Divisible
 (>*<) :: Divisible k => k a -> k b -> k (a, b)
@@ -178,11 +159,11 @@ Recovering `divide` from `divided` is straightforward, and entirely
 analogous to how `lizip` can be obtained from `zipped`:
 
 ``` haskell
-divide' :: Divisible k => (a -> (b, c)) -> (k b, k c) -> k a
-divide' f = contramap f . divided'
+divide :: Divisible k => (a -> (b, c)) -> k b -> k c -> k a
+divide f = contramap f (divided u v)
 ```
 
-Lack of currying aside, we might say that `divide` plays the role of
+Lessened currying aside, we might say that `divide` plays the role of
 `liftA2` in `Divisible`.
 
 It's about time for an example. For that, I will borrow the one from
@@ -211,46 +192,46 @@ cleanly assembled out of the component projection functions `x`, `y` and
 gives us a variant of `divide` that takes the projections separately:
 
 ``` haskell
-tdivide' :: Divisible k => (a -> b) -> (a -> c) -> (k b, k c) -> k a
-tdivide' f g = divide' (f &&& g)
+tdivide :: Divisible k => (a -> b) -> (a -> c) -> k b -> k c -> k a
+tdivide f g u v = divide (f &&& g) u v
 ```
 
-Besides offering an extra option with respect to ergonomics, `tdivide'`
+Besides offering an extra option with respect to ergonomics, `tdivide`
 hints at extra structure available from the `Divisible` class. Let's
 play with the definitions a little:
 
 ``` haskell
-tdivide' f g
-divide' (f &&& g)
-contramap (f &&& g) . divided'
-contramap ((f *** g) . dup) . divided'
-contramap dup . contramap (f *** g) . divided'
-contramap dup . divided' . (contramap f *** contramap g)
-divide' dup . (contramap f *** contramap g)
+tdivide f g u v
+divide (f &&& g) u v
+contramap (f &&& g) (divided u v)
+contramap ((f *** g) . dup) (divided u v)
+(contramap dup . contramap (f *** g)) (divided u v)
+contramap dup (divided (contramap f u) (contramap g v))
+divide dup (contramap f u) (contramap g v)
 ```
 
 `divide dup`, which duplicates input in order to feed each of its
 arguments, is a combinator worthy of a name:
 
 ``` haskell
-dplus' :: Divisible k => (k a, k a) -> k a
-dplus' = divide' dup
+dplus :: Divisible k => k a -> k a -> k a
+dplus = divide dup
 
 (>+<) :: Divisible k => k a -> k a -> k a
-(>+<) = curry dplus'
+(>+<) = dplus
 infixr 5 >+<
 ```
 
 So we have:
 
 ``` haskell
-tdivide' f g = dplus' . (contramap f *** contramap g)
+tdivide f g u v = dplus (contramap f u) (contramap g v)
 ```
 
-It is easier to picture what is going on here by writing it pointfully:
+Or, using the operators:
 
 ``` haskell
-tdivide' f g (u, v) = f >$< u >+< g >$< v
+tdivide f g u v = f >$< u >+< g >$< v
 ```
 
 An alternative to using the projections to set up a deconstructor to be
@@ -306,10 +287,6 @@ http://h2.jaguarpaw.co.uk/posts/alternatives-convert-products-to-sums/):
 combined :: Alternative f => f a -> f b -> f (Either a b)
 combined u v = Left <$> u <|> Right <$> v
 
-combined' :: Alternative f => (f a, f b) -> f (Either a b)
-combined' = uncurry combine
-
--- An operator spelling:
 (-|-) :: Alternative f => f a -> f b -> f (Either a b)
 (-|-) = combined
 infixr 5 -|-
@@ -332,11 +309,8 @@ be intersting matters to think about from this vantage point, though.)
 A `divide` analogue follows:
 
 ``` haskell
-combine' :: Alternative f => (Either a b -> c) -> (f a, f b) -> f c
-combine' f = fmap f . combined'
-
 combine :: Alternative f => (Either a b -> c) -> f a -> f b -> f c
-combine f = curry (combine' f)
+combine f u v = fmap f (combined u v)
 ```
 
 Crucially, `Either a b -> c` can be split in a way dual to what we have
@@ -346,31 +320,33 @@ we can use the alternative style trick done for `Divisible` by
 dualising things:
 
 ``` haskell
-tcombine' :: Alternative f => (a -> c) -> (b -> c) -> (f a, f b) -> f c
-tcombine' f g = combine' (f ||| g)
+tcombine :: Alternative f => (a -> c) -> (b -> c) -> f a -> f b -> f c
+tcombine f g = combine (f ||| g)
 ```
 
 ``` haskell
-tcombine' f g
-combine' (f ||| g)
-fmap (f ||| g) . combined'
-fmap (forget . (f +++ g)) . combined'
-fmap forget . fmap (f +++ g) . combined'
-fmap forget . combined' . (fmap f +++ fmap g)
-combine' forget . (fmap +++ fmap g)
+tcombine f g u v
+combine (f ||| g) u v
+fmap (f ||| g) (combined u v)
+fmap (forget . (f +++ g)) (combined u v)
+fmap forget (combined (fmap f u) (fmap g v))
+combine forget (fmap f u) (fmap g v)
 ```
 
+We now go full circle...
+
 ``` haskell
--- Going full circle:
--- (<|>) = curry aplus'
-aplus' :: Alternative f => (f a, f a) -> f a
-aplus' = combine' forget
+aplus :: Alternative f => f a -> f a -> f a
+aplus = combine forget
+-- (<|>) = aplus
 ```
 
-``` haskell
-tcombine' f g = aplus' . (fmap f +++ fmap g)
+... to end up with:
 
-tcombine' f g (u, v) = f <$> u <|> g <$> v
+``` haskell
+tcombine f g u v = aplus (fmap f u) (fmap g v)
+
+tcombine f g u v = f <$> u <|> g <$> v
 ```
 
 For instance, here is the `Alternative` composition example from the
@@ -401,8 +377,8 @@ using the class combinators.
 
 Last, but not least, there is `Decidable` to deal with.
 `Data.Functor.Contravariant.Divisible` already provides `chosen` as the
-`divided` analogue, so let's just supply the uncurried and operator
-variants [^chosen-operator]:
+`divided` analogue, so let's just supply the and operator variant
+[^chosen-operator]:
 
 [^chosen-operator]: Both [*dhall*](
   https://hackage.haskell.org/package/dhall-1.40.1/docs/Dhall-Marshal-Encode.html#v:-62--124--60-)
@@ -413,9 +389,6 @@ variants [^chosen-operator]:
   neither of them here.
 
 ``` haskell
-chosen' :: Decidable k => (k a, k b) -> k (Either a b)
-chosen' = uncurry chosen
-
 (|-|) :: Decidable k => k a -> k b -> k (Either a b)
 (|-|) = chosen
 infixr 5 |-|
@@ -430,8 +403,8 @@ infixr 5 |-|
 `choose` can be recovered from `chosen` in the usual way:
 
 ``` haskell
-choose' :: Decidable k => (a -> Either b c) -> (k b, k c) -> k a
-choose' f = contamap f . chosen'
+choose :: Decidable k => (a -> Either b c) -> k b -> k c -> k a
+choose f u v = contamap f (chosen u v)
 ```
 
 The `a -> Either b c` argument of `choose`, however, is not amenable to
