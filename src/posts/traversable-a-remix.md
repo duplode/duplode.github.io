@@ -115,7 +115,7 @@ function to `T a` and `T b` (that is precisely what `fmap` does with
 regular functions). This would give an endofunctor, whose arrow
 mapping would have a signature shaped like this:
 
-[^functor-dp]: For why that is a good idea, see Gabriel Gonzalez's
+[^functor-dp]: For why that is a good idea, see Gabriella Gonzalez's
     [*The functor design pattern*](http://www.haskellforall.com/2012/09/the-functor-design-pattern.html).
 
 ``` haskell

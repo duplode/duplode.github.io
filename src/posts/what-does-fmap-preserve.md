@@ -48,7 +48,7 @@ post. If the category theory concepts I just mentioned are new to you,
 I suggest the following gentle introductions for Haskellers, which have
 very different approaches: [Haskell Wikibook chapter on category
 theory](https://en.wikibooks.org/wiki/Haskell/Category_theory), and
-Gabriel Gonzalez's posts [The category design
+Gabriella Gonzalez's posts [The category design
 pattern](http://www.haskellforall.com/2012/08/the-category-design-pattern.html)
 and [The functor design
 pattern](http://www.haskellforall.com/2012/09/the-functor-design-pattern.html).

@@ -11,6 +11,5 @@ optional). I can be spotted in locations such as:
   over and contribute to the Haskell Wikibook.
 - [Stack Overflow](http://stackoverflow.com/users/2751851/duplode).
   There, I can occasionaly be found hanging around the Haskell tag.
-- [Bitbucket](https://bitbucket.org/duplode/stunts-cartography), which I
-  use mainly for my Stunts-related projects. What is
-  [Stunts](http://scr.stunts.hu), you ask? It is the best racing game ever.
+- [ZakStunts](http://zak.stunts.hu), the hub for all things Stunts.
+  What is [Stunts](http://wiki.stunts.hu), you ask? It is the best racing game ever.

@@ -29,7 +29,7 @@ directory):
 
     # After compiling the Hakyll executable, builds the site incrementally.
     # See the Hakyll documentation for other commands.
-    cabal new-run . -- build
+    cabal v2-run . -- build
 
     # Transfers the built site to the master root using rsync.
     # Afterwards, you should commit the updates at the master clone.
@@ -39,7 +39,7 @@ directory):
     # there and publishes to GitHub.
     # Uses a [`turtle`](https://hackage.haskell.org/package/turtle) script
     # defined in `Scripts.hs`.
-    cabal new-run . -- deploy
+    cabal v2-run . -- deploy
 
 Repository layout
 -----------------

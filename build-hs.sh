@@ -5,4 +5,4 @@
 
 # Note that the threaded ghc-option might be helpful on Windows.
 
-cabal new-build
+cabal v2-build

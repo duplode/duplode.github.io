@@ -422,10 +422,10 @@ the name commonly given in the recursion schemes liteature to the law
 which guarantees the correctness of this kind of fold fusion.
 
 Banana split fusion is eminently practical. A fabulous demonstration of
-that is [*foldl*](hackage.haskell.org/package/foldl), Gabriel Gonzalez's
-popular library for "composable, streaming, and efficient left folds".
-Here is what `averageList` would look like if recast with the *foldl*
-vocabulary [^foldl-mean]:
+that is [*foldl*](hackage.haskell.org/package/foldl), Gabriella
+Gonzalez's popular library for "composable, streaming, and efficient
+left folds".  Here is what `averageList` would look like if recast with
+the *foldl* vocabulary [^foldl-mean]:
 
 [^foldl-mean]: With respect to this specific example, it should be
   mentioned that among many other utility folds, *foldl* offers [a
