@@ -255,12 +255,13 @@ from `Alternative`, down to its implied monoidal nature [^arrowplus]:
 [^arrowplus]: A proof that `(>+<)` is indeed monoidal is in [an end
   note](#dplus-is-a-monoidal-operation) to this post.
 
-  On a related note, my choice of `>+<` as the `dplus`
-  operator is, in part, a pun on [`(<+>)` from `ArrowPlus`](
-  https://hackage.haskell.org/package/base-4.16.0.0/docs/Control-Arrow.html#t:ArrowPlus).
-  `(>+<)` works very much like `(<+>)`, monoidally combining outputs,
-  even if there probably isn't a sensible way to actually make the types
-  underlying the various `Divisible` functors instances of `ArrowPlus`.
+    On a related note, my choice of `>+<` as the `dplus` operator is, in
+    part, a pun on [`(<+>)` from `ArrowPlus`](
+    https://hackage.haskell.org/package/base-4.16.0.0/docs/Control-Arrow.html#t:ArrowPlus).
+    `(>+<)` for many instances works very much like `(<+>)`, monoidally
+    combining outputs, even if there probably isn't a sensible way to
+    actually make the types underlying the various `Divisible` functors
+    instances of `ArrowPlus`.
 
 It is surprising that `(>+<)` springs forth in `Divisible` rather than
 `Decidable`, which might look like the more obvious candidate to be
@@ -430,7 +431,12 @@ The problem identified in the post is that there is no straightfoward
 way around having to write "the explicit unpacking into an `Either`"
 performed by `analyse`. In the `Divisible` and `Alternative` examples,
 it was possible to avoid tuple or `Either` shuffling by decomposing the
-counterparts to `analyse`, but that is not possible here.
+counterparts to `analyse`, but that is not possible here
+[^nested-either].
+
+[^nested-either]: I will talk a bit more about this ergonomic problem of
+  nested `Either` in [an end note](#the-nested-either-problem) to this
+  post.
 
 In the last few paragraphs, we have mentioned `Divisible`, `Alternative`
 and `Decidable`. What about `Applicative`, though? The `Applicative`
@@ -461,7 +467,8 @@ monoidalCompose =
 
 Just like `a -> Either b c` functions, `(a, b) -> c` functions cannot be
 decomposed: the `c` value can be produced by using the `a` and `b`
-components in arbitrary ways, and there is no way to disentangle that.
+components in arbitrary ways, and there is no easy way to disentangle
+that.
 
 `Decidable`, then, relates to `Applicative` in an analogous way to how
 `Divisible` does to `Alternative`. There are a few other similiarities
@@ -492,12 +499,20 @@ four classes:
 `Applicative` and `Decidable` in one diagonal, and `Alternative` and
 `Divisible` in the other.*](/images/posts/monoidal-quartet-diagram.png)
 
-To my eyes, the main takeaway of our around this diagram has to do with
-its diagonals. Thanks to a peculiar kind of duality, classes in opposite
-corners are similar in quite a few ways. In particular, the orange
-diagonal classes, `Alternative` and `Divisible`, have monoidal
-operations of `f a -> f a -> f a` signature that arise out of their
-monoidal functor structure.
+To my eyes, the main takeaway of our figure of eight trip around this
+diagram has to do with its diagonals. Thanks to a peculiar kind of
+duality, classes in opposite corners of it are similar to each other in
+quite a few ways. In particular, the orange diagonal classes,
+`Alternative` and `Divisible`, have monoidal operations of `f a -> f a
+-> f a` signature that arise out of their monoidal functor structure.
+
+After noting that `Divisible`, from this perspective, appears to have
+more to do with `Alternative` than with `Applicative`, it is hard not to
+wonder about what exactly the relationship between `Divisible` and
+`Decidable` is supposed to be. Maybe there are even grounds, as Zemyla
+has suggested at [*contravariant* issue #64](
+https://github.com/ekmett/contravariant/issues/64), reconsidering the
+subclass relationship between them.
 
 ## End notes
 
@@ -557,3 +572,78 @@ second dup . dup >$< (assoc >$< ((u >*< v) >*< w))
 assoc . second dup . dup >$< ((u >*< v) >*< w)
 first dup . dup >$< ((u >*< v) >*< w)  -- LHS = RHS
 ```
+
+### The nested Either problem
+
+There is a certain awkwardness in dealing with nested `Either` as
+anonymous sums that is hard to get rid of completely. Prisms are a tool
+worthy of consideration in this context, as they are largely about
+expressing pattern matching in a first-class way, which is pretty much
+what we'd like to do here. Let's bring *lens* into that `Decidable`
+example, then:
+
+``` haskell
+{-# LANGUAGE TemplateHaskell #-}
+
+import Control.Lens hiding (chosen)
+import Control.Lens.TH
+-- etc.
+
+pString :: Predicate String
+pString = Predicate (const False)
+
+pBool :: Predicate Bool
+pBool = Predicate id
+
+pInt :: Predicate Int
+pInt = Predicate (>= 0)
+
+data Foo = Bar String | Baz Bool | Quux Int
+    deriving (Show)
+makePrisms ''Foo
+```
+
+A cute trick with prisms is using [`outside`](
+https://hackage.haskell.org/package/lens-5.0.1/docs/Control-Lens-Prism.html#v:outside)
+to fill in the missing cases of a partial function (in this case, `(^?!
+_Quux)`:
+
+``` haskell
+anonSum :: APrism' s a -> (s -> b) -> s -> Either a b
+anonSum p cases = set (outside p) Left (Right . cases)
+
+decidableOutside :: Predicate Foo
+decidableOutside = analyse >$< pString |-| pBool |-| pInt
+    where
+    analyse = _Bar `anonSum` (_Baz `anonSum` (^?! _Quux))
+```
+
+An alternative is using [`matching`](
+https://hackage.haskell.org/package/lens-5.0.1/docs/Control-Lens-Prism.html#v:matching)
+to write it in a more self-explanatory way:
+
+``` haskell
+matchingL :: APrism' s a -> s -> Either a s
+matchingL p = view swapped . matching p
+
+decidableMatching :: Predicate Foo
+decidableMatching =
+    matchingL _Bar >$< pString
+    |-| (matchingL _Baz >$< pBool
+    |-| (matchingL _Quux >$< pInt
+    |-| (matchingL id >$< error "Missing case in decidableMatching")))
+```
+
+There are a few remaining inconveniences with these implementations, the
+main one perhaps being that there is noting to stop us from forgetting
+one of the prisms. The combinators from [the *total* package](
+https://hackage.haskell.org/package/total-1.0.6) improve on that by
+incorporating exhaustiveness checking for prisms, at the cost of
+requiring the sum type to be defined in a particular way.
+
+There presumably also is the option of brining in heavy machinery, and
+setting up an anonymous sum wrangler with Template Haskell or generics.
+In fact, it appears the [*shapely-data*](
+https://hackage.haskell.org/package/shapely-data) package used to offer
+precisely that. It might be worth it to take a moment to make it build
+with modern GHCs.
