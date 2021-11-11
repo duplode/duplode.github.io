@@ -8,15 +8,15 @@ build-depends: base
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Arrows #-}
 -- |
--- Module      :  Quartet.EndNote
+-- Module      :  Quartet.Appendix
 -- Author      :  Daniel Mlot
 -- License     :  CC0 (see https://creativecommons.org/publicdomain/zero/1.0/ )
 --
--- Examples from the "Handling nested Either" end note to "Divisible
--- and the monoidal quartet"
+-- Examples from the "Handling nested Either" appendix to "Divisible and
+-- the monoidal quartet"
 -- https://duplode.github.io/posts/divisible-and-the-monoidal-quartet.html
 
-module Quartet.EndNote where
+module Quartet.Appendix where
 
 import Data.Functor.Contravariant
 import Data.Functor.Contravariant.Divisible
@@ -26,6 +26,7 @@ import Control.Arrow
 import Control.Category
 import Prelude hiding (id, (.))
 
+-- https://duplode.github.io/demos/Quartet/Combinators.hs
 import Quartet.Combinators
 
 main :: IO ()

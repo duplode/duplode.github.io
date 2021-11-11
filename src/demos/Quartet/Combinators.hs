@@ -15,7 +15,8 @@ module Quartet.Combinators where
 
 import Data.Functor.Contravariant
 import Data.Functor.Contravariant.Divisible
-import Control.Applicative
+    (Divisible(..), divided, conquered, Decidable(..), chosen, lost)
+import Control.Applicative (liftA2, Alternative(..))
 import Control.Arrow
 import Data.Void
 
@@ -59,7 +60,7 @@ dplus = divide dup
 (>+<) = dplus
 infixl 3 >+<
 
-tdivide :: Divisible f => (a -> b) -> (a -> c) -> f b -> f c -> f a
+tdivide :: Divisible k => (a -> b) -> (a -> c) -> k b -> k c -> k a
 tdivide f g = divide (f &&& g)
 
 -- divided = divide id

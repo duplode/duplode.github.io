@@ -26,7 +26,7 @@ Besides Gabriella's post, which is an excellent introduction to
 [*`Alternatives` convert products to sums*](
 http://h2.jaguarpaw.co.uk/posts/alternatives-convert-products-to-sums/),
 which conveys the core intuition about monoidal functor classes in an
-accessible manner. There is a second Tom Ellis post, [*The Mysterious
+accessible manner. There is a second post by Tom, [*The Mysterious
 Incomposability of `Decidable`*](
 http://h2.jaguarpaw.co.uk/posts/mysterious-incomposability-of-decidable/),
 that this article will be in constant dialogue with, in particular as a
@@ -46,8 +46,8 @@ from familiar ground, as well as set up a reference point, I will first
 look at the best known of those classes, `Applicative`. We won't,
 however make use of the usual presentation of `Applicative` in terms of
 `(<*>)`, as it doesn't generalise to the other classes we're interested
-in. Instead, we will switch to the monoidal presentation
-[^applicative-monoidal]:
+in. Instead, we will switch to the monoidal presentation:
+[^applicative-monoidal]
 
 [^applicative-monoidal]: See [the relevant section of the
   *Typeclassopedia*](
@@ -123,15 +123,15 @@ forget = id ||| id
 
 ## Divisible
 
-As Tom Ellis summarises it at the beginning of the *Decidable* post,
-while `Applicative` converts products to products covariantly,
-`Divisible` converts products to products contravariantly.  From that
-vantage point, I will take `divided`, the counterpart to `zipped`, as
-the fundamental combinator of the class:
+As summarised at the beginning of the *Decidable* post, while
+`Applicative` converts products to products covariantly, `Divisible`
+converts products to products contravariantly.  From that vantage point,
+I will take `divided`, the counterpart to `zipped`, as the fundamental
+combinator of the class:
 
 ``` haskell
--- This is the divided operator featured on Gabriella's post, which will
--- soon be available from Data.Functor.Contravariant.Divisible
+-- This is the divided operator featured on Gabriella's post, soon to
+-- become available from Data.Functor.Contravariant.Divisible
 (>*<) :: Divisible k => k a -> k b -> k (a, b)
 (>*<) = divided
 infixr 5 >*<
@@ -199,7 +199,7 @@ divide dup (contramap f u) (contramap g v)
 ```
 
 `divide dup`, which duplicates input in order to feed each of its
-arguments, is a combinator worthy of a name:
+arguments, is a combinator worthy of a name, or even two:
 
 ``` haskell
 dplus :: Divisible k => k a -> k a -> k a
@@ -225,9 +225,9 @@ tdivide f g u v = f >$< u >+< g >$< v
 An alternative to using the projections to set up a deconstructor to be
 used with `divide` is to contra-map each projection to its corresponding
 divisible value and combine the pieces with `(>+<)`. That is the style
-favoured by Tom Ellis [^tom-style], which is why I have added a "t"
-prefix to `tdivide` comes from. For instance, Gabriella's example would
-be spelled as follows in this style:
+favoured by Tom Ellis, [^tom-style] which is why I have added a "t"
+prefix to `tdivide` comes from. For instance, Gabriella Gonzalez's
+example would be spelled as follows in this style:
 
 ``` haskell
 nonNegativeOctantT :: Predicate Point
@@ -241,10 +241,24 @@ nonNegativeOctantT =
   using `(>$<)` here for the sake of parallelism, the examples in this
   style arguably look tidier when spelled with `contramap`.
 
+    Speaking of operator usage, it is not straightforward to decide on
+    the right fixities for all those operators, and it is entirely
+    possible that I have overlooked something. I have picked them aiming
+    to have both styles work without parentheses, and to have the pairs
+    associated to the right, that is:
+
+    ``` haskell
+    adapt >$< u >*< v >*< w
+      = adapt >$< (u >*< (v >*< w))
+
+    f >$< u >+< g >$< v >+< h >$< v
+      = (f >$< u) >+< (g >$< v) >+< (h >$< w)
+    ```
+
 ## Alternative
 
 The `(>+<)` combinator defined above is strikingly similar to `(<|>)`
-from `Alternative`, down to its implied monoidal nature [^arrowplus]:
+from `Alternative`, down to its implied monoidal nature: [^arrowplus]
 
 ``` haskell
 (>+<) :: Divisible k => k a -> k a -> k a
@@ -365,8 +379,8 @@ using the class combinators.
 
 Last, but not least, there is `Decidable` to deal with.
 `Data.Functor.Contravariant.Divisible` already provides `chosen` as the
-`divided` analogue, so let's just supply the and operator variant
-[^chosen-operator]:
+`divided` analogue, so let's just supply the and operator variant:
+[^chosen-operator]
 
 [^chosen-operator]: Both [*dhall*](
   https://hackage.haskell.org/package/dhall-1.40.1/docs/Dhall-Marshal-Encode.html#v:-62--124--60-)
@@ -399,7 +413,7 @@ The `a -> Either b c` argument of `choose`, however, is not amenable to
 the function splitting trick we have used for `divide` and `combine`.
 `Either`-producing functions cannot be decomposed in that manner, as the
 case analysis to decide whether to return `Left` or `Right` cannot be
-disentangled. This is ultimately what Tom Ellis' complaint about the
+disentangled. This is ultimately what Tom's complaint about the
 "mysterious incomposability" of `Decidable` is about. Below is a
 paraphrased version of the `Decidable` example from the *Decidable*
 post:
@@ -430,12 +444,11 @@ The problem identified in the post is that there is no straightfoward
 way around having to write "the explicit unpacking into an `Either`"
 performed by `analyse`. In the `Divisible` and `Alternative` examples,
 it was possible to avoid tuple or `Either` shuffling by decomposing the
-counterparts to `analyse`, but that is not possible here
-[^nested-either].
+counterparts to `analyse`, but that is not possible here.
+[^nested-either]
 
-[^nested-either]: I will play with a couple of approaches to the
-  ergonomics of nested either nested `Either` in [an end
-  note](#handling-nested-either) to this post.
+[^nested-either]: I will play with a couple of approaches to nested
+  `Either` ergonomics at the end of the post, in an appendix.
 
 In the last few paragraphs, we have mentioned `Divisible`, `Alternative`
 and `Decidable`. What about `Applicative`, though? The `Applicative`
@@ -503,12 +516,12 @@ diagram has to do with its diagonals. Thanks to a peculiar kind of
 duality, classes in opposite corners of it are similar to each other in
 quite a few ways. In particular, the orange diagonal classes,
 `Alternative` and `Divisible`, have monoidal operations of `f a -> f a
--> f a` signature that arise out of their monoidal functor structure.
+-> f a` signature that emerge from their monoidal functor structure.
 
-After noting that `Divisible`, from this perspective, appears to have
-more to do with `Alternative` than with `Applicative`, it is hard not to
-wonder about what exactly the relationship between `Divisible` and
-`Decidable` is supposed to be [^issue-64].
+That `Divisible`, from this perspective, appears to have more to do with
+`Alternative` than with `Applicative` leaves us a question to ponder:
+what does that mean for the relationship between `Divisible` and
+`Decidable`? [^issue-64]
 
 [^issue-64]: See also [*contravariant* issue #64](
   https://github.com/ekmett/contravariant/issues/64), which suggests no
@@ -516,7 +529,7 @@ wonder about what exactly the relationship between `Divisible` and
   argument made by Zemyla is a different one, there are resonances with
   the observations made here.
 
-## End notes
+## Appendixes
 
 ### dplus is a monoidal operation
 
@@ -578,7 +591,7 @@ first dup . dup >$< ((u >*< v) >*< w)  -- LHS = RHS
 ### Handling nested Either
 
 *The examples in this end note is available as [a separate `.hs` file](
-/demos/Quartet/EndNote.hs).*
+/demos/Quartet/Appendix.hs).*
 
 There is a certain awkwardness in dealing with nested `Either` as
 anonymous sums that is hard to get rid of completely. Prisms are a tool
@@ -687,7 +700,7 @@ decidableArrowised = toPred $ proc foo -> case foo of
 in arrow notation give rise to nested eithers. Said eithers are dealt
 with by the arrows, which are combined in an appropriate way with
 `(|||)`. `(|||)`, in turn, can be seen as an arrow counterpart to
-`chosen`/`(|-|)`. Even the feeder `-<` syntax, which the example above
+`chosen`/`(|-|)`. Even the `-<` "feed" syntax, which the example above
 doesn't really take advantage of, amounts to slots for contramapping. If
 someone ever feels like arranging a do-esque noation for `Decidable` to
 go with Gabriella's `DivisibleFrom`, it seems `case` commands would be a
