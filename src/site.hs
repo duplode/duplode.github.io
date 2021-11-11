@@ -151,13 +151,17 @@ theSite = do
         route   $ customRoute $ takeFileName . toFilePath
         compile   copyFileCompiler
 
+    match "css/*" $ do
+        route   idRoute
+        compile compressCssCompiler
+
     match "extras/**" $ do
         route   idRoute
         compile copyFileCompiler
 
-    match "css/*" $ do
+    match "demos/**" $ do
         route   idRoute
-        compile compressCssCompiler
+        compile copyFileCompiler
 
     match "about.md" $ do
         route $ setExtension ".html"

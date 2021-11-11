@@ -1,15 +1,15 @@
 ---
 title: "Divisible and the monoidal quartet"
 license: CC-BY-SA
-published: 2021-11-06T20:00:00-03:00
+published: 2021-11-11T22:00:00-03:00
 gh-issue: 15
 ---
 
-A recent blog post by Gabriella Gonzalez,
-[*Co-Applicative programming style*](
+A recent blog post by Gabriella Gonzalez, [*Co-Applicative programming
+style*](
 https://www.haskellforall.com/2021/10/co-applicative-programming-style.html),
-has motivated some discussion on ergonomic ways to make use of [the
-`Divisible` type class](https://hackage.haskell.org/package/contravariant-1.5.5).
+has sparked discussion on ergonomic ways to make use of [the `Divisible`
+type class](https://hackage.haskell.org/package/contravariant-1.5.5).
 The conversation pointed to an interesting rabbit hole, and diving into
 it resulted in these notes, in which I attempt to get a clearer view of
 picture of the constellation of monoidal functor classes that
@@ -31,20 +31,12 @@ Incomposability of `Decidable`*](
 http://h2.jaguarpaw.co.uk/posts/mysterious-incomposability-of-decidable/),
 that this article will be in constant dialogue with, in particular as a
 source of examples. From now on I will refer to it as "the *Decidable*
-post". Needless to say, these notes are heavily indebted to those posts,
-and so I thank Gabriella and Tom for the spark of inspiration.
+post". Thanks to Gabriella and Tom for inspiring the writing of this
+article.
 
-For those of you reading with GHCi on the side, here is an import list:
-
-``` haskell
-{-# LANGUAGE LambdaCase #-}
-
-import Data.Functor.Contravariant
-import Data.Functor.Contravariant.Divisible
-import Control.Applicative
-import Control.Arrow
-import Data.Void
-```
+For those of you reading with GHCi on the side, the key general
+definitions in this post are available from [this `.hs`
+file](/demos/Quartet.hs).
 
 ## Applicative
 
@@ -93,11 +85,7 @@ on when writing in applicative style become unfeasible.
 Before we continue, a few notes about naming and style choices in this
 post. Purely for the sake of consistency, I will try to stick to the
 `Data.Functor.Contravariant.Divisible` naming conventions for functions
-like `zipped` [^fzip-name].
-
-[^fzip-name]: Personally, my favourite prefix name for it is not
-  `zipped`, but `fzip`, which I borrowed from [Justus Sagemüller](
-  https://stackoverflow.com/a/50703828/2751851).
+like `zipped`.
 
 While keep ourselves away from `(<*>)` and `liftA2`, we can recover, if
 not the full flexibility, the power of applicative style with a variant
@@ -264,8 +252,8 @@ from `Alternative`, down to its implied monoidal nature [^arrowplus]:
 (<|>) :: Alternative f => f a -> f a -> f a
 ```
 
-[^arrowplus]: A proof that `(>+<)` is indeed monoidal is in an appendix
-  to this post.
+[^arrowplus]: A proof that `(>+<)` is indeed monoidal is in [an end
+  note](#dplus-is-a-monoidal-operation) to this post.
 
   On a related note, my choice of `>+<` as the `dplus`
   operator is, in part, a pun on [`(<+>)` from `ArrowPlus`](
@@ -511,9 +499,9 @@ diagonal classes, `Alternative` and `Divisible`, have monoidal
 operations of `f a -> f a -> f a` signature that arise out of their
 monoidal functor structure.
 
-## Appendix
+## End notes
 
-### `(>+<)` is a monoidal operation
+### dplus is a monoidal operation
 
 If we are to show that `(>+<)` is a monoidal operation, first of all we
 need an identity for it. `conquer :: f a` sounds like a reasonable

@@ -1,0 +1,11 @@
+(c) 2014-2021 Daniel Mlot
+
+Posts in this repository (the contents of the src/posts directory and
+any images from the src/images directory linked therein) are released
+under the CC-BY-SA 4.0 license (see
+http://creativecommons.org/licenses/by-sa/4.0/ ), unless specified
+otherwise in the post itself.
+
+Code in this repository (in particular, the .hs files) is released under
+the 3-Clause BSD license (see the BSD-3.txt file), unless specified
+otherwise in the code file.
