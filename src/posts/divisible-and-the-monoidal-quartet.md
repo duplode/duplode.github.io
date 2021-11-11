@@ -36,7 +36,7 @@ article.
 
 For those of you reading with GHCi on the side, the key general
 definitions in this post are available from [this `.hs`
-file](/demos/Quartet.hs).
+file](/demos/Quartet/Combinators.hs).
 
 ## Applicative
 
@@ -78,7 +78,7 @@ unit = pure ()
 
 The matter with `(<*>)` (and also `liftA2`) that stops it from being
 generalised for our purposes is that it leans heavily on the fact that
-**Hask** is a *cartesian closed category*, with pairs as the relevant
+**Hask** is a *Cartesian closed category*, with pairs as the relevant
 product. Without that, the currying and the partial application we rely
 on when writing in applicative style become unfeasible.
 
@@ -100,7 +100,7 @@ lizip f u v = fmap f (zipped u v)
 around this topic has left me with few good options.)
 
 On a closing note for this section, my choice of operator for `zipped`
-is motivated by the similiarity with `(&&&)` from `Control.Arrow`:
+is motivated by the similarity with `(&&&)` from `Control.Arrow`:
 
 ``` haskell
 (&&&) :: Arrow p => p a b -> p a c -> p a (b, c)
@@ -269,8 +269,7 @@ It is surprising that `(>+<)` springs forth in `Divisible` rather than
 on, it helps to look at `Alternative` from the same perspective we have
 used here for `Applicative` and `Divisible`. For that, first of all we
 need a `divided` counterpart. Let's borrow the definition from
-[*Applicatives convert products to sums*](
-http://h2.jaguarpaw.co.uk/posts/alternatives-convert-products-to-sums/):
+*Applicatives convert products to sums*:
 
 ``` haskell
 combined :: Alternative f => f a -> f b -> f (Either a b)
@@ -293,7 +292,7 @@ zero = empty
 
 (I won't entertain the various controversies about the `Alternative`
 laws here, nor any interaction laws involving `Applicative`. Those might
-be intersting matters to think about from this vantage point, though.)
+be interesting matters to think about from this vantage point, though.)
 
 A `divide` analogue follows:
 
@@ -322,7 +321,7 @@ fmap forget (combined (fmap f u) (fmap g v))
 combine forget (fmap f u) (fmap g v)
 ```
 
-We now go full circle...
+To keep things symmetrical, let's define:
 
 ``` haskell
 aplus :: Alternative f => f a -> f a -> f a
@@ -330,7 +329,7 @@ aplus = combine forget
 -- (<|>) = aplus
 ```
 
-... to end up with:
+So that we end up with:
 
 ``` haskell
 tcombine f g u v = aplus (fmap f u) (fmap g v)
@@ -358,8 +357,8 @@ alternativeComposeG = merge <$> [1,2] -|- ["hello", "world"]
 There is, therefore, something of a subterranean connection between
 `Alternative` and `Divisible`. The function arguments to both `combine`
 and `divide`, whose types are dual to each other, can be split in a way
-that not only reveals an underlying monoidal operaion, `(<|>)` and
-`(>+<)` respectively, but also allows for a certain flexibiliy in
+that not only reveals an underlying monoidal operation, `(<|>)` and
+`(>+<)` respectively, but also allows for a certain flexibility in
 using the class combinators.
 
 ## Decidable
@@ -398,7 +397,7 @@ choose f u v = contamap f (chosen u v)
 
 The `a -> Either b c` argument of `choose`, however, is not amenable to
 the function splitting trick we have used for `divide` and `combine`.
-`Either`-producing functions are not splittable in that manner, as the
+`Either`-producing functions cannot be decomposed in that manner, as the
 case analysis to decide whether to return `Left` or `Right` cannot be
 disentangled. This is ultimately what Tom Ellis' complaint about the
 "mysterious incomposability" of `Decidable` is about. Below is a
@@ -434,9 +433,9 @@ it was possible to avoid tuple or `Either` shuffling by decomposing the
 counterparts to `analyse`, but that is not possible here
 [^nested-either].
 
-[^nested-either]: I will talk a bit more about this ergonomic problem of
-  nested `Either` in [an end note](#the-nested-either-problem) to this
-  post.
+[^nested-either]: I will play with a couple of approaches to the
+  ergonomics of nested either nested `Either` in [an end
+  note](#handling-nested-either) to this post.
 
 In the last few paragraphs, we have mentioned `Divisible`, `Alternative`
 and `Decidable`. What about `Applicative`, though? The `Applicative`
@@ -452,7 +451,7 @@ applicativeCompose =
 ```
 
 As noted earlier, though, applicative style is a fortunate consequence
-of **Hask** being cartesian closed, which makes it possibke to turn `(a,
+of **Hask** being Cartesian closed, which makes it possible to turn `(a,
 b) -> c` into `a -> b -> c`. If we leave out `(<*>)` and restrict
 ourselves to `(&*&)`, we end up having to deal explicitly with tuples,
 which is a dual version of the `Decidable` issue:
@@ -471,7 +470,7 @@ components in arbitrary ways, and there is no easy way to disentangle
 that.
 
 `Decidable`, then, relates to `Applicative` in an analogous way to how
-`Divisible` does to `Alternative`. There are a few other similiarities
+`Divisible` does to `Alternative`. There are a few other similarities
 between them that are worth pointing out:
 
 - Neither `Applicative` nor `Decidable` offer a monoidal `f a -> f a ->
@@ -509,10 +508,13 @@ quite a few ways. In particular, the orange diagonal classes,
 After noting that `Divisible`, from this perspective, appears to have
 more to do with `Alternative` than with `Applicative`, it is hard not to
 wonder about what exactly the relationship between `Divisible` and
-`Decidable` is supposed to be. Maybe there are even grounds, as Zemyla
-has suggested at [*contravariant* issue #64](
-https://github.com/ekmett/contravariant/issues/64), reconsidering the
-subclass relationship between them.
+`Decidable` is supposed to be [^issue-64].
+
+[^issue-64]: See also [*contravariant* issue #64](
+  https://github.com/ekmett/contravariant/issues/64), which suggests no
+  longer making `Decidable` a subclass of `Divisible`. Though the
+  argument made by Zemyla is a different one, there are resonances with
+  the observations made here.
 
 ## End notes
 
@@ -573,31 +575,18 @@ assoc . second dup . dup >$< ((u >*< v) >*< w)
 first dup . dup >$< ((u >*< v) >*< w)  -- LHS = RHS
 ```
 
-### The nested Either problem
+### Handling nested Either
+
+*The examples in this end note is available as [a separate `.hs` file](
+/demos/Quartet/EndNote.hs).*
 
 There is a certain awkwardness in dealing with nested `Either` as
 anonymous sums that is hard to get rid of completely. Prisms are a tool
 worthy of consideration in this context, as they are largely about
-expressing pattern matching in a first-class way, which is pretty much
-what we'd like to do here. Let's bring *lens* into that `Decidable`
-example, then:
+expressing pattern matching in a composable way.  what we'd like to do
+here. Let's bring *lens* into Tom's `Decidable` example, then:
 
 ``` haskell
-{-# LANGUAGE TemplateHaskell #-}
-
-import Control.Lens hiding (chosen)
-import Control.Lens.TH
--- etc.
-
-pString :: Predicate String
-pString = Predicate (const False)
-
-pBool :: Predicate Bool
-pBool = Predicate id
-
-pInt :: Predicate Int
-pInt = Predicate (>= 0)
-
 data Foo = Bar String | Baz Bool | Quux Int
     deriving (Show)
 makePrisms ''Foo
@@ -628,22 +617,78 @@ matchingL p = view swapped . matching p
 
 decidableMatching :: Predicate Foo
 decidableMatching =
-    matchingL _Bar >$< pString
-    |-| (matchingL _Baz >$< pBool
-    |-| (matchingL _Quux >$< pInt
-    |-| (matchingL id >$< error "Missing case in decidableMatching")))
+    choose (matchingL _Bar) pString $
+    choose (matchingL _Baz) pBool $
+    choose (matchingL _Quux) pInt $
+    error "Missing case in decidableMatching"
 ```
 
-There are a few remaining inconveniences with these implementations, the
-main one perhaps being that there is noting to stop us from forgetting
-one of the prisms. The combinators from [the *total* package](
+These implementations have a few inconveniences of their own, the main
+one perhaps being that there is noting to stop us from forgetting one of
+the prisms. The combinators from [the *total* package](
 https://hackage.haskell.org/package/total-1.0.6) improve on that by
 incorporating exhaustiveness checking for prisms, at the cost of
 requiring the sum type to be defined in a particular way.
 
 There presumably also is the option of brining in heavy machinery, and
 setting up an anonymous sum wrangler with Template Haskell or generics.
-In fact, it appears the [*shapely-data*](
-https://hackage.haskell.org/package/shapely-data) package used to offer
+In fact, it appears [the *shapely-data* package](
+https://hackage.haskell.org/package/shapely-data) used to offer
 precisely that. It might be worth it to take a moment to make it build
-with modern GHCs.
+with recent GHCs.
+
+All in all, these approaches feel like attempts to approximate extra
+language support for juggling sum types. As it happens, though, there is
+a corner of the language which does provide extra support: [arrow
+notation](
+https://downloads.haskell.org/ghc/9.2.1/docs/html/users_guide/exts/arrows.html#conditional-commands).
+We can get a glimpse of what might be converting the example to arrows:
+
+``` haskell
+-- I'm going to play nice, rather than making b phantom and writing a
+-- blatantly unlawful Arrow instance just for the sake of the notation.
+newtype Pipecate a b = Pipecate { getPipecate :: a -> (Bool, b) }
+
+instance Category Pipecate where
+    id = Pipecate (True,)
+    Pipecate q . Pipecate p = Pipecate $ \x ->
+        let (bx, y) = p x
+            (by, z) = q y
+        in (bx && by, z)
+
+instance Arrow Pipecate where
+    arr f = Pipecate (const True &&& f)
+    first (Pipecate p) = Pipecate $ \(x, o) ->
+         let (bx, y) = p x
+         in (bx, (y, o))
+
+instance ArrowChoice Pipecate where
+    left (Pipecate p) = Pipecate $ \case
+        Left x ->
+            let (bx, y) = p x
+            in (bx, Left y)
+        Right o -> (True, Right o)
+
+fromPred :: Predicate a -> Pipecate a ()
+fromPred (Predicate p) = Pipecate (p &&& const ())
+
+toPred :: Pipecate a x -> Predicate a
+toPred (Pipecate p) = Predicate (fst . p)
+
+decidableArrowised :: Predicate Foo
+decidableArrowised = toPred $ proc foo -> case foo of
+    Bar s -> fromPred pString -< s
+    Baz b -> fromPred pBool -< b
+    Quux n -> fromPred pInt -< n
+```
+
+`decidableArrowised` corresponds quite closely to the  various
+`Decidable`-powered implementations.  Behind the scenes, `case` commands
+in arrow notation give rise to nested eithers. Said eithers are dealt
+with by the arrows, which are combined in an appropriate way with
+`(|||)`. `(|||)`, in turn, can be seen as an arrow counterpart to
+`chosen`/`(|-|)`. Even the feeder `-<` syntax, which the example above
+doesn't really take advantage of, amounts to slots for contramapping. If
+someone ever feels like arranging a do-esque noation for `Decidable` to
+go with Gabriella's `DivisibleFrom`, it seems `case` commands would be a
+nice starting point.

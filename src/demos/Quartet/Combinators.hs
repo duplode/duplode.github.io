@@ -4,23 +4,20 @@ build-depends: base
              , contravariant
 -}
 -- |
--- Module      :  Quartet
+-- Module      :  Quartet.Combinators
 -- Author      :  Daniel Mlot
 -- License     :  CC0 (see https://creativecommons.org/publicdomain/zero/1.0/ )
 --
 -- Key definitions from "Divisible and the monoidal quartet"
 -- https://duplode.github.io/posts/divisible-and-the-monoidal-quartet.html
 
-module Quartet where
+module Quartet.Combinators where
 
 import Data.Functor.Contravariant
 import Data.Functor.Contravariant.Divisible
 import Control.Applicative
 import Control.Arrow
 import Data.Void
-
-main :: IO ()
-main = return ()
 
 -- Helpers
 
