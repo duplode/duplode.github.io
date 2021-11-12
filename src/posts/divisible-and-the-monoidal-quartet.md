@@ -78,20 +78,19 @@ unit = pure ()
 -- the laws the other monoidal functor classes follow the same pattern.
 ```
 
+(Purely for the sake of consistency, I will try to stick to the
+`Data.Functor.Contravariant.Divisible` naming conventions for functions
+like `zipped`.)
+
 The matter with `(<*>)` (and also `liftA2`) that stops it from being
 generalised for our purposes is that it leans heavily on the fact that
 **Hask** is a *Cartesian closed category*, with pairs as the relevant
 product. Without that, the currying and the partial application we rely
 on when writing in applicative style become unfeasible.
 
-Before we continue, a few notes about naming and style choices in this
-post. Purely for the sake of consistency, I will try to stick to the
-`Data.Functor.Contravariant.Divisible` naming conventions for functions
-like `zipped`.
-
-While keep ourselves away from `(<*>)` and `liftA2`, we can recover, if
-not the full flexibility, the power of applicative style with a variant
-of `liftA2` that takes an uncurried function:
+While keeping ourselves away from `(<*>)` and `liftA2`, we can recover,
+if not the full flexibility, the power of applicative style with a
+variant of `liftA2` that takes an uncurried function:
 
 ``` haskell
 lizip :: Applicative f => ((a, b) -> c) -> f a -> f b -> f c
