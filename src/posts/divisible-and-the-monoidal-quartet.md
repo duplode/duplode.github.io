@@ -2,7 +2,7 @@
 title: "Divisible and the Monoidal Quartet"
 license: CC-BY-SA
 published: 2021-11-11T23:50:00-03:00
-gh-issue: 15
+gh-issue: 16
 ---
 
 A recent blog post by Gabriella Gonzalez, [*Co-Applicative programming
