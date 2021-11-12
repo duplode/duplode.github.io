@@ -49,6 +49,20 @@
 
             
   <div class="post-teaser">
+    <h2>Divisible and the monoidal quartet</h2>
+
+    
+      <p>A recent blog post by Gabriella Gonzalez, <a href="https://www.haskellforall.com/2021/10/co-applicative-programming-style.html"><em>Co-Applicative programming style</em></a>, has sparked discussion on ergonomic ways to make use of <a href="https://hackage.haskell.org/package/contravariant-1.5.5">the <code>Divisible</code> type class</a>. The conversation pointed to an interesting rabbit hole, and diving into it resulted in these notes, in which I attempt to get a clearer view of picture of the constellation of monoidal functor classes that <code>Divisible</code> belongs to. The gist of it is that “<code>Divisible</code> is a contravariant <code>Applicative</code>, and <code>Decidable</code> is a contravariant <code>Alternative</code>” is not a full picture of the relationships between the classes, as there are a few extra connections that aren’t obvious to the naked eye.</p>
+<div>
+
+</div>
+
+    
+
+    <p><a href="./posts/divisible-and-the-monoidal-quartet.html">Read more</a> - November 12, 2021</p>
+  </div>
+
+  <div class="post-teaser">
     <h2>Idempotent Applicatives, Parametricity, and a Puzzle</h2>
 
     
@@ -112,21 +126,6 @@
     
 
     <p><a href="./posts/migrating-a-project-to-stack.html">Read more</a> - July 27, 2015</p>
-  </div>
-
-  <div class="post-teaser">
-    <h2>Applicative Archery</h2>
-
-    
-      <p>It is widely agreed that the laws of the <code>Applicative</code> class are not pretty to look at.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pure</span> <span class="fu">id</span> <span class="op">&lt;*&gt;</span> v <span class="ot">=</span> v                            <span class="co">-- identity</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">pure</span> f <span class="op">&lt;*&gt;</span> <span class="fu">pure</span> x <span class="ot">=</span> <span class="fu">pure</span> (f x)               <span class="co">-- homomorphism</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>u <span class="op">&lt;*&gt;</span> <span class="fu">pure</span> y <span class="ot">=</span> <span class="fu">pure</span> (<span class="op">$</span> y) <span class="op">&lt;*&gt;</span> u              <span class="co">-- interchange</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">pure</span> (<span class="op">.</span>) <span class="op">&lt;*&gt;</span> u <span class="op">&lt;*&gt;</span> v <span class="op">&lt;*&gt;</span> w <span class="ot">=</span> u <span class="op">&lt;*&gt;</span> (v <span class="op">&lt;*&gt;</span> w) <span class="co">-- composition</span></span></code></pre></div>
-<p>Monad laws, in comparison, not only look less odd to begin with but can also be stated in a much more elegant way in terms of Kleisli composition <code>(&lt;=&lt;)</code>. Shouldn’t there be an analogous nice presentation for <code>Applicative</code> as well? That became a static question in my mind while I was studying applicative functors many moons ago. After finding surprisingly little commentary on this issue, I decided to try figuring it out by myself. 
-    
-
-    <p><a href="./posts/applicative-archery.html">Read more</a> - July  6, 2015</p>
   </div>
 
 
