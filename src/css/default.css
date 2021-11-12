@@ -2,6 +2,7 @@ body {
     color: black;
     font-size: 16px;
     font-size: 1.0rem;
+    line-height: 1.4;
     max-width: 960px;
 }
 
