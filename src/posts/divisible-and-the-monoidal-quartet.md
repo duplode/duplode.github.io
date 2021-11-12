@@ -12,7 +12,7 @@ style*](
 https://www.haskellforall.com/2021/10/co-applicative-programming-style.html),
 has sparked discussion on ergonomic ways to make use of [the `Divisible`
 type class](https://hackage.haskell.org/package/contravariant-1.5.5).
-The conversation pointed to an interesting rabbit hole, and diving into
+The conversation pointed to an interesting rabbit hole, and jumping into
 it resulted in these notes, in which I attempt to get a clearer view of
 picture of the constellation of monoidal functor classes that
 `Divisible` belongs to. The gist of it is that "`Divisible` is a
@@ -37,19 +37,18 @@ post". Thanks to Gabriella and Tom for inspiring the writing of this
 article.
 
 For those of you reading with GHCi on the side, the key general
-definitions in this post are available from [this `.hs`
-file](/demos/Quartet/Combinators.hs).
+definitions in this post are available from [this `.hs` file](
+/demos/Quartet/Combinators.hs).
 
 ## Applicative
 
 As I hinted at the introduction, this post is not solely about
 `Divisible`, but more broadly about monoidal functor classes. To start
-from familiar ground, as well as set up a reference point, I will first
-look at the best known of those classes, `Applicative`. We won't,
-however make use of the usual presentation of `Applicative` in terms of
-`(<*>)`, as it doesn't generalise to the other classes we're interested
-in. Instead, we will switch to the monoidal presentation:
-[^applicative-monoidal]
+from familiar ground and set up a reference point, I will first look at
+the best known of those classes, `Applicative`. We won't, however, stick
+with the usual presentation of `Applicative` in terms of `(<*>)`, as it
+doesn't generalise to the other classes we're interested in. Instead, we
+will switch to the monoidal presentation: [^applicative-monoidal]
 
 [^applicative-monoidal]: See [the relevant section of the
   *Typeclassopedia*](
@@ -126,7 +125,7 @@ forget = id ||| id
 
 As summarised at the beginning of the *Decidable* post, while
 `Applicative` converts products to products covariantly, `Divisible`
-converts products to products contravariantly.  From that vantage point,
+converts products to products contravariantly. From that point of view,
 I will take `divided`, the counterpart to `zipped`, as the fundamental
 combinator of the class:
 
@@ -224,7 +223,7 @@ tdivide f g u v = f >$< u >+< g >$< v
 ```
 
 An alternative to using the projections to set up a deconstructor to be
-used with `divide` is to contra-map each projection to its corresponding
+used with `divide` is to contramap each projection to its corresponding
 divisible value and combine the pieces with `(>+<)`. That is the style
 favoured by Tom Ellis, [^tom-style] which is why I have added a "t"
 prefix to `tdivide` comes from. For instance, Gabriella Gonzalez's
@@ -239,8 +238,8 @@ nonNegativeOctantT =
 [^tom-style]: See, for instance, [this Twitter conversation](
   https://twitter.com/tomjaguarpaw/status/1451235378363609096), or the
   `Divisible` example in the *Decidable* post. Note that, though I'm
-  using `(>$<)` here for the sake of parallelism, the examples in this
-  style arguably look tidier when spelled with `contramap`.
+  using `(>$<)` here for ease of comparison, the examples in this style
+  arguably look tidier when spelled with `contramap`.
 
     Speaking of operator usage, it is not straightforward to decide on
     the right fixities for all those operators, and it is entirely
@@ -283,7 +282,7 @@ It is surprising that `(>+<)` springs forth in `Divisible` rather than
 `Alternative`'s contravariant counterpart. To understand what is going
 on, it helps to look at `Alternative` from the same perspective we have
 used here for `Applicative` and `Divisible`. For that, first of all we
-need a `divided` counterpart. Let's borrow the definition from
+need an analogue to `divided`. Let's borrow the definition from
 *Applicatives convert products to sums*:
 
 ``` haskell
@@ -318,9 +317,9 @@ combine f u v = fmap f (combined u v)
 
 Crucially, `Either a b -> c` can be split in a way dual to what we have
 seen earlier with `a -> (b, c)`: an `Either`-consuming function amounts
-to a pairs of functions, one to deal with each component. That being so,
-we can use the alternative style trick done for `Divisible` by
-dualising things:
+to a pair of functions, one to deal with each component. That being so,
+we can use the alternative style trick done for `Divisible` by dualising
+things:
 
 ``` haskell
 tcombine :: Alternative f => (a -> c) -> (b -> c) -> f a -> f b -> f c
@@ -597,9 +596,9 @@ first dup . dup >$< ((u >*< v) >*< w)  -- LHS = RHS
 
 There is a certain awkwardness in dealing with nested `Either` as
 anonymous sums that is hard to get rid of completely. Prisms are a tool
-worthy of consideration in this context, as they are largely about
-expressing pattern matching in a composable way.  what we'd like to do
-here. Let's bring *lens* into Tom's `Decidable` example, then:
+worth looking into in this context, as they are largely about expressing
+pattern matching in a composable way.  Let's bring *lens* into Tom's
+`Decidable` example, then:
 
 ``` haskell
 data Foo = Bar String | Baz Bool | Quux Int
