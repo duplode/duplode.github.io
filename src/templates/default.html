@@ -22,6 +22,13 @@
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@duplode" />
         <meta name="twitter:title" content="$title$" />
+        $if(twitter-card-image)$
+          <meta name="twitter:image" content="$twitter-image$" />
+        $endif$
+        $if(twitter-card-descr)$
+          <meta name="twitter:description" content="$twitter-descr$" />
+        $endif$
+
 
     </head>
     <body class="pure-skin-duplode">

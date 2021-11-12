@@ -116,6 +116,22 @@ ghCommentsCtx = field "gh-comments-button" $ \it -> do
     issueLink ghi = issueBasePath ++ ghi
     issueLinkCtx ghi = constField "gh-issue-link" $ issueLink ghi
 
+twitterCardImageCtx :: Context String
+twitterCardImageCtx = field "twitter-image" $ \it -> do
+    maybe "" (imageBasePath ++)
+        <$> itemIdentifier it `getMetadataField` "twitter-card-image"
+    where
+    -- TODO: This *really* shouldn't be hardcoded
+    imageBasePath = "https://duplode.github.io/images/"
+
+twitterCardDescrCtx :: Context String
+twitterCardDescrCtx = field "twitter-descr" $ \it -> do
+    maybe "" id
+        <$> itemIdentifier it `getMetadataField` "twitter-card-descr"
+
+twitterCardCtx :: Context String
+twitterCardCtx = twitterCardImageCtx <> twitterCardDescrCtx
+
 teaserCtx :: Context String
 teaserCtx = teaserField "teaser" "content" <> postItemCtx
 
@@ -125,7 +141,7 @@ postCtx = postDateCtx
     <> baseCtx
 
 baseCtx :: Context String
-baseCtx = defaultContext
+baseCtx = defaultContext <> twitterCardCtx
 
 --------------------------------------------------------------------------------
 plainPosts, literatePosts, hiddenPosts, allPosts :: Pattern
