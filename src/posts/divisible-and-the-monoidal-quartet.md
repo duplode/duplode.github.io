@@ -509,7 +509,8 @@ four classes:
 
 ![*Diagram of the four monoidal functor classes under consideration, with
 `Applicative` and `Decidable` in one diagonal, and `Alternative` and
-`Divisible` in the other.*](/images/posts/monoidal-quartet-diagram.png)
+`Divisible` in the other.*](
+/images/posts/divisible-and-the-monoidal-quartet/monoidal-quartet-diagram.png)
 
 To my eyes, the main takeaway of our figure of eight trip around this
 diagram has to do with its diagonals. Thanks to a peculiar kind of
