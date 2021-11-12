@@ -593,7 +593,7 @@ first dup . dup >$< ((u >*< v) >*< w)  -- LHS = RHS
 
 ### Handling nested Either
 
-*The examples in this end note is available as [a separate `.hs` file](
+*The examples in this appendix are available as [a separate `.hs` file](
 /demos/Quartet/Appendix.hs).*
 
 There is a certain awkwardness in dealing with nested `Either` as
