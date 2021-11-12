@@ -1,5 +1,5 @@
 ---
-title: "Divisible and the monoidal quartet"
+title: "Divisible and the Monoidal Quartet"
 license: CC-BY-SA
 published: 2021-11-11T23:50:00-03:00
 gh-issue: 15
