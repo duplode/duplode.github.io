@@ -72,9 +72,6 @@ unit = pure ()
 -- unit &*& v ~ v
 -- u &*& unit ~ u
 -- (u &*& v) &*& w ~ u &*& (v &*& w)
-
--- These laws characterise the functor as a monoidal one; accordingly,
--- the laws the other monoidal functor classes follow the same pattern.
 ```
 
 (Purely for the sake of consistency, I will try to stick to the
