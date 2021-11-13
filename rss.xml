@@ -35,10 +35,7 @@
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co">-- unit &amp;*&amp; v ~ v</span></span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co">-- u &amp;*&amp; unit ~ u</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- (u &amp;*&amp; v) &amp;*&amp; w ~ u &amp;*&amp; (v &amp;*&amp; w)</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co">-- These laws characterise the functor as a monoidal one; accordingly,</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co">-- the laws the other monoidal functor classes follow the same pattern.</span></span></code></pre></div>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- (u &amp;*&amp; v) &amp;*&amp; w ~ u &amp;*&amp; (v &amp;*&amp; w)</span></span></code></pre></div>
 <p>(Purely for the sake of consistency, I will try to stick to the <code>Data.Functor.Contravariant.Divisible</code> naming conventions for functions like <code>zipped</code>.)</p>
 <p>The matter with <code>(&lt;*&gt;)</code> (and also <code>liftA2</code>) that stops it from being generalised for our purposes is that it leans heavily on the fact that <strong>Hask</strong> is a <em>Cartesian closed category</em>, with pairs as the relevant product. Without that, the currying and the partial application we rely on when writing in applicative style become unfeasible.</p>
 <p>While keeping ourselves away from <code>(&lt;*&gt;)</code> and <code>liftA2</code>, we can recover, if not the full flexibility, the power of applicative style with a variant of <code>liftA2</code> that takes an uncurried function:</p>
