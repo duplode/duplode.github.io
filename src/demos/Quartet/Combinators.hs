@@ -103,5 +103,5 @@ infixr 5 |-|
 (-|>) :: Decidable k => k a -> k b -> k b
 (-|>) = choose Right
 
--- choose f u v = f <$> u |-| v
+-- choose f u v = f >$< u |-| v
 -- chosen = choose id
