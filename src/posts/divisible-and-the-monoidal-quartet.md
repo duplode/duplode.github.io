@@ -3,6 +3,7 @@ title: "Divisible and the Monoidal Quartet"
 license: CC-BY-SA
 published: 2021-11-11T23:50:00-03:00
 gh-issue: 16
+discourse: 3666
 twitter-card-image: "posts/divisible-and-the-monoidal-quartet/monoidal-quartet-diagram.png"
 twitter-card-descr: "Divisible, Alternative; Decidable, Applicative"
 ---
