@@ -90,6 +90,14 @@ a#reddit-discussion-button {
     font-weight: bold;
 }
 
+a#discourse-button {
+    color: white;
+    background-color: #8f4e8b;
+    border-radius: 4px;
+    font-size: x-small;
+    font-weight: bold;
+}
+
 h1 {
     font-size: 24px;
 }

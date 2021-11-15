@@ -116,6 +116,18 @@ ghCommentsCtx = field "gh-comments-button" $ \it -> do
     issueLink ghi = issueBasePath ++ ghi
     issueLinkCtx ghi = constField "gh-issue-link" $ issueLink ghi
 
+discourseCtx :: Context String
+discourseCtx = field "discourse-button" $ \it -> do
+    mDis <- itemIdentifier it `getMetadataField` "discourse"
+    maybe (return "") discourseFragment mDis
+    where
+    discourseBasePath = "https://discourse.haskell.org/t/"
+    discourseFragment dis = fmap itemBody $
+        load "fragments/discourse.html"
+        >>= applyAsTemplate (discourseLinkCtx dis)
+    discourseLink dis = discourseBasePath ++ dis
+    discourseLinkCtx dis = constField "discourse-link" $ discourseLink dis
+
 twitterCardImageCtx :: Context String
 twitterCardImageCtx = field "twitter-image" $ \it -> do
     maybe "" (imageBasePath ++)
@@ -137,7 +149,7 @@ teaserCtx = teaserField "teaser" "content" <> postItemCtx
 
 postCtx :: Context String
 postCtx = postDateCtx
-    <> ghCommentsCtx <> licenseInfoCtx <> redditCtx
+    <> ghCommentsCtx <> licenseInfoCtx <> redditCtx <> discourseCtx
     <> baseCtx
 
 baseCtx :: Context String
