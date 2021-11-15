@@ -4,6 +4,8 @@ published: 2014-06-02T06:00:00Z
 license: CC-BY-SA
 reddit: 2dmfvx
 gh-issue: 2
+twitter-card-image: "posts/what-does-fmap-preserve/naturality-diagram.png"
+twitter-card-descr: "A gentle introduction to naturality in Haskell"
 ---
 
 A common way of introducing `fmap` is saying that it only changes the
