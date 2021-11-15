@@ -219,7 +219,7 @@
 <img src="../images/posts/divisible-and-the-monoidal-quartet/monoidal-quartet-diagram.png" alt="Diagram of the four monoidal functor classes under consideration, with Applicative and Decidable in one diagonal, and Alternative and Divisible in the other." /><figcaption aria-hidden="true"><em>Diagram of the four monoidal functor classes under consideration, with <code>Applicative</code> and <code>Decidable</code> in one diagonal, and <code>Alternative</code> and <code>Divisible</code> in the other.</em></figcaption>
 </figure>
 <p>To my eyes, the main takeaway of our figure of eight trip around this diagram has to do with its diagonals. Thanks to a peculiar kind of duality, classes in opposite corners of it are similar to each other in quite a few ways. In particular, the orange diagonal classes, <code>Alternative</code> and <code>Divisible</code>, have monoidal operations of <code>f a -&gt; f a -&gt; f a</code> signature that emerge from their monoidal functor structure.</p>
-<p>That <code>Divisible</code>, from this perspective, appears to have more to do with <code>Alternative</code> than with <code>Applicative</code> leaves us a question to ponder: what does that mean for the relationship between <code>Divisible</code> and <code>Decidable</code>? <a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
+<p>That <code>Divisible</code>, from this perspective, appears to have more to do with <code>Alternative</code> than with <code>Applicative</code> leaves us a question to ponder: what does that mean for the relationship between <code>Divisible</code> and <code>Decidable</code>? The current class hierarchy, with <code>Decidable</code> being a subclass of <code>Divisible</code>, mirrors the <code>Alternative</code>-<code>Applicative</code> relationship on the other side of the covariant-contravariant divide. That, however, is not the only reasonable arrangement, and possibly not even the most natural one. <a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
 <h2 id="appendixes">Appendixes</h2>
 <h3 id="dplus-is-a-monoidal-operation">dplus is a monoidal operation</h3>
 <p>If we are to show that <code>(&gt;+&lt;)</code> is a monoidal operation, first of all we need an identity for it. <code>conquer :: f a</code> sounds like a reasonable candidate. It can be expressed in terms of <code>conquered</code>, the unit for <code>divided</code>, as follows:</p>
@@ -341,7 +341,7 @@
 <p>On a related note, my choice of <code>&gt;+&lt;</code> as the <code>dplus</code> operator is, in part, a pun on <a href="https://hackage.haskell.org/package/base-4.16.0.0/docs/Control-Arrow.html#t:ArrowPlus"><code>(&lt;+&gt;)</code> from <code>ArrowPlus</code></a>. <code>(&gt;+&lt;)</code> for many instances works very much like <code>(&lt;+&gt;)</code>, monoidally combining outputs, even if there probably isn’t a sensible way to actually make the types underlying the various <code>Divisible</code> functors instances of <code>ArrowPlus</code>.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn4" role="doc-endnote"><p>Both <a href="https://hackage.haskell.org/package/dhall-1.40.1/docs/Dhall-Marshal-Encode.html#v:-62--124--60-"><em>dhall</em></a> and <a href="https://hackage.haskell.org/package/co-log-core-0.3.0.0/docs/Colog-Core-Action.html#v:-62--124--60-"><em>co-log-core</em></a> define <code>(&gt;|&lt;)</code> as <code>chosen</code>-like operators. To my eyes, though, <code>&gt;|&lt;</code> fits <code>dplus</code> better. As a compromise, I opted to not use <code>&gt;|&lt;</code> for neither of them here.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn5" role="doc-endnote"><p>I will play with a couple of approaches to nested <code>Either</code> ergonomics at the end of the post, in an appendix.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" role="doc-endnote"><p>See also <a href="https://github.com/ekmett/contravariant/issues/64"><em>contravariant</em> issue #64</a>, which suggests no longer making <code>Decidable</code> a subclass of <code>Divisible</code>. Though the argument made by Zemyla is a different one, there are resonances with the observations made here.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" role="doc-endnote"><p>See also <a href="https://github.com/ekmett/contravariant/issues/64"><em>contravariant</em> issue #64</a>, which suggests no longer making <code>Decidable</code> a subclass of <code>Divisible</code>. Though the argument made by Zemyla is a different one, there are resonances with the observations made here. On a related development, <em>semigroupoids</em> has recently introduced <a href="https://hackage.haskell.org/package/semigroupoids-5.3.6/docs/Data-Functor-Contravariant-Conclude.html">a <code>Conclude</code> class</a>, which amounts to “<code>Decidable</code> without a superclass constraint on <code>Divisible</code>”.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
@@ -355,7 +355,10 @@
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -673,7 +676,10 @@
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -876,7 +882,10 @@
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -1188,7 +1197,10 @@
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -1309,7 +1321,10 @@
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -1447,7 +1462,10 @@ Listening on http://127.0.0.1:10000/
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -1594,7 +1612,10 @@ extra-deps:
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -1729,7 +1750,10 @@ extra-deps:
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -1867,7 +1891,10 @@ extra-deps:
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
@@ -2073,7 +2100,10 @@ extra-deps:
     
     
   </div>
-  <div class="pure-u-3-4">
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
   </div>
 </div>
 
