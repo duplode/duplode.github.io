@@ -519,13 +519,21 @@ quite a few ways. In particular, the orange diagonal classes,
 That `Divisible`, from this perspective, appears to have more to do with
 `Alternative` than with `Applicative` leaves us a question to ponder:
 what does that mean for the relationship between `Divisible` and
-`Decidable`? [^issue-64]
+`Decidable`? The current class hierarchy, with `Decidable` being a
+subclass of `Divisible`, mirrors the `Alternative`-`Applicative`
+relationship on the other side of the covariant-contravariant divide.
+That, however, is not the only reasonable arrangement, and possibly not
+even the most natural one.  [^issue-64]
 
 [^issue-64]: See also [*contravariant* issue #64](
   https://github.com/ekmett/contravariant/issues/64), which suggests no
   longer making `Decidable` a subclass of `Divisible`. Though the
   argument made by Zemyla is a different one, there are resonances with
-  the observations made here.
+  the observations made here. On a related development, *semigroupoids*
+  has recently introduced [a `Conclude` class](
+  https://hackage.haskell.org/package/semigroupoids-5.3.6/docs/Data-Functor-Contravariant-Conclude.html),
+  which amounts to "`Decidable` without a superclass constraint on
+  `Divisible`".
 
 ## Appendixes
 
