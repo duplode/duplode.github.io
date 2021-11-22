@@ -662,7 +662,7 @@ language support for juggling sum types. As it happens, though, there is
 a corner of the language which does provide extra support: [arrow
 notation](
 https://downloads.haskell.org/ghc/9.2.1/docs/html/users_guide/exts/arrows.html#conditional-commands).
-We can get a glimpse of what might be converting the example to arrows:
+Converting the example to arrows provides a glimpse of what might be:
 
 ``` haskell
 -- I'm going to play nice, rather than making b phantom and writing a
@@ -702,7 +702,7 @@ decidableArrowised = toPred $ proc foo -> case foo of
     Quux n -> fromPred pInt -< n
 ```
 
-`decidableArrowised` corresponds quite closely to the  various
+`decidableArrowised` corresponds quite closely to the various
 `Decidable`-powered implementations.  Behind the scenes, `case` commands
 in arrow notation give rise to nested eithers. Said eithers are dealt
 with by the arrows, which are combined in an appropriate way with
