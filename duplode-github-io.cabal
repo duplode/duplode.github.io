@@ -29,6 +29,7 @@ executable duplode-github-io
                      , mtl
                      , vector
                      , text
+                     , tagsoup
   hs-source-dirs:      src
   default-language:    Haskell2010
 

@@ -14,6 +14,8 @@ import Skylighting (styleToCss, tango)
 import Text.Pandoc.Options
 import Text.Pandoc.Templates (compileTemplate)
 import qualified Data.Text as T
+import qualified Text.HTML.TagSoup as TS
+import qualified Text.HTML.TagSoup.Tree as TS
 
 import qualified Scripts as Scr
 import qualified IssueThread as Iss
@@ -54,6 +56,15 @@ pandocCompilerOfOurs = do
         Nothing -> return defaultHakyllWriterOptions
         Just _ -> tocPandocWriterOptions
     pandocCompilerWith defaultHakyllReaderOptions tocOpts
+
+suppressToc :: Item String -> Item String
+suppressToc = fmap (withTagList (withTree suppressor))
+    where
+    withTree f = TS.flattenTree . f . TS.tagTree
+    suppressor = TS.transformTree $ \t -> case t of
+        TS.TagBranch "div" [("id", "toc")] _ -> []
+        _ -> [t]
+
 
 rssConfig :: FeedConfiguration
 rssConfig = FeedConfiguration
@@ -226,13 +237,17 @@ theSite = do
             barePosts <- fmap (take 6) . recentFirst
                 =<< filterM (fmap isNothing
                         . (`getMetadataField` "retired") . itemIdentifier)
-                =<< loadAllSnapshots (allPosts .&&. hasNoVersion) "content"
+                -- The right snapshot to use is specified at teaserCtx.
+                -- At this specific stage the item body isn't used at all.
+                -- That's a reason for only using suppressToc later on.
+                =<< loadAll (allPosts .&&. hasNoVersion)
             getResourceBody
                 >>= applyAsTemplate
                     (listField "post-teasers" teaserCtx (return barePosts))
                 >>= loadAndApplyTemplate
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
+                >>= return . suppressToc
 
 
     match "repo/*" $ do
@@ -264,6 +279,7 @@ theSite = do
                         >>= loadAndApplyTemplate
                             "templates/post.html" toRssCtx
                         >>= relativizeUrls
+                        >>= return . suppressToc
 
             barePosts <- mapM processRssItem
                 =<< fmap (take 12) . recentFirst
