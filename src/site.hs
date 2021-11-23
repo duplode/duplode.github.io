@@ -38,25 +38,14 @@ tocPandocWriterOptions = do
         , writerTemplate = tmpl
         }
 
-processWithPandoc :: Item String -> Compiler (Item String)
-processWithPandoc = processWithPandoc' False
-
-processWithPandoc' :: Bool -> Item String -> Compiler (Item String)
-processWithPandoc' withToc it = do
-    tocOpts <- tocPandocWriterOptions
-    renderPandocWith
-        defaultHakyllReaderOptions
-        (if withToc then tocOpts else defaultHakyllWriterOptions)
-        it
-
 pandocCompilerOfOurs :: Compiler (Item String)
-pandocCompilerOfOurs = pandocCompilerOfOurs' False
-
-pandocCompilerOfOurs' :: Bool -> Compiler (Item String)
-pandocCompilerOfOurs' withToc = do
-    tocOpts <- tocPandocWriterOptions
-    pandocCompilerWith defaultHakyllReaderOptions $
-        if withToc then tocOpts else defaultHakyllWriterOptions
+pandocCompilerOfOurs = do
+    ident <- getUnderlying
+    mToc <- ident `getMetadataField` "toc"
+    tocOpts <- case mToc of
+        Nothing -> return defaultHakyllWriterOptions
+        Just _ -> tocPandocWriterOptions
+    pandocCompilerWith defaultHakyllReaderOptions tocOpts
 
 rssConfig :: FeedConfiguration
 rssConfig = FeedConfiguration
