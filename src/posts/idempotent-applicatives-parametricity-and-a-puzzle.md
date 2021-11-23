@@ -3,6 +3,7 @@ title: "Idempotent Applicatives, Parametricity, and a Puzzle"
 license: CC-BY-SA
 published: 2019-04-01T02:30:00-03:00
 gh-issue: 14
+toc: true
 ---
 
 Some applicative functors are idempotent, in the sense that repeating an

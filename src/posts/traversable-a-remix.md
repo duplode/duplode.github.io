@@ -4,6 +4,7 @@ published: 2017-05-19T07:30:00Z
 license: CC-BY-SA
 reddit: 6c2819
 gh-issue: 13
+toc: true
 ---
 
 `Traversable` is a fun type class. It lies at a crossroad, where many

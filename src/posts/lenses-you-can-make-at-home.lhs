@@ -4,7 +4,7 @@ published: 2014-04-26T12:00:00Z
 license: CC-BY-SA
 reddit: 241aec
 gh-issue: 1
-toc: True
+toc: true
 ---
 
 The most striking traits of the `lens` library are its astonishing

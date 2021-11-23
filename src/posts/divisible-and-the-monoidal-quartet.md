@@ -6,6 +6,7 @@ gh-issue: 16
 discourse: 3666
 twitter-card-image: "posts/divisible-and-the-monoidal-quartet/monoidal-quartet-diagram.png"
 twitter-card-descr: "Divisible, Alternative; Decidable, Applicative"
+toc: true
 ---
 
 A recent blog post by Gabriella Gonzalez, [*Co-Applicative programming
