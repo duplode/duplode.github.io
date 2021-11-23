@@ -13,6 +13,7 @@ import Hakyll
 import Skylighting (styleToCss, tango)
 import Text.Pandoc.Options
 import Text.Pandoc.Templates (compileTemplate)
+import qualified Data.Text as T
 
 import qualified Scripts as Scr
 import qualified IssueThread as Iss
@@ -32,11 +33,18 @@ hakyllConfig = defaultConfiguration
 tocPandocWriterOptions :: Compiler WriterOptions
 tocPandocWriterOptions = do
     tmpl <- either (const Nothing) Just
-        <$> unsafeCompiler (compileTemplate "" "$toc$\n$body$")
+        <$> unsafeCompiler (compileTemplate "" tmplSpec)
     return defaultHakyllWriterOptions
         { writerTableOfContents = True
         , writerTemplate = tmpl
         }
+    where
+    tmplSpec = T.unlines
+        [ "<div id=\"toc\">"
+        , "$toc$"
+        , "</div>"
+        , "$body$"
+        ]
 
 pandocCompilerOfOurs :: Compiler (Item String)
 pandocCompilerOfOurs = do

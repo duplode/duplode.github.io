@@ -19,6 +19,12 @@ div#content {
     max-width: 45rem;
 }
 
+div#toc {
+    background-color: #fbf9fb;
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+}
+
 div#navigation {
     text-align: right;
     padding-left: 1em;
