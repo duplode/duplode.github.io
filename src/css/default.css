@@ -6,24 +6,41 @@ body {
     max-width: 960px;
 }
 
-/*
-div#header {
-    border-bottom: 2px solid black;
-    margin-bottom: 30px;
-    padding: 12px 0px 12px 0px;
-}
-*/
 div#content {
     margin-right: 1em;
     max-width: 720px;
     max-width: 45rem;
 }
 
-div#toc {
+.mini-header {
+    font-weight: bold;
+}
+
+div#contents {
     background-color: #fbf9fb;
+    margin-left: 0.75em;
+    margin-bottom: 0.75em;
     padding-top: 0.25em;
     padding-bottom: 0.25em;
+    padding-left: 0.5em;
+    float: right;
+    max-width: 240px;
+    max-width: 15rem;
+    max-width: 30%;
+    min-width: 25%;
+    min-width: 180px;
 }
+
+div#contents ul {
+    font-size: 90%;
+    margin-top: 0.5em;
+    padding-left: 1em;
+}
+
+div#contents li + li {
+    margin-top: 0.5em;
+}
+
 
 div#navigation {
     text-align: right;

@@ -42,7 +42,8 @@ tocPandocWriterOptions = do
         }
     where
     tmplSpec = T.unlines
-        [ "<div id=\"toc\">"
+        [ "<div id=\"contents\">"
+        , "<p class=\"mini-header\">Contents</p>"
         , "$toc$"
         , "</div>"
         , "$body$"
@@ -62,7 +63,7 @@ suppressToc = fmap (withTagList (withTree suppressor))
     where
     withTree f = TS.flattenTree . f . TS.tagTree
     suppressor = TS.transformTree $ \t -> case t of
-        TS.TagBranch "div" [("id", "toc")] _ -> []
+        TS.TagBranch "div" [("id", "contents")] _ -> []
         _ -> [t]
 
 
