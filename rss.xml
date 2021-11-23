@@ -11,7 +11,8 @@
         <item>
     <title>Divisible and the Monoidal Quartet</title>
     <link>http://duplode.github.io/posts/divisible-and-the-monoidal-quartet.html</link>
-    <description><![CDATA[<p>A recent blog post by Gabriella Gonzalez, <a href="https://www.haskellforall.com/2021/10/co-applicative-programming-style.html"><em>Co-Applicative programming style</em></a>, has sparked discussion on ergonomic ways to make use of <a href="https://hackage.haskell.org/package/contravariant-1.5.5">the <code>Divisible</code> type class</a>. The conversation pointed to an interesting rabbit hole, and jumping into it resulted in these notes, in which I attempt to get a clearer view of picture of the constellation of monoidal functor classes that <code>Divisible</code> belongs to. The gist of it is that “<code>Divisible</code> is a contravariant <code>Applicative</code>, and <code>Decidable</code> is a contravariant <code>Alternative</code>” is not a full picture of the relationships between the classes, as there are a few extra connections that aren’t obvious to the naked eye.</p>
+    <description><![CDATA[
+<p>A recent blog post by Gabriella Gonzalez, <a href="https://www.haskellforall.com/2021/10/co-applicative-programming-style.html"><em>Co-Applicative programming style</em></a>, has sparked discussion on ergonomic ways to make use of <a href="https://hackage.haskell.org/package/contravariant-1.5.5">the <code>Divisible</code> type class</a>. The conversation pointed to an interesting rabbit hole, and jumping into it resulted in these notes, in which I attempt to get a clearer view of picture of the constellation of monoidal functor classes that <code>Divisible</code> belongs to. The gist of it is that “<code>Divisible</code> is a contravariant <code>Applicative</code>, and <code>Decidable</code> is a contravariant <code>Alternative</code>” is not a full picture of the relationships between the classes, as there are a few extra connections that aren’t obvious to the naked eye.</p>
 <div>
 
 </div>
@@ -288,7 +289,7 @@
 <span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">error</span> <span class="st">&quot;Missing case in decidableMatching&quot;</span></span></code></pre></div>
 <p>These implementations have a few inconveniences of their own, the main one perhaps being that there is noting to stop us from forgetting one of the prisms. The combinators from <a href="https://hackage.haskell.org/package/total-1.0.6">the <em>total</em> package</a> improve on that by incorporating exhaustiveness checking for prisms, at the cost of requiring the sum type to be defined in a particular way.</p>
 <p>There presumably also is the option of brining in heavy machinery, and setting up an anonymous sum wrangler with Template Haskell or generics. In fact, it appears <a href="https://hackage.haskell.org/package/shapely-data">the <em>shapely-data</em> package</a> used to offer precisely that. It might be worth it to take a moment to make it build with recent GHCs.</p>
-<p>All in all, these approaches feel like attempts to approximate extra language support for juggling sum types. As it happens, though, there is a corner of the language which does provide extra support: <a href="https://downloads.haskell.org/ghc/9.2.1/docs/html/users_guide/exts/arrows.html#conditional-commands">arrow notation</a>. We can get a glimpse of what might be converting the example to arrows:</p>
+<p>All in all, these approaches feel like attempts to approximate extra language support for juggling sum types. As it happens, though, there is a corner of the language which does provide extra support: <a href="https://downloads.haskell.org/ghc/9.2.1/docs/html/users_guide/exts/arrows.html#conditional-commands">arrow notation</a>. Converting the example to arrows provides a glimpse of what might be:</p>
 <div class="sourceCode" id="cb35"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- I'm going to play nice, rather than making b phantom and writing a</span></span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- blatantly unlawful Arrow instance just for the sake of the notation.</span></span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Pipecate</span> a b <span class="ot">=</span> <span class="dt">Pipecate</span> {<span class="ot"> getPipecate ::</span> a <span class="ot">-&gt;</span> (<span class="dt">Bool</span>, b) }</span>
@@ -345,6 +346,7 @@
 </ol>
 </section>
 
+
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/16">Comment on GitHub</a>
@@ -387,7 +389,8 @@
 <item>
     <title>Idempotent Applicatives, Parametricity, and a Puzzle</title>
     <link>http://duplode.github.io/posts/idempotent-applicatives-parametricity-and-a-puzzle.html</link>
-    <description><![CDATA[<p>Some applicative functors are idempotent, in the sense that repeating an effect is the same as having it just once. An example and a counterexample are <code>Maybe</code> and <code>IO</code>, respectively (contrast <code>Just 3 *&gt; Just 3</code> with <code>print 3 *&gt; print 3</code>). More precisely, idempotency means that <code>f &lt;$&gt; u &lt;*&gt; u = (\x -&gt; f x x) &lt;$&gt; u</code>. Given the informal description I began with, though, one might wonder whether the simpler property <code>u *&gt; u = u</code>, which seems to capture the intuition about repeated effects, is equivalent to the usual idempotency property. In this post, I will tell how I went about exploring this conjecture, as well as a few things I learnt about parametricity along the way.</p>
+    <description><![CDATA[
+<p>Some applicative functors are idempotent, in the sense that repeating an effect is the same as having it just once. An example and a counterexample are <code>Maybe</code> and <code>IO</code>, respectively (contrast <code>Just 3 *&gt; Just 3</code> with <code>print 3 *&gt; print 3</code>). More precisely, idempotency means that <code>f &lt;$&gt; u &lt;*&gt; u = (\x -&gt; f x x) &lt;$&gt; u</code>. Given the informal description I began with, though, one might wonder whether the simpler property <code>u *&gt; u = u</code>, which seems to capture the intuition about repeated effects, is equivalent to the usual idempotency property. In this post, I will tell how I went about exploring this conjecture, as well as a few things I learnt about parametricity along the way.</p>
 <div>
 
 </div>
@@ -669,6 +672,7 @@
 </ol>
 </section>
 
+
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/14">Comment on GitHub</a>
@@ -708,7 +712,8 @@
 <item>
     <title>Traversable: A Remix</title>
     <link>http://duplode.github.io/posts/traversable-a-remix.html</link>
-    <description><![CDATA[<p><code>Traversable</code> is a fun type class. It lies at a crossroad, where many basic Haskell concepts meet, and it can be presented in multiple ways that provide complementary intuitions. In this post, <code>Traversable</code> will be described from a slightly unusual point of view, or at least one that is not put into foreground all that often. We will suspend for a moment the picture of walking across a container while using an effectful function, and instead start by considering what can be done with effectful functions.</p>
+    <description><![CDATA[
+<p><code>Traversable</code> is a fun type class. It lies at a crossroad, where many basic Haskell concepts meet, and it can be presented in multiple ways that provide complementary intuitions. In this post, <code>Traversable</code> will be described from a slightly unusual point of view, or at least one that is not put into foreground all that often. We will suspend for a moment the picture of walking across a container while using an effectful function, and instead start by considering what can be done with effectful functions.</p>
 <div>
 
 </div>
@@ -871,6 +876,7 @@
 </ol>
 </section>
 
+
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/13">Comment on GitHub</a>
@@ -914,7 +920,8 @@
 <item>
     <title>What's in a Fold: The Basic Catamorphism in recursion-schemes</title>
     <link>http://duplode.github.io/posts/whats-in-a-fold.html</link>
-    <description><![CDATA[<p>This article is meant as an accessible introduction to the most basic recursion scheme, the catamorphism. It won’t engage in deep dives into theory, or survey practical motives for using recursion schemes – that will be covered by the further reading suggestions at the end. Rather, its main goal is simply offering a concrete presentation of how folds can be generalised. This presentation will be done in terms of the types and combinators used by the <a href="https://hackage.haskell.org/package/recursion-schemes-5.0.1"><em>recursion-schemes</em></a> library, so that the article doubles as an introduction to some of its key conventions.</p>
+    <description><![CDATA[
+<p>This article is meant as an accessible introduction to the most basic recursion scheme, the catamorphism. It won’t engage in deep dives into theory, or survey practical motives for using recursion schemes – that will be covered by the further reading suggestions at the end. Rather, its main goal is simply offering a concrete presentation of how folds can be generalised. This presentation will be done in terms of the types and combinators used by the <a href="https://hackage.haskell.org/package/recursion-schemes-5.0.1"><em>recursion-schemes</em></a> library, so that the article doubles as an introduction to some of its key conventions.</p>
 <div>
 
 </div>
@@ -1185,6 +1192,7 @@
 <li id="fn7" role="doc-endnote"><p>The names in said texts tend to be different, though. Common picks include <code>μ</code> for the <code>Fix</code> type constructor, <code>In</code> for the <code>Fix</code> value constructor, <code>out</code> for <code>unfix</code>, and <code>⦇f⦈</code> for <code>leanCata f</code> (using the famed banana brackets).<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
+
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
@@ -1782,7 +1790,8 @@ extra-deps:
 <item>
     <title>What Does fmap Preserve?</title>
     <link>http://duplode.github.io/posts/what-does-fmap-preserve.html</link>
-    <description><![CDATA[<p>A common way of introducing <code>fmap</code> is saying that it only changes the values in a container, and not its structure. Leaving behind the the functors-as-containers metaphor, we can convey the same idea by saying that <code>fmap</code> leaves the context of the values in a <code>Functor</code> unchanged. But what, exactly, is the “context” or “structure” being preserved? “It depends on the functor”, though correct, is not an entirely satisfactory answer. The functor laws, after all, are highly abstract, and make no mention of anything a programmer would be inclined to call “structure” (say, the skeleton of a list); and yet the preservation we alluded to follows from them. After struggling a bit with this question, I realised that the incompatibility is only apparent. This post shows how the tension can be resolved through the mediation of <em>parametricity</em> and <em>naturality</em>, two concepts from different domains that are intertwined in Haskell.</p>
+    <description><![CDATA[
+<p>A common way of introducing <code>fmap</code> is saying that it only changes the values in a container, and not its structure. Leaving behind the the functors-as-containers metaphor, we can convey the same idea by saying that <code>fmap</code> leaves the context of the values in a <code>Functor</code> unchanged. But what, exactly, is the “context” or “structure” being preserved? “It depends on the functor”, though correct, is not an entirely satisfactory answer. The functor laws, after all, are highly abstract, and make no mention of anything a programmer would be inclined to call “structure” (say, the skeleton of a list); and yet the preservation we alluded to follows from them. After struggling a bit with this question, I realised that the incompatibility is only apparent. This post shows how the tension can be resolved through the mediation of <em>parametricity</em> and <em>naturality</em>, two concepts from different domains that are intertwined in Haskell.</p>
 <div>
 
 </div>
@@ -1880,6 +1889,7 @@ extra-deps:
 </ol>
 </section>
 
+
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">
     <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/2">Comment on GitHub</a>
@@ -1923,7 +1933,8 @@ extra-deps:
 <item>
     <title>Lenses You Can Make at Home</title>
     <link>http://duplode.github.io/posts/lenses-you-can-make-at-home.html</link>
-    <description><![CDATA[<p>The most striking traits of the <code>lens</code> library are its astonishing breadth and generality. And yet, the whole edifice is built around van Laarhoven lenses, which are a simple and elegant concept. In this hands-on exposition, I will show how the <code>Lens</code> type can be understood without prerequisites other than a passing acquaintance with Haskell functors. Encouraging sound intuition in an accessible manner can go a long way towards making <code>lens</code> and lenses less intimidating.</p>
+    <description><![CDATA[
+<p>The most striking traits of the <code>lens</code> library are its astonishing breadth and generality. And yet, the whole edifice is built around van Laarhoven lenses, which are a simple and elegant concept. In this hands-on exposition, I will show how the <code>Lens</code> type can be understood without prerequisites other than a passing acquaintance with Haskell functors. Encouraging sound intuition in an accessible manner can go a long way towards making <code>lens</code> and lenses less intimidating.</p>
 <div>
 
 </div>
@@ -2088,6 +2099,7 @@ extra-deps:
 <li id="fn5" role="doc-endnote"><p>And in some cases of profunctors to replace the function type constructor.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
+
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">

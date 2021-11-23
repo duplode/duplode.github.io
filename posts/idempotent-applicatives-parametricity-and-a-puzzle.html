@@ -52,6 +52,20 @@
 
             <p><em>April  1, 2019</em></p>
 
+<div id="contents">
+<p class="mini-header">Contents</p>
+<ul>
+<li><a href="#prolegomena">Prolegomena</a></li>
+<li><a href="#drawing-relations">Drawing relations</a></li>
+<li><a href="#something-twisted">Something twisted</a></li>
+<li><a href="#appendix">Appendix</a>
+<ul>
+<li><a href="#alternative-presentation-of-the-idempotency-property">Alternative presentation of the idempotency property</a></li>
+<li><a href="#alternative-definitions-of-and">Alternative definitions of <code>(&lt;*)</code> and <code>(*&gt;)</code></a></li>
+<li><a href="#lawfulness-of-twisted-as-an-applicative-functor">Lawfulness of <code>Twisted</code> as an applicative functor</a></li>
+</ul></li>
+</ul>
+</div>
 <p>Some applicative functors are idempotent, in the sense that repeating an effect is the same as having it just once. An example and a counterexample are <code>Maybe</code> and <code>IO</code>, respectively (contrast <code>Just 3 *&gt; Just 3</code> with <code>print 3 *&gt; print 3</code>). More precisely, idempotency means that <code>f &lt;$&gt; u &lt;*&gt; u = (\x -&gt; f x x) &lt;$&gt; u</code>. Given the informal description I began with, though, one might wonder whether the simpler property <code>u *&gt; u = u</code>, which seems to capture the intuition about repeated effects, is equivalent to the usual idempotency property. In this post, I will tell how I went about exploring this conjecture, as well as a few things I learnt about parametricity along the way.</p>
 <div>
 
@@ -333,6 +347,7 @@
 <li id="fn6" role="doc-endnote"><p>The appendix includes a proof of the lawfulness of <code>Twisted</code>.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
+
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">

@@ -56,6 +56,21 @@
 
             <p><em>November 12, 2021</em></p>
 
+<div id="contents">
+<p class="mini-header">Contents</p>
+<ul>
+<li><a href="#applicative">Applicative</a></li>
+<li><a href="#divisible">Divisible</a></li>
+<li><a href="#alternative">Alternative</a></li>
+<li><a href="#decidable">Decidable</a></li>
+<li><a href="#in-summary">In summary</a></li>
+<li><a href="#appendixes">Appendixes</a>
+<ul>
+<li><a href="#dplus-is-a-monoidal-operation">dplus is a monoidal operation</a></li>
+<li><a href="#handling-nested-either">Handling nested Either</a></li>
+</ul></li>
+</ul>
+</div>
 <p>A recent blog post by Gabriella Gonzalez, <a href="https://www.haskellforall.com/2021/10/co-applicative-programming-style.html"><em>Co-Applicative programming style</em></a>, has sparked discussion on ergonomic ways to make use of <a href="https://hackage.haskell.org/package/contravariant-1.5.5">the <code>Divisible</code> type class</a>. The conversation pointed to an interesting rabbit hole, and jumping into it resulted in these notes, in which I attempt to get a clearer view of picture of the constellation of monoidal functor classes that <code>Divisible</code> belongs to. The gist of it is that “<code>Divisible</code> is a contravariant <code>Applicative</code>, and <code>Decidable</code> is a contravariant <code>Alternative</code>” is not a full picture of the relationships between the classes, as there are a few extra connections that aren’t obvious to the naked eye.</p>
 <div>
 
@@ -333,7 +348,7 @@
 <span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">error</span> <span class="st">&quot;Missing case in decidableMatching&quot;</span></span></code></pre></div>
 <p>These implementations have a few inconveniences of their own, the main one perhaps being that there is noting to stop us from forgetting one of the prisms. The combinators from <a href="https://hackage.haskell.org/package/total-1.0.6">the <em>total</em> package</a> improve on that by incorporating exhaustiveness checking for prisms, at the cost of requiring the sum type to be defined in a particular way.</p>
 <p>There presumably also is the option of brining in heavy machinery, and setting up an anonymous sum wrangler with Template Haskell or generics. In fact, it appears <a href="https://hackage.haskell.org/package/shapely-data">the <em>shapely-data</em> package</a> used to offer precisely that. It might be worth it to take a moment to make it build with recent GHCs.</p>
-<p>All in all, these approaches feel like attempts to approximate extra language support for juggling sum types. As it happens, though, there is a corner of the language which does provide extra support: <a href="https://downloads.haskell.org/ghc/9.2.1/docs/html/users_guide/exts/arrows.html#conditional-commands">arrow notation</a>. We can get a glimpse of what might be converting the example to arrows:</p>
+<p>All in all, these approaches feel like attempts to approximate extra language support for juggling sum types. As it happens, though, there is a corner of the language which does provide extra support: <a href="https://downloads.haskell.org/ghc/9.2.1/docs/html/users_guide/exts/arrows.html#conditional-commands">arrow notation</a>. Converting the example to arrows provides a glimpse of what might be:</p>
 <div class="sourceCode" id="cb35"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- I'm going to play nice, rather than making b phantom and writing a</span></span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- blatantly unlawful Arrow instance just for the sake of the notation.</span></span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Pipecate</span> a b <span class="ot">=</span> <span class="dt">Pipecate</span> {<span class="ot"> getPipecate ::</span> a <span class="ot">-&gt;</span> (<span class="dt">Bool</span>, b) }</span>
@@ -389,6 +404,7 @@
 <li id="fn6" role="doc-endnote"><p>See also <a href="https://github.com/ekmett/contravariant/issues/64"><em>contravariant</em> issue #64</a>, which suggests no longer making <code>Decidable</code> a subclass of <code>Divisible</code>. Though the argument made by Zemyla is a different one, there are resonances with the observations made here. On a related development, <em>semigroupoids</em> has recently introduced <a href="https://hackage.haskell.org/package/semigroupoids-5.3.6/docs/Data-Functor-Contravariant-Conclude.html">a <code>Conclude</code> class</a>, which amounts to “<code>Decidable</code> without a superclass constraint on <code>Divisible</code>”.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
+
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">

@@ -52,6 +52,18 @@
 
             <p><em>March 10, 2017</em></p>
 
+<div id="contents">
+<p class="mini-header">Contents</p>
+<ul>
+<li><a href="#foldr">foldr</a></li>
+<li><a href="#listf">ListF</a></li>
+<li><a href="#cata">cata</a></li>
+<li><a href="#fix">Fix</a></li>
+<li><a href="#closing-remarks">Closing remarks</a></li>
+<li><a href="#further-reading">Further reading</a></li>
+<li><a href="#appendix-leancata">Appendix: leanCata</a></li>
+</ul>
+</div>
 <p>This article is meant as an accessible introduction to the most basic recursion scheme, the catamorphism. It won’t engage in deep dives into theory, or survey practical motives for using recursion schemes – that will be covered by the further reading suggestions at the end. Rather, its main goal is simply offering a concrete presentation of how folds can be generalised. This presentation will be done in terms of the types and combinators used by the <a href="https://hackage.haskell.org/package/recursion-schemes-5.0.1"><em>recursion-schemes</em></a> library, so that the article doubles as an introduction to some of its key conventions.</p>
 <div>
 
@@ -323,6 +335,7 @@
 <li id="fn7" role="doc-endnote"><p>The names in said texts tend to be different, though. Common picks include <code>μ</code> for the <code>Fix</code> type constructor, <code>In</code> for the <code>Fix</code> value constructor, <code>out</code> for <code>unfix</code>, and <code>⦇f⦈</code> for <code>leanCata f</code> (using the famed banana brackets).<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
+
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">

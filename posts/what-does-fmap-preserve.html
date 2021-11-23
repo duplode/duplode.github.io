@@ -56,6 +56,18 @@
 
             <p><em>June  2, 2014</em></p>
 
+<div id="contents">
+<p class="mini-header">Contents</p>
+<ul>
+<li><a href="#categorical-cautionary-comment">Categorical Cautionary Comment</a></li>
+<li><a href="#what-can-you-do-with-a-function">What Can You Do With a Function?</a></li>
+<li><a href="#what-is-a-context-after-all">What Is a Context, After All?</a></li>
+<li><a href="#your-freedom-comes-naturally">Your Freedom Comes Naturally</a></li>
+<li><a href="#structures-and-structures">Structures and Structures</a></li>
+<li><a href="#fmap-preserves-fmap">fmap Preserves fmap</a></li>
+<li><a href="#further-reading">Further Reading</a></li>
+</ul>
+</div>
 <p>A common way of introducing <code>fmap</code> is saying that it only changes the values in a container, and not its structure. Leaving behind the the functors-as-containers metaphor, we can convey the same idea by saying that <code>fmap</code> leaves the context of the values in a <code>Functor</code> unchanged. But what, exactly, is the “context” or “structure” being preserved? “It depends on the functor”, though correct, is not an entirely satisfactory answer. The functor laws, after all, are highly abstract, and make no mention of anything a programmer would be inclined to call “structure” (say, the skeleton of a list); and yet the preservation we alluded to follows from them. After struggling a bit with this question, I realised that the incompatibility is only apparent. This post shows how the tension can be resolved through the mediation of <em>parametricity</em> and <em>naturality</em>, two concepts from different domains that are intertwined in Haskell.</p>
 <div>
 
@@ -153,6 +165,7 @@
 <li id="fn1" role="doc-endnote"><p>A category theory primer would be too big a detour for this post. If the category theory concepts I just mentioned are new to you, I suggest the following gentle introductions for Haskellers, which have very different approaches: <a href="https://en.wikibooks.org/wiki/Haskell/Category_theory">Haskell Wikibook chapter on category theory</a>, and Gabriella Gonzalez’s posts <a href="http://www.haskellforall.com/2012/08/the-category-design-pattern.html">The category design pattern</a> and <a href="http://www.haskellforall.com/2012/09/the-functor-design-pattern.html">The functor design pattern</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
+
 
 <div id="comment-nav" class="pure-g-r no-print">
   <div class="pure-u-1-4">

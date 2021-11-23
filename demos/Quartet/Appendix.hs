@@ -55,7 +55,7 @@ decidableOutside = analyse >$< pString |-| pBool |-| pInt
     where
     analyse = _Bar `anonSum` (_Baz `anonSum` (^?! _Quux))
 
--- Strategy two: prisms, outside, and choose
+-- Strategy two: prisms, matching, and choose
 
 matchingL :: APrism' s a -> s -> Either a s
 matchingL p = view swapped . matching p
