@@ -16,6 +16,8 @@ import Text.Pandoc.Templates (compileTemplate)
 import qualified Data.Text as T
 import qualified Text.HTML.TagSoup as TS
 import qualified Text.HTML.TagSoup.Tree as TS
+import Data.List (span)
+import Control.Arrow (second)
 
 import qualified Scripts as Scr
 import qualified IssueThread as Iss
@@ -59,12 +61,14 @@ pandocCompilerOfOurs = do
     pandocCompilerWith defaultHakyllReaderOptions tocOpts
 
 suppressToc :: Item String -> Item String
-suppressToc = fmap (withTagList (withTree suppressor))
+suppressToc = fmap (withTagList suppressor)
     where
-    withTree f = TS.flattenTree . f . TS.tagTree
-    suppressor = TS.transformTree $ \t -> case t of
-        TS.TagBranch "div" [("id", "contents")] _ -> []
-        _ -> [t]
+    suppressor tags =
+        let (pre, (_, post)) =
+                second (second (drop 1) . break (== TS.TagClose "div"))
+                . break (== TS.TagOpen "div" [("id", "contents")])
+                $ tags
+        in pre ++ post
 
 
 rssConfig :: FeedConfiguration
@@ -73,7 +77,7 @@ rssConfig = FeedConfiguration
     , feedDescription = "Haskell amusements"
     , feedAuthorName = "Daniel Mlot"
     , feedAuthorEmail = "" -- Not used by RSS.
-    , feedRoot = "http://duplode.github.io"
+    , feedRoot = "https://duplode.github.io"
     }
 
 --------------------------------------------------------------------------------
@@ -222,8 +226,12 @@ theSite = do
     match allPosts $ do
         route   $ setExtension "html"
         compile $ do
+            let prepareBare it = do
+                    let it' = suppressToc it
+                    saveSnapshot "content" it'
+                    return it
             pandocCompilerOfOurs
-                >>= saveSnapshot "content"
+                >>= prepareBare
                 >>= loadAndApplyTemplate
                     "templates/post.html" postCtx
                 >>= loadAndApplyTemplate
@@ -248,7 +256,6 @@ theSite = do
                 >>= loadAndApplyTemplate
                     "templates/default.html" baseCtx
                 >>= relativizeUrls
-                >>= return . suppressToc
 
 
     match "repo/*" $ do
@@ -280,7 +287,6 @@ theSite = do
                         >>= loadAndApplyTemplate
                             "templates/post.html" toRssCtx
                         >>= relativizeUrls
-                        >>= return . suppressToc
 
             barePosts <- mapM processRssItem
                 =<< fmap (take 12) . recentFirst
