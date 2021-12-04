@@ -506,9 +506,8 @@ revert . flap . fmap evert
 distribute = revert . flap . fmap evert
 
 -- Corollary:
--- If revert . evert = id, then:
-revert . flap = distribute . fmap revert
 -- If evert . revert = id, then:
+revert . flap = distribute . fmap revert
 evert . distribute = flap . fmap evert
 ```
 
@@ -608,6 +607,7 @@ fflip (flap u)  -- LHS
 revert (\p -> p . flap m)
 revert (\p -> p . (\r -> (\f -> f r) <$> m))
 revert (\p -> \r -> p ((\f -> f r) <$> m))
+-- p is a natural transformation
 revert (\p -> (\r -> (\f -> f r) (p m)))
 revert (\p -> (\r -> p m r))
 revert (\p -> p m)
@@ -635,10 +635,12 @@ revert . evert = id
 
 fmap uI . distribute = uI
 fmap uI . revert . flap . fmap evert = uI
+-- revert is a natural transformation
 revert . fmap uI . flap . fmap evert = uI
 -- flap @I = fmap I . uI
 revert . fmap uI . fmap I . uI . fmap evert = uI
 revert . uI . fmap evert = uI
+-- evert is a natural transformation
 revert . evert . uI = uI
 revert . evert = id  -- Goal, reversibly
 ```
@@ -648,11 +650,13 @@ If the identity law holds, `distribute . distribute = id`:
 ``` haskell
 distribute . distribute
 revert . flap . fmap evert . revert . flap . fmap evert
+-- revert is a natural transformation
 revert . flap . revert . fmap evert . flap . fmap evert
 -- Using the naturality law for flap, twice:
 revert . flap . revert . flap . evert . fmap evert
 revert . fmap revert . flap . flap . evert . fmap evert
 revert . fmap revert . evert . fmap evert  -- flap . flap = id
+-- evert is a natural transformation
 revert . fmap revert . fmap evert . evert
 revert . fmap (revert . evert) . evert
 
@@ -683,6 +687,7 @@ fmap uC . distibute  -- LHS
 fmap uC . revert . flap . fmap evert
 -- flap @C = fmap C . flap . fmap flap . uC
 fmap uC . revert . fmap C . flap . fmap flap . uC . fmap evert
+-- revert is a natural transformation
 fmap uC . fmap C . revert . flap . fmap flap . uC . fmap evert
 revert . flap . fmap flap . uC . fmap evert
 revert . flap . fmap flap . fmap (fmap evert) . uC  -- On hold
@@ -690,7 +695,7 @@ distribute . fmap distribute . uC  -- RHS
 revert . flap . fmap evert . fmap revert
     . fmap flap . fmap (fmap evert) . uC
 revert . flap . fmap (evert . revert)
-    . fmap flap . fmap (fmap evert) . uC
+    . fmap flap . fmap (fmap evert) . uC  -- On hold
 revert . flap
     . fmap flap . fmap (fmap evert) . uC
     = revert . flap . fmap (evert . revert)
@@ -716,36 +721,6 @@ revert . flap
     . fmap flap . fmap (fmap evert)  -- LHS = RHS
 ```
 
-If `revert . evert = id`, then the composition law holds.
-
-``` haskell
--- Given:
-revert . evert = id
--- Goal:
-fmap uC . distribute = distribute . fmap distribute . uC
-
-fmap uC . distribute = distribute . fmap distribute . uC
--- By the lemma of the previous proof:
-revert . flap
-    . fmap flap . fmap (fmap evert)
-    = revert . flap . fmap (evert . revert)
-        . fmap flap . fmap (fmap evert)
-distribute . fmap revert
-    . fmap flap . fmap (fmap evert)
-    = distribute . fmap revert . fmap (evert . revert)
-        . fmap flap . fmap (fmap evert)
-distribute . fmap distribute
-    . fmap (fmap revert) . fmap (fmap evert)
-    = distribute . fmap revert . fmap  evert . fmap distribute
-        . fmap (fmap revert) . fmap (fmap evert)
-distribute . fmap distribute
-    = distribute . fmap distribute  -- LHS = RHS
-```
-
-Surprisingly, `revert` and `evert` being inverses in *either* way is
-enough for the composition law to hold, and `revert . evert = id`
-implies *both* laws.
-
 ### Uncertain
 
 If the identity and composition laws both hold, then `evert . revert =
@@ -764,19 +739,62 @@ revert . flap
     . fmap flap . fmap (fmap evert)
     = revert . flap . fmap (evert . revert)
         . fmap flap . fmap (fmap evert)
--- By the identity law, revert . evert = id
--- Consequently, revert . flap = distribute . fmap revert
-distribute . fmap revert
+flap . revert . flap
     . fmap flap . fmap (fmap evert)
-    = distribute . fmap revert . fmap (evert . revert)
+    = flap . revert . flap . fmap (evert . revert)
         . fmap flap . fmap (fmap evert)
-distribute . fmap distribute
-    . fmap (fmap revert) . fmap (fmap evert)
-    = distribute . fmap revert . fmap (evert . revert)
+flap . revert . flap
+    . fmap flap . fmap (fmap evert)
+    = fmap revert
         . fmap flap . fmap (fmap evert)
-distribute . fmap distribute
-    = distribute . fmap revert . fmap flap . fmap (fmap evert)
+flap . revert . flap
+    . fmap flap . fmap (fmap evert)
+    = fmap distribute
+-- ???
 ```
+
+## Draft: alternative proofs
+
+``` haskell
+-- Given:
+fmap uI . distribute = uI
+-- Goal:
+revert . evert = id
+
+fmap uI . distribute = uI
+fmap uI . revert . flap . fmap evert = uI
+-- flap @I = fmap I . uI
+fmap uI . revert . fmap I . uI . fmap evert = uI
+-- Rearrange uI and I, which commute with anything
+fmap uI . fmap I . revert . evert . uI = uI
+revert . evert . uI = uI
+-- uI is surjective
+revert . evert = id  -- Goal
+```
+
+``` haskell
+-- Given
+revert . evert = id
+evert . revert = id
+-- Goal
+distribute . distribute = id
+
+distribute . distribute
+revert . flap . fmap evert . revert . flap . fmap evert
+-- revert is a natural transformation
+revert . flap . revert . fmap evert . flap . fmap evert
+-- Using the distribute definition corollaries
+distribute . fmap revert . revert . distribute . evert . fmap evert
+
+-- Therefore:
+distributive . distribute = revert . fmap (revert . evert) . evert
+
+-- Corollary:
+-- Given revert . evert = id, or, equivalently,
+-- given the identity law:
+distribute . distribute = id
+```
+
 
 ## Extra stuff
 
