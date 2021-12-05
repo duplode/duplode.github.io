@@ -105,17 +105,17 @@ makes sense if there is only one possible shape for the functor `g`:
 otherwise, we would have to figure out a way to combine any different
 shapes that might lie under the `f` layer in `f (g a)`, which would end
 up with us reinventing `Applicative` and `Traversable`. With a single
-shape, though, we can recreate it on the outside, no questions asked. As
-for the `f` functorial layer, we can simply duplicate it as many times
-as necessary to fill in the positions of the `g` shape:
+shape, though, we can recreate it on the outside, no questions asked:
 
 ``` haskell
 instance Distributive Duo where
     distribute u = Duo (fstDuo <$> u) (sndDuo <$> u)
 ```
 
-Ordinary Haskell values can be duplicated at will, so nothing more than
-`Functor` is necessary for `f`. [^coapplicative]
+Note the `f` functorial layer gets duplicated as many times as necessary
+to fill in the positions of the `g` shape. Ordinary Haskell values can
+be duplicated at will, so nothing more than `Functor` is necessary for
+`f`.  [^coapplicative]
 
 [^coapplicative]: That is what the `Data.Distributive` documentation
   means with "Due to the lack of non-trivial comonoids in Haskell, we
@@ -147,15 +147,20 @@ concepts.
 
 ## Single-shapedness
 
-We are betting on having a single shape being a defining
-characteristic of distributive functors, so it should be worth it to
-have a closer look at what that property means. Here is one possible
-approach: if we know that a functor `g` has only one possible shape, all
-there remains to learn about some `u :: g a` value is which `a` values
-can be found in each position of the shape. To discover that, we can use
-`forall x. g x -> x` extractor functions, however many there might be.
-That, however, means there is an isomorphism between `g a` and the
-following type:
+One of the points in our discussion of `distribute` in the first section
+is that it only made sense for functors with a single shape. That being
+the case, though, it looks reasonable to try reconstructing
+`Distributive` starting from single-shapedness. Let's see where such a
+bet will take us: hopefully, it will help us teasing out some of the
+connections between distributive functors and other concepts.
+
+The first thing we need for the task at hand is pinning down the notion
+of single-shapedness. Here is one possible approach: approach: if we
+know that a functor `g` has only one possible shape, all there remains
+to learn about some `u :: g a` value is which `a` values can be found in
+each position of the shape. To discover that, we can use `forall x. g x
+-> x` extractor functions, however many there might be.  That, however,
+means there is an isomorphism between `g a` and the following type:
 
 ``` haskell
 -- For Distributive g, isomorphic to g a:
@@ -270,20 +275,19 @@ distribute :: (Distributive g, Functor f) => f (g a) -> g (f a)
 distribute m = revert (\p -> p <$> m)
 ```
 
-And now, the unavoidable follow-up question: is this `distribute`
-lawful? Happily, the answer is yes: given a `revert` which has `evert`
-as its inverse on both sides, the definition above gives us a
-`distribute` which follows the usual distributive laws. A full proof of
-that result can be found in the appendix to this post. For now, I will
-just comment on a striking aspect of said proof.
+Is this `distribute` lawful, though? Happily, the answer is yes: if
+`distribute` is defined in this manner, `revert . evert = id` is
+equivalent to the identity law, while the composition law follows from
+`evert . revert = id`. A proof of this result can be found in the
+appendix to this post.
 
 ### Through the looking glass
 
-For the sake of more comfortable equational reasoning, the proof in the
-appendix uses a pointfree spelling of the `distribute` definition:
+The definition of `distribute` in terms of `revert` given just above can
+be tweaked into the following pointfree form:
 
 ``` haskell
-distribute :: (Distributive g, Functor f) => f (g a) -> g (f a)
+-- See the appendix for a proof.
 distribute = revert . flap . fmap evert
 ```
 
@@ -301,61 +305,71 @@ flap m r = (\f -> f r) <$> m
 ```
 
 It turns out that `flap` is `distribute` for functions. That being so,
-the implementation of `distribute` offered here amounts to changing `g`
-into `(->) (Pos g)` through `fmap evert`, distributing it with `flap`,
-and restoring the `g` layer on the outside with `revert`.
+the implementation of `distribute` offered here amounts to:
 
-Now, a slight detour: remember the informal description of
-`Traversable`, in terms of separating the contents from the shape and so
-forth, that I mentioned at the beginning of the post? There are a few
-ways to explicitly use it to define `Traversable`. Here is one that,
-though a bit rough around the edges, conveys the idea well enough
-without calling for advanced techniques. The key idea is expressing the
-separation of shape and contents as an isomorphism:
+- Changing `g` into `(->) (Pos g)` through `fmap evert`;
+
+- Distributing it, as a function, with `flap`; and
+
+- Restoring the `g` layer on the outside with `revert`.
+
+Now, remember the informal description of `sequenceA` from the beginning
+of the post? We can state it in a very similar fashion:
+
+- Extract, in a specific order, the `f a` contents of a `t (f a)`;
+
+- Following that order, sequence the `f a` contents, combining the
+  applicative effects; and
+
+- Restore the original `t` shape under the combined `f` layer.
+
+There are a few ways to make an actual implementation of `sequenceA` out
+of that description. For the sake of simplicity, let's stick to the one
+which extracts the contents into lists. Though a bit rough around the
+edges, it suits our purposes just fine:
 
 ``` haskell
+-- A hollowed-out shape, paired with a list of contents.
 data Decomp t a = Decomp (t ()) [a]
 
 detach :: (Functor t, Foldable t) => t a -> Decomp t a
 detach u = Decomp (() <$ u) (toList u)
 
--- Given a detach, this suffices to specify an instance of Traversable.
+-- Given a compatible detach, implementing fill is enough to set up a
+-- Traversable instance. Merely for the sake of illustration, below is
+-- a definition in the other direction, in terms of the usual
+-- Traversable class.
 fill :: Traversable t => Decomp t a -> t a
+fill (Decomp sh as) = snd (mapAccumL (\(a : as) _ -> (as, a)) as sh)
 
--- Laws:
+-- "Resident" direction of the isomorphism:
+-- fill (detach u) = u
+-- "Visitor" direction of the isomorphism:
+-- Precondition: length sh = length as
+-- detach (fill (Decomp sh as)) = Decomp sh as
 
-fill (detach u) = u
--- Assuming length sh = length as
-detach (fill (Decomp sh as)) = Decomp sh as
-```
-
-(The equal length assumption, though rather unsightly, is not a
-fundamental problem. In particular, it can be avoided with more
-sophisticated encodings.)
-
-Given `detach` and `fill`, we can implement a lawful `sequenceA`:
-
-``` haskell
 -- The familiar sequenceA for lists.
 sequenceList :: Applicative f => [f a] -> f [a]
-sequenceList = foldr (liftA2 (:)) (pure ())
+sequenceList = foldr (liftA2 (:)) (pure [])
 
 -- sequenceList, adapted to Decomp.
 sequenceDecomp :: Applicative f => Decomp t (f a) -> f (Decomp t a)
 sequenceDecomp (Decomp sh ms) = Decomp sh <$> sequenceList ms
 
-sequenceA :: (Traversable t, Applicative f) => t (f a) -> f (t a)
-sequenceA = fmap fill . sequenceDecomp . detach
+-- sequenceA, in terms of detach and fill.
+sequenceFill :: (Traversable t, Applicative f) => t (f a) -> f (t a)
+sequenceFill = fmap fill . sequenceDecomp . detach
 ```
 
-Here's the kicker, though: this definiton of `sequenceA` perfectly
+Here's the kicker, though: this definition of `sequenceA` perfectly
 mirrors the pointfree definition of `distributive` we saw above! Here,
-we used the `detach`/`fill` isomorphism to sequence it as a list; there,
-we used the `evert`/`revert` isomorphism to distribute it as a function.
-Accordingly, the proof in the appendix connecting the `evert`/`revert`
-isomorphism to the distributive laws is essentially a flipped version of
-the corresponding proof for `detach`/`fill` and the distributive laws.
-[^shape-and-contents]
+we have used an isomorphism to get a list, which is straightforward to
+sequence, out of the traversable structure; there, we have used an
+isomorphism to get a function, which is straightforward to distribute,
+out of the distributive structure. Fittingly, proving the `revert`-based
+`distribute` is lawful, as done in the appendix, can be done in a very
+similar way to how the lawfulness of the `fill`-based `sequenceA` is
+proven. [^shape-and-contents]
 
 [^shape-and-contents]: For a detailed account of the shape-and-contents
   presentation of `Traversable`, see [this Stack Overflow answer I wrote
@@ -364,59 +378,73 @@ the corresponding proof for `detach`/`fill` and the distributive laws.
 ### The other way around
 
 We have defined `distribute` using `revert`, but what about getting
-`revert` out of `distribute`? There's a cute trick that can take us most
-of the way:
+`revert` out of `distribute`? Ideally, we'd like to have a definition in
+the other direction to establish our `Distributive` is equivalent to the
+conventional one. Encouragingly, there's a cute trick that can take us
+most of the way:
 
 ``` haskell
 -- Here, id :: g a -> g a
 distribute id :: Distribute g => g (g a -> a)
 ```
 
-`distribute id` is a distributive structure in which each position holds
-its corresponding `g a -> a` extractor. We can use it to get something
-that looks like `revert`:
+In `distribute id`, each position in the `g` shape holds its
+corresponding `g a -> a` extractor. We can use it to get something
+that looks a lot like `revert`:
 
 ``` haskell
 revertRank1 :: Distributive g => ((g b -> b) -> a) -> g a
 revertRank1 e = e <$> distribute id
 ```
 
-`revertRank1`, however, is a pale shadow of the real thing. Setting up
-the isomorphism with `flip ($)`, which is the rank-1 version of `evert`,
-requires specialising the rank-1 `g b -> b` extractor type to `g a ->
-a`, and doing so leaves us with something too weak for even defining
-`distribute` as `\m -> revert (\p -> p <$> m)`.  Another salient
-limitation is that the `g b -> b` extractors can't be instantiated at
-multiple types at once, which makes certain implementations in terms of
-`revertRank1` awkward, `apD` being a good example.
+Exactly how close are we? One limitation of `revertRank1` that readily
+shows up is that if we try to use for the style of definition we have
+seen earlier, `revertRank1 (\p -> _)`, the lessened polymorphism of the
+type of `p` will stop us from instantiating it at different types.  That
+makes certain implementations more complicated than they might be, `apD`
+being a good example if you feel like trying it out.
 
 Unfortunately, `distribute` gives us no way to bring in the extra
-polymorphism in the extractor type, and so we end up with `g a -> a`
+polymorphism in the extractor type, and so we end up with `g b -> b`
 instead of `Pos g ~ forall x. g x -> x`. What we'd really want to have
-would be `revert id :: Distribute g => g (forall x. g x -> x)`, but of
-course that takes `revert` for granted.
+would be `revert id :: Distribute g => g (forall x. g x -> x)` instead
+of `distribute id`, but of course that takes `revert` for granted. And
+yet, the extractors made available by `distribute id` are the same ones
+given by `revert id`, except for the difference in their types (a proof
+of that can be found in the appendix).
 
 Is our `Distributive` class more powerful than the one from
 `Data.Distributive`, then? It certainly looks like so, given that
-`distribute` doesn't give us a proper `revert`. However, it can be
-argued that the difference is a mere technicality, as the extractors in
-`distribute id` are the same ones given by `revert id` (see the appendix
-for proofs). Ultimately, we end up running against a type system
-limitation, which makes it impossible to give `distribute id` the
-stronger type it should rightfully have. From that point of view,
-identifying our `Distributive` with the conventional one still makes
-sense. [^unsafeCoerce]
+`distribute` doesn't give us a proper `revert`. It is tempting to argue
+that the difference is trivial, only existing because the type system
+can't give `distribute id` the stronger type it should rightfully have.
+There is one caveat, though: there being a function with the type of
+`distribute` for some functor is no guarantee that it can be decomposed
+into `evert`, `flap` and `revert`. That being so, before using any
+results based on `revert` it is prudent to show it actually exists for
+the functor we are working with. [^select]
 
-[^unsafeCoerce]: If you are in the mood for dramatic measures, or just
-  want to play with `revert` using the class from `Data.Distributive`,
-  in this case it should be safe to force the issue by resorting to
-  `unsafeCoerce` to introduce the extra polymorphism:
+[^select]: One example of this kind of pitfall is [`Select`](
+  https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html).
+  As I originally [learned from Sergei Winitzki](
+  https://stackoverflow.com/a/39736535/2751851), `Select` has a not
+  entirely implausible candidate for `distribute`:
 
     ``` haskell
-    revertCheat :: Distributive g => (Pos g -> a) -> g a
-    revertCheat e =
-        e <$> unsafeCoerce (distribute (id :: g Any -> g Any))
+    distributish :: Functor f => f (Select r a) -> Select r (f a)
+    distributish m = select $ \k ->
+        (\u -> u `runSelect ` (\a -> k (const a <$> m))) <$> m
     ```
+
+  `distributish` does not arise out of any `revert`, rank-one or
+  otherwhise. The decomposition is impossible because the implementation
+  relies on a `k :: f a -> r` criterion
+  function being eventually supplied by the caller, which goes against the
+  entire idea of using polymorphic extractors known in advance. In any case,
+  `Select r` is not actually distributive, as `distributish` only
+  follows the identity law, and not the composition one.
+
+
 
 ## Appendix: proofs
 
@@ -460,19 +488,6 @@ fmap uC . distribute = distribute . fmap distribute . uC
 -- Given Functor f, Functor h, and t :: forall a. f a -> h a
 fmap t . distribute = distribute . t
 
--- Other naturality properties (also ensured by parametricity):
-
-fmap f . evert = evert . fmap f  -- (!)
-fmap f . revert = revert . fmap f  -- (!)
-
--- Given p :: Pos g
-p (f <$> u) = f (p u)
-
-fmap (fmap f) . distribute = distribute . fmap (fmap f)
-
-f . uI = uI . fmap f
-fmap (fmap f) . uC = uC . fmap f
-
 -- Auxiliary definitions:
 
 instance Distributive ((->) r) where
@@ -504,10 +519,14 @@ revert . flap . fmap evert
 
 --Therefore:
 distribute = revert . flap . fmap evert
+```
 
+An useful consequence follows from this alternative definition:
+
+``` haskell
 -- Corollary:
 -- If evert . revert = id, then:
-revert . flap = distribute . fmap revert
+distribute . fmap revert = revert . flap
 evert . distribute = flap . fmap evert
 ```
 
@@ -547,8 +566,6 @@ flap (fmap flap (uC m))  -- RHS
 uC . (\r -> ((\f -> f r) <$> m))
 uC . flap m
 fmap uC (flap m)  -- LHS = RHS
-
--- Corollary: flap has the naturality properties of distribute.
 ```
 
 `flap` at `Identity` and `Compose`:
@@ -673,7 +690,7 @@ distribute . distribute = id
 
 Given one direction of the isomorphism is equivalent to the identity
 law, we would expect the other direction to have to do with the
-composition law. It doesn't stop there, though...
+composition law.
 
 If `evert . revert = id`, then the composition law holds:
 
@@ -690,12 +707,13 @@ fmap uC . revert . fmap C . flap . fmap flap . uC . fmap evert
 -- revert is a natural transformation
 fmap uC . fmap C . revert . flap . fmap flap . uC . fmap evert
 revert . flap . fmap flap . uC . fmap evert
-revert . flap . fmap flap . fmap (fmap evert) . uC  -- On hold
+-- uC is a natural transformation
+revert . flap . fmap flap . fmap (fmap evert) . uC  -- On hold (LHS)
 distribute . fmap distribute . uC  -- RHS
 revert . flap . fmap evert . fmap revert
     . fmap flap . fmap (fmap evert) . uC
 revert . flap . fmap (evert . revert)
-    . fmap flap . fmap (fmap evert) . uC  -- On hold
+    . fmap flap . fmap (fmap evert) . uC  -- On hold (RHS)
 revert . flap
     . fmap flap . fmap (fmap evert) . uC
     = revert . flap . fmap (evert . revert)
@@ -772,19 +790,21 @@ revert . evert . uI = uI
 revert . evert = id  -- Goal
 ```
 
-``` haskell
--- Given
-revert . evert = id
-evert . revert = id
--- Goal
-distribute . distribute = id
 
+`distribute . distribute = id`:
+
+``` haskell
 distribute . distribute
 revert . flap . fmap evert . revert . flap . fmap evert
 -- revert is a natural transformation
 revert . flap . revert . fmap evert . flap . fmap evert
--- Using the distribute definition corollaries
-distribute . fmap revert . revert . distribute . evert . fmap evert
+-- Using the naturality law for flap, twice:
+revert . flap . revert . flap . evert . fmap evert
+revert . fmap revert . flap . flap . evert . fmap evert
+revert . fmap revert . evert . fmap evert  -- flap . flap = id
+-- evert is a natural transformation
+revert . fmap revert . fmap evert . evert
+revert . fmap (revert . evert) . evert
 
 -- Therefore:
 distributive . distribute = revert . fmap (revert . evert) . evert
@@ -794,7 +814,6 @@ distributive . distribute = revert . fmap (revert . evert) . evert
 -- given the identity law:
 distribute . distribute = id
 ```
-
 
 ## Extra stuff
 
