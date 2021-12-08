@@ -140,10 +140,177 @@ Accordingly, the laws also get flipped:
 -- fmap t . distribute = distribute . t
 ```
 
-The property of having a single shape appears to be intimately connected
-to `Distributive`. Let's see if we can explore that property to tease
-out some of the connections between distributive functors and other
-concepts.
+## Collecting results
+
+Before we go on to further explore the general properties of
+`distribute`, it is probably a good idea to at least have a look at a
+handful of toy examples of it being used, so that we have a clearer idea
+of what to expect from it.
+
+In quite a few cases, `distribute` amounts to a transposition:
+
+``` haskell
+names :: [Duo String]
+names =
+    [ Duo "Alex" "Lifeson"
+    , Duo "Geddy" "Lee"
+    , Duo "Neil" "Peart"
+    ]
+```
+
+``` haskell
+ghci> distribute names
+Duo {fstDuo = ["Alex","Geddy","Neil"], sndDuo = ["Lifeson","Lee","Peart"]}
+```
+
+In this first example, the distributive layer was given from the start
+in `names`. Alternatively, we can use `\f -> distribute . fmap f` to
+introduce it through some function `f`. This combination is available as
+`collect`, which is a method of `Distribute`:
+
+``` haskell
+ghci> :t collect
+collect
+  :: (Distributive g, Functor f) => (a -> g b) -> f a -> g (f b)
+```
+
+For instance, an `f :: a -> Duo b` function can be thought of as a way
+to generate two options, of type `b`, from an `a` value.  `collect f`,
+then, allows us to generate and bring together all first options, and
+all second options:
+
+``` haskell
+timesTables :: Duo [Integer]
+timesTables = collect (\x -> Duo (7*x) (9*x)) [1..10]
+```
+
+``` haskell
+ghci> timesTables
+Duo {fstDuo = [7,14,21,28,35,42,49,56,63,70], sndDuo = [9,18,27,36,45,54,63,72,81,90]}
+```
+
+(A more satisfying version of this example can be written using infinite
+lists as the distributive functor. See the [*streams*](
+https://hackage.haskell.org/package/streams-3.3/docs/Data-Stream-Infinite.html)
+package for an implementation ready to play with.)
+
+`fmap` and `distribute` can also be combined in the opposite way, `\f ->
+fmap f  . distribute`: instead of supplying a function to create a
+distributive layer before distributing, we can supply a function to
+eliminate the other functorial layer after distributing. That gives rise
+to `cotraverse`: [^cotraverse]
+
+[^cotraverse]: As the name suggests, `cotraverse` is dual to `traverse`.
+  Omitting the constraints, the type of traverse is:
+
+    ``` haskell
+    (a -> f b) -> (g a -> f (g b))
+    ```
+
+  That dualises to (as before, `-<` indicates an arrow in
+  **Hask**<sup>op</sup>):
+
+    ``` haskell
+    (a -< f b) -> (g a -< f (g b))
+    ```
+
+   Or, rendered in **Hask**:
+
+     ``` haskell
+     (f b -> a) -> (f (g b) -> g a)
+     ```
+
+  Accordingly, the traversable laws in terms of `traverse` dualise to
+  become distributive laws in terms of `cotraverse`:
+
+    ``` haskell
+    cotraverse runIdentity = runIdentity
+    cotraverse (g . fmap f . getCompose)
+        = cotraverse g . fmap (cotraverse f) . getCompose
+    cotraverse f . r = cotraverse (r . f)  -- r is a natural transform.
+    ```
+
+``` haskell
+ghci> :t cotraverse
+cotraverse
+  :: (Distributive g, Functor f) => (f a -> b) -> f (g a) -> g b
+```
+
+One way to picture `cotraverse` is as generalised, arbitrary arity,
+zipping for distributive functors:
+
+``` haskell
+powers :: [Duo Integer]
+powers = (\x -> Duo (x^2) (x^3)) <$> [1..5]
+```
+
+``` haskell
+ghci> cotraverse sum powers
+Duo {fstDuo = 55, sndDuo = 225}
+```
+
+## Functions can be distributed
+
+Functions give us a specially important example of a distributive
+functor. Consider:
+
+``` haskell
+flap :: Functor f => f (r -> a) -> r -> f a
+flap m r = ($ r) <$> m
+```
+
+`flap` is [a reasonably familiar](
+https://hackage.haskell.org/package/relude-1.0.0.1/docs/Relude-Functor-Fmap.html#v:flap)
+combinator, [also known as `(??)`](
+https://hackage.haskell.org/package/lens-5.1/docs/Control-Lens-Lens.html#v:-63--63-),
+which turns `f (r -> a)` into `a -> f r` by supplying a common argument
+to all the `r -> a` functions:
+
+``` haskell
+ghci> flap [reverse, take 4] "sandals"
+["sladnas","sand"]
+```
+
+(The name of the combinator is a play on it being a generalisation of
+`flip`, as can be seen by specialising `f` to `(->) s`)
+
+From our current point of view, when looking at `flap`'s type it
+stands out how it pulls the function arrow (or, to be precise, the `(->)
+r` functorial layer) out of `f`. If that sounds a lot like what
+`distribute` usually does, it is because `flap` indeed is `distribute`
+for functions. As the `Data.Distributive` source puts its:
+
+``` haskell
+instance Distributive ((->)e) where
+  distribute a e = fmap ($e) a
+  collect f q e = fmap (flip f e) q
+```
+
+If the `f` functor is a monad, `flap`/`distribute` converts [static
+arrows](/posts/applicative-archery.html) (the ones we use with `(<*>)`)
+into the equivalent Kleisli arrows (the ones we use with `(>>=)`). For
+instance, `distribute` gives us a very direct implementation of
+[`(<**>)`](
+https://hackage.haskell.org/package/base-4.16.0.0/docs/Control-Applicative.html#v:-60--42--42--62-)
+in terms of `Monad`: [^backAp]
+
+``` haskell
+backAp :: Monad m => m a -> m (a -> b) -> m b
+backAp v u = v >>= distribute u
+```
+
+[^backAp]: It never hurts to emphasise that `(<**>)` is not `flip
+  (<*>)`, and the `backAp` defined here is not `ap` from
+  `Control.Monad`, as they differ in the order effects are sequenced.
+  Here is an implementation of `ap` in a similar style:
+
+    ``` haskell
+    ap :: Monad m => m (a -> b) -> m a -> m b
+    ap u v = u >>= flip fmap v
+
+## Natural wonders
+
+## Sections from the original attempt
 
 ## Single-shapedness
 
