@@ -9,11 +9,11 @@ toc: true
 [`Distributive`](
 https://hackage.haskell.org/package/distributive-0.6.2.1/docs/Data-Distributive.html)
 is a class that goes under many bynames: "dual to `Traversable`",
-"representable functors", "isomorphic to functions", and so forth. In
-this post, I will explore what these descriptions have to do with each
-other. I will also use the opportunity to put down to paper a handful of
-proofs on this matter that I always seem to end up deriving over and
-over again.
+"single-shaped", "isomorphic to functions", "representable functors",
+"right adjoints", and so forth. In this post, I will explore what these
+descriptions have to do with each other. I will also use the opportunity
+to put down to paper a handful of proofs on this matter that I always
+seem to end up deriving over and over again.
 
 <!-- more -->
 
@@ -44,7 +44,9 @@ sequenceA :: (Traversable g, Applicative f) => g (f a) -> f (g a)
 
 -- Naturality (comes for free, by parametricity):
 -- Given Applicative f, Applicative h, and t :: forall a. f a -> h a
--- such that t preserves pure and (<*>), we have:
+-- such that t preserves pure and (<*>), that is:
+-- t . pure = pure
+-- t u <*> t v = t (u <*> v)
 -- sequenceA . fmap t = t . sequenceA
 ```
 
@@ -227,7 +229,7 @@ to `cotraverse`: [^cotraverse]
     cotraverse runIdentity = runIdentity
     cotraverse (g . fmap f . getCompose)
         = cotraverse g . fmap (cotraverse f) . getCompose
-    cotraverse f . r = cotraverse (r . f)  -- r is a natural transform.
+    cotraverse f . t = cotraverse (t . f)  -- t is a nat. transformation
     ```
 
 ``` haskell
@@ -271,8 +273,14 @@ ghci> flap [reverse, take 4] "sandals"
 ["sladnas","sand"]
 ```
 
-(The name of the combinator is a play on it being a generalisation of
-`flip`, as can be seen by specialising `f` to `(->) s`)
+The name of the combinator is a play on it being a generalisation of
+`flip`, as can be seen by specialising `f` to `(->) s`:
+
+``` haskell
+ghci> :t flap @((->) _)
+flap @((->) _)
+  :: Functor ((->) w) => (w -> (a -> b)) -> a -> w -> b
+```
 
 From our current point of view, when looking at `flap`'s type it
 stands out how it pulls the function arrow (or, to be precise, the `(->)
@@ -307,8 +315,178 @@ backAp v u = v >>= distribute u
     ``` haskell
     ap :: Monad m => m (a -> b) -> m a -> m b
     ap u v = u >>= flip fmap v
+    ```
 
-## Natural wonders
+## Natural magic
+
+In the introduction to this post, I mentioned a laundry list of
+properties of distributive functors. At first glance, not many of them
+sound like they have anything to do with `distribute` and its unassuming
+type:
+
+``` haskell
+distribute :: (Distributive g, Functor f) => f (g a) -> g (f a)
+```
+
+Not unusually for cases like this, the connection has to do with
+parametricty.  [^parametricity] A relevant example is provided by
+contrasting the naturality law for `Distributive` we mentioned earlier
+with its `Applicative` counterpart:
+
+[^parametricity]: For an introduction to the big idea behind
+  parametricity arguments and what they have to do with naturality, see
+  my earlier post [*What does fmap
+  preserve?*](/posts/what-does-fmap-preserve.html). Here we will be
+  specially interested in using parametricity on type constructors, as
+  discussed, for instance, by Janis Voigtländer's [*Free Theorems
+  Involving Type Constructor Classes*](
+  http://www.janis-voigtlaender.eu/Voi09b.html).
+
+``` haskell
+-- Naturality law for Applicative:
+-- Given Applicative f, Applicative h, and t :: forall a. f a -> h a
+-- such that t preserves pure and (<*>), that is:
+-- t . pure = pure
+-- t u <*> t v = t (u <*> v)
+t . sequenceA = sequenceA . t
+
+-- Naturality law for Distributive:
+-- Given Functor f, Functor h, and t :: forall a. f a -> h a
+fmap t . distribute = distribute . t
+```
+
+In the case of `sequenceA`, the property only holds if the natural
+transformation `t` preserves `pure` and `(<*>)`, as otherwise applying
+it to the applicative layer might interfere with `sequenceA`. With
+`distribute`, though, there are no constraints other than `Functor` on
+the `f` functor, and so the law can be used with any natural
+transformation. That turns the naturality law into a much stronger
+claim.
+
+We can learn a lot about `Distributive` by taking advantage of
+parametricity by means such as the naturality law. To make the text
+easier to follow, in the remainder of this section I will present some
+noteworthy facts that can be established in this manner; proofs and
+justifications for the claims are included at the end of the post, in an
+appendix.
+
+### The law of extractors
+
+Let's begin with the key result. I would say the property below, which
+follows from the naturality and identity laws, expresses better than
+anything else the essence of `Distributive`:
+
+``` haskell
+-- Law of extractors:
+($ u) <$> distribute id = u
+```
+
+At the heart of this rather mind-bending statement we find `distribute
+id`.  That is a combinator worthy of a name of its own, so I will from
+now on call it `extractors`:
+
+``` haskell
+extractors :: Distributive g => g (g a -> a)
+extractors = distribute id
+```
+
+`extractors` is a distributive structure that holds a number of
+extractor functions of type `g a -> a`. The property says that if we
+pick any other `u :: g a` structure and use `fmap` to feed it to all the
+extractors (`($ u) = \p -> p u`), we end up reconstructing `u`.
+
+Two major consequences follow directly from this law of extractors:
+
+- `extractors` can be related, in the parametricity/free theorems sense,
+  to any `u :: g a` through `($ u) :: (g a -> a) -> a`. Having all `g a`
+  structures related to each other is precisely what we would expect for
+  a functor which only admits a single shape.
+
+- `extractors` holds all possible `g a -> a` extractors polymorphic in
+  `a`, with every extractor occupying the position it extracts from.
+  That is what makes it possible for it to reconstruct any `u :: g a` by
+  feeding it to the extractors.
+
+Below is a tiny example with `Duo` which illustrates these two
+consequences:
+
+``` haskell
+extractors @Duo
+distribute @Duo id
+Duo (fstDuo <$> id) (sndDuo <$> id)
+Dup fstDuo sndDuo
+
+($ Duo 1 2) <$> extractors @Duo
+($ Duo 1 2) <$> Duo fstDuo sndDuo
+Duo (($ Duo 1 2) fstDuo) (($ Duo 1 2) sndDuo)
+Duo 1 2
+```
+
+To put it in another way: `distribute` encodes information about the
+shape of the distributive functor, and `extractors` makes that
+information explicit.
+
+Though the law of extractors is ultimately equivalent to the identity
+law (with naturality taken as a background assumption), I believe that
+it is reasonable to call it a law, in recognition of how useful it is
+when trying to make sense of `Distributive`. To further underline how
+`extractors` and `distribute` are on the same footing, here is a
+definition of `distribute` in terms of extractors:
+
+``` haskell
+distribute m = (<$> m) <$> extractors
+-- Pointfully: (\p -> p <$> m) <$> extractors
+```
+
+The definition looks a lot like the law of extractors, except that,
+instead of directly applying each extractor to `m`, we have to do it
+to do it under the extra functorial layer by using `fmap`/`(<$>)`.
+
+### The Select loophole
+
+You may have noticed that, when describing the consequences of the law
+of extractors, I have stopped just short of stating that it means
+distributive functors have a single shape. Similarly, saying that
+`extractors` "holds all" polymorphic extractors was a hedge to avoid the
+more straightforward claim that `extractors` *is* the collection of all
+polymorphic extractors, arranged in a certain manner. My cautiousness
+has to do with a quirk of functors that are not strictly positive. To
+clarify what on earth I'm talking about, let's look at a concrete
+example.
+
+As shown earlier, `extractors @Duo` contains the two polymorphic
+extractors for `Duo`, namely `fstDuo` and `sndDuo`, and only them. These
+extractors can be specialised to concrete types in the usual manner, and
+similarly `extractors` can be further specialised on the element tyoe:
+
+``` haskell
+ghci> :t fstDuo @Int
+fstDuo @Integer :: Duo Integer -> Integer
+ghci> :t extractors @Duo @Integer
+extractors @Duo @Integer :: Duo (Duo Integer -> Integer)
+```
+
+While there are functions of type `Duo Integer -> Integer` other than
+`fstDuo @Integer` and `sndDuo @Integer`, these functions can't possibly
+be in `extractors @Duo @Integer`. If the idea that specialising
+`extractors @Duo` might make something like `sum :: Duo Integer ->
+Integer` show up in it sounds preposterous, that is because `Duo` is a
+*strictly positive functor*: in the right-hand side of `data Duo a = Duo
+a a`, the argument `a` to the type constructor `Duo` never appears to
+the left of a function arrow. Since `Duo` is strictly positive, we can
+freely probe the `a` values in some `u :: Duo a` value with whatever
+`Duo a -> b` we feel like writing, with the only bounds on what we can
+do being set by the structure of the data type. [^strictly-positive]
+
+[^strictly-positive]: The texts I know on the notion of strictly
+  positive functors are quite technical, and would arguably be too much
+  of a tangent for this discussion.  The discussion and examples in
+  Michael Snoyman's [*Covariance and Contravariance*](
+  https://www.fpcomplete.com/blog/2016/11/covariance-contravariance/)
+  might shed some additional light on the matter, even though the post
+  doesn't directly discuss strict positivity. In particular, the
+  `CallbackRunner` example in the "Positive and negative position"
+  section towards the end is a `Functor` that isn't strictly positive.
 
 ## Sections from the original attempt
 
