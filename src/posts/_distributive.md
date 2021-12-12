@@ -17,9 +17,16 @@ seem to end up deriving over and over again.
 
 <!-- more -->
 
-Before we begin, here is my go-to self-contained example functor for
-playing with `Distributive`: an homogeneous pair (or length-two vector,
-if you will) type:
+## The basic facts
+
+In the initial part of this post, `Distributive` will be introduced
+starting from connection to `Traversable`, and we will look at
+at a few basic features of the class. In the process, we will prepare
+the terrain for the bridge to `Representable` to be built.
+
+Throughout the post, I will use the following homongeneous pair (or
+length-two vector, if you will) type as a nice, self-contained running
+example:
 
 ``` haskell
 data Duo a = Duo { fstDuo :: a, sndDuo :: a }
@@ -28,8 +35,8 @@ data Duo a = Duo { fstDuo :: a, sndDuo :: a }
 
 ## Dualising Traversable
 
-Out of the many possible starting points, let's begin our journey from
-the purported duality. `Traversable` is:
+Let's begin our journey from the purported duality, then. `Traversable`
+is:
 
 ``` haskell
 sequenceA :: (Traversable g, Applicative f) => g (f a) -> f (g a)
@@ -142,12 +149,11 @@ Accordingly, the laws also get flipped:
 -- fmap t . distribute = distribute . t
 ```
 
-## Collecting results
+### Collecting results
 
 Before we go on to further explore the general properties of
-`distribute`, it is probably a good idea to at least have a look at a
-handful of toy examples of it being used, so that we have a clearer idea
-of what to expect from it.
+`distribute`, it makes sense to have a look at a handful of examples of
+it being used, so that we have a clearer idea of what to expect from it.
 
 In quite a few cases, `distribute` amounts to a transposition:
 
@@ -229,7 +235,7 @@ to `cotraverse`: [^cotraverse]
     cotraverse runIdentity = runIdentity
     cotraverse (g . fmap f . getCompose)
         = cotraverse g . fmap (cotraverse f) . getCompose
-    cotraverse f . t = cotraverse (t . f)  -- t is a nat. transformation
+    cotraverse f . t = cotraverse (t . f)  -- t is a natural transf.
     ```
 
 ``` haskell
@@ -238,8 +244,9 @@ cotraverse
   :: (Distributive g, Functor f) => (f a -> b) -> f (g a) -> g b
 ```
 
-One way to picture `cotraverse` is as generalised, arbitrary arity,
-zipping for distributive functors:
+One way to picture `cotraverse` is as a kind of zipping for distributive
+structures, with the `f a -> b` function combining `a` values drawn from
+matching positions:
 
 ``` haskell
 powers :: [Duo Integer]
@@ -251,7 +258,7 @@ ghci> cotraverse sum powers
 Duo {fstDuo = 55, sndDuo = 225}
 ```
 
-## Functions can be distributed
+### Functions can be distributed
 
 Functions give us a specially important example of a distributive
 functor. Consider:
@@ -317,6 +324,35 @@ backAp v u = v >>= distribute u
     ap u v = u >>= flip fmap v
     ```
 
+### Counting shapes
+
+While comparing `distribute` and `traverse` a few subsections ago, I
+mentioned that, at least as far as my description went, `distribute`
+only makes sense for functors that have just a shape. This idea will
+play an important role in what follows, and we will engage it more
+closely. For now, it is good enough to understand "shape" as everything
+in a `f a` functorial value other than the `a` values it holds. For
+instance, here are two examples and two non-examples of single-shaped
+functors:
+
+- `Duo` only has a single shape:  every `Duo a` value holds exactly two
+  `a` values, and nothing else.
+
+- `((->) Integer)`, an example of a function functor, only has a single
+  shape: every `Integer -> a` function has exactly one `a` value for
+  each possible `Integer`, and, implementation details aside, this
+  association fully specifies the function.
+
+- `[]` does not have a single shape: a list might contain any number of
+  `a` values; accordingly, every possible list length makes for a
+  different shape.
+
+- `(,) Integer` does not have a single shape: while a pair of type
+  `(Integer, a)` contains exactly one `a` value, it also holds an
+  arbitary `Integer` value, with each choice of `Integer` amounting to a
+  different shape. (In particular, note that said `Integer` is not
+  affected by `fmap`.)
+
 ## Natural magic
 
 In the introduction to this post, I mentioned a laundry list of
@@ -333,7 +369,7 @@ parametricty.  [^parametricity] A relevant example is provided by
 contrasting the naturality law for `Distributive` we mentioned earlier
 with its `Applicative` counterpart:
 
-[^parametricity]: For an introduction to the big idea behind
+[^parametricity]: For an introduction to the core idea behind
   parametricity arguments and what they have to do with naturality, see
   my earlier post [*What does fmap
   preserve?*](/posts/what-does-fmap-preserve.html). Here we will be
@@ -397,10 +433,11 @@ extractors (`($ u) = \p -> p u`), we end up reconstructing `u`.
 
 Two major consequences follow directly from this law of extractors:
 
-- `extractors` can be related, in the parametricity/free theorems sense,
-  to any `u :: g a` through `($ u) :: (g a -> a) -> a`. Having all `g a`
-  structures related to each other is precisely what we would expect for
-  a functor which only admits a single shape.
+- For every `u :: g a`, there is a function (namely, `($ u)`) which can
+  be used through `fmap` to change `extractors` into `u`. Considering
+  that `fmap` cannot change shapes, that is exactly what we would expect
+  if all `g a` values had the same shape (more specifically, the shape
+  of `extractors`).
 
 - `extractors` holds all possible `g a -> a` extractors polymorphic in
   `a`, with every extractor occupying the position it extracts from.
@@ -449,10 +486,251 @@ of extractors, I have stopped just short of stating that it means
 distributive functors have a single shape. Similarly, saying that
 `extractors` "holds all" polymorphic extractors was a hedge to avoid the
 more straightforward claim that `extractors` *is* the collection of all
-polymorphic extractors, arranged in a certain manner. My cautiousness
-has to do with a quirk of functors that are not strictly positive. To
-clarify what on earth I'm talking about, let's look at a concrete
-example.
+polymorphic extractors, arranged in a certain manner. I will justify
+my cautiousness with an example. Consider [`Select`](
+https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html):
+
+``` haskell
+-- A paraphrased, non-transformer version of Select.
+-- A Select r a value can be thought of as a way to choose an `a` value
+-- based on some `a -> r` criterion.
+newtype Select r a = Select { runSelect :: (a -> r) -> a }
+```
+
+Does `Select r` have a single shape?
+
+If we try to settle the matter by counting shapes, as in those four
+examples from a while ago, things get confusing very quickly. The
+strangeness comes from how `a`, the argument to the type constructor,
+shows up to the left of a function arrow, which makes it hard to picture
+what even is the shape apart from the contents. Functors with no such
+occurrences, like our earlier examples, are known as *strictly positive
+functors*; `Select r`, then, is an example of a functor which is *not*
+strictly positive.  [^strictly-positive]
+
+[^polarity]: Though it doesn't explicitly mention strict positivity,
+  Michael Snoyman's [*Covariance and Contravariance*](
+  https://www.fpcomplete.com/blog/2016/11/covariance-contravariance/)
+  might be useful as an accessible explanation of why the side of the
+  arrow on which type variables appear matters.  In particular, the
+  `CallbackRunner` example in the "Positive and negative position"
+  section towards the end is a `Functor` that isn't strictly positive.
+
+We might try to cut through the befuddlement by pointing to the
+following combinator: [^extractorsSelect]
+
+[^extractorsSelect]: I originally realised it exists thanks to [a Stack
+  Overflow answer by Sergei Winitzki](
+  https://stackoverflow.com/a/39736535/2751851).
+
+``` haskell
+extractorsSelect :: Select r (Select r a -> a)
+extractorsSelect = Select $ \k -> \u -> u `runSelect` \a -> k (const a)
+```
+
+`extractorsSelect` not just has the type an hypothetical `extractors`
+for `Select r` would have: it turns out it actually follows the law of
+extractors!  Accordingly, `\m -> (<$> m) <$> extractorsSelect` follows
+the identity law of distributive functors. Given what we have said so
+far about `extractors`, this sounds like a pretty good argument in
+support of `Select r` indeed having a single shape, right?
+
+Things aren't so simple, though. If `Select r` has a single shape, the
+shape [is bigger on the inside](
+https://tvtropes.org/pmwiki/pmwiki.php/Main/BiggerOnTheInside). If we
+were to think of the shape of `Select r ~ (a -> r) -> a` as if it were
+a garden-variety function functor, we would say it holds an `a`
+result value for each possible `a -> r` function. The problem is that
+the number of `a -> r` functions depends on our choice of `a`, and so
+the shape, so to speak, adjusts itself when we specialise `Select r a`
+one way or another. In particular, a specialised `extractorsSelect`,
+like this one...
+
+``` haskell
+ghci> :t extractorsSelect @Bool @Integer
+extractorsSelect @Bool @Integer
+  :: Select Bool (Select Bool Integer -> Integer)
+```
+
+... has, as possible results, *all* possible `Select Bool Integer ->
+Integer` extractors, and not just the ones we get by specialising the
+polymorphic extractors of type `Select Bool a -> a`.
+[^polymorphic-Select-extractors] `extractorsSelect`, therefore, is not
+fully determined by the polymorphic extractors of type `forall a. Select
+r a -> a`. Note this doesn't happen with strictly positive functors. If
+it did, specialising `extractors @Duo` to `Integer` would make things
+like `sum @Integer` appear alongside `fstDuo @Integer` and `sndDuo
+@Integer`, which would be quite outrageous.
+
+[^polymorphic-Select-extractors]: This latter bunch, by the way, is
+  quite the exclusive club: if we insist on keeping `a` polymorphic, the
+  only possible extractors are of the form `\u -> u `runSelect` \_ ->
+  b`, corresponding to constant functions `Integer -> Bool` which ignore
+  the `Integer` that is ostensibly being tested.
+
+`Select`, thus, demonstrates a loophole in our current understanding of
+distributive functors, which puts us in the uncomfortable position of
+applying our tools to functors for which we aren't even sure of there
+being a reasonable notion of shape. A simple way to close the loophole
+is to exclude from consideration functors that aren't strictly positive,
+which is precisely what the theory of containers does from the start
+[^containers]. In the next section, we will address this issue in a
+slightly different manner, which better suits our gameplan.
+
+[^containers]: See, for instance, the first few paragraphs of Abbott et.
+  al., [*Containers: Constructing strictly positive types*](
+  https://www.sciencedirect.com/science/article/pii/S0304397505003373).
+  Do note that is a very theory-heavy article, and arguably too wild a
+  digression to jump into right now, as far as our immediate purposes in
+  this post are concerned.
+
+Before we move on from `Select`, it should be mentioned, for
+avoidance of doubt, that `Select r` is not actually distributive. This
+is the would-be `distribute` we get out of `extractorsSelect`:
+
+``` haskell
+nonDistribute :: Functor f => f (Select r a) -> Select r (f a)
+nonDistribute m = Select $
+    \k -> (\u -> u `runSelect` \a -> a <$ m) <$> m
+```
+
+`nonDistribute` borrows the shape of `m` so that it can turn the
+supplied criterion `k :: f a -> r` into an `a -> r` function. That
+ultimately leads to a violation of the composition law.
+
+## It's all about the extractors
+
+By considering the quirkiness of `Select`, we discovered we don't
+actually want to deal with functors that aren't strictly positive, as
+they allow things that aren't polymorphic extractors to sneak into
+`extractors`. If the issue ultimately has to do with the individual
+extractors, though, we should be able to address it by being more
+specific about which extractors are acceptable. To see how we might
+do that, let's have another look at the law of extractors:
+
+``` haskell
+($ u) <$> extractors = u
+```
+
+Written in this way, the law draws our eyes `extractors`.  We can
+rearrange it so that the focus is shifted to what is being done to `u`:
+
+``` haskell
+(\e -> e <$> extractors) . (\u -> ($ u)) = id
+```
+
+This change of style brings to the foreground that `flip ($)`, taken as
+a function *from* `g a`...
+
+``` haskell
+(\u -> ($ u)) :: g a -> (g a -> a) -> a
+```
+
+... has, if `g` is `Distributive`, a left inverse, namely, this function
+*to* `g a`:
+
+``` haskell
+(\e -> e <$> extractors) :: Distributive g => ((g a -> a) -> a) -> g a
+```
+
+To put it in another way, we can convert some `g a` into a `(g a -> a)
+-> a` function and, given `Distributive g`, undo that recover the `g a`
+from which the function was made. That is particularly interesting
+because it suggests that, if we are lucky, there will be a way to show
+the inverses above are actually full inverses, which would give us a
+powerful characterisation of distributive functors through an
+isomorphism between `g a` and `(g a -> a) -> a`.
+
+And yet, there is a problem. Given the `(g a -> a) -> a` form is clearly
+meant to take an extractor and return a value, the type `flip ($)` gives
+us is too permissive. The functions it produce happily accept
+counterfeit extractors which rely on concrete element types:
+
+``` haskell
+ghci> test = (\u -> ($ u)) (Duo 3 4)
+ghci> test sum
+7
+```
+
+With the `Select` example, we have already seen how that spells trouble.
+Besides that, using a larger type than we need is bound to complicate
+things if we are looking for an isomorphism (isomorphic types, after
+all, must have the same amount of possible values).
+
+### A revamp
+
+The good news, though, is that writing the law in terms of the two
+inverses brings to light  where we can intervene to avoid such
+difficulties. If we replace `(g a -> a) -> a` with the higher-rank type
+`(forall x. g x -> x) -> a`, the inverses will only deal with proper,
+polymorphic extractors. For that, however, we need to soup up our
+toolkit:
+
+``` haskell
+elide :: g a -> (forall x. g x -> x) -> a
+elide u = \p -> p u
+
+class Distributive g => Revealable g where
+    reveal :: ((forall x. g x -> x) -> a) -> g a
+```
+
+I'd better justify the choice of names:
+
+- `elide` takes a structure and hides the information about its shape.
+  If we are given `elide u` for some `u :: g a`, the only thing about
+  `u` it can tell us is what are the `a` values at specific positions,
+  assuming we have the corresponding extractors to hand it. `elide`
+  doesn't impose any constraints on `g`. Also, it is, in general, a
+  lossy operation.  For instance, `elide` on `(Integer, a)` irreversibly
+  removes access to the first component.
+
+- If `g` is distributive, though, knowing the values at all positions is
+  enough to reconstruct the structure, as there is only one possible
+  shape. That being so, it becomes possible to implement `reveal`, a
+  left inverse for `elide`. A class separate from `Distributive` is
+  needed because there is no way to squeeze the needed higher-rank type
+  out of `distribute`. [^impredicative-types] Here are a couple
+  instances of it:
+
+[^impredicative-types]: The definitions here are meant to be used with
+  the `ImpredicativeTypes` GHC extension. If you want to try them on GHC
+  9.0 or older, it is probably better to adapt them to use a `newtype`
+  wrapper around `(forall x. g x -> x) -> a` like the one below, so that
+  `ImpredicativeTypes` is not needed:
+
+    ``` haskell
+    newtype Elide g a = Elide { runElide :: (forall x. g x -> x) -> a }
+        deriving Functor
+    ```
+
+``` haskell
+instance Revealable Duo where
+    reveal e = Duo (e fstDuo) (e sndDuo)
+
+instance Revealable ((->) r) where
+    reveal e = \r -> e ($ r)
+```
+
+We should be able to recover `distribute` from `reveal`:
+
+``` haskell
+distributeRev :: (Revealable g, Functor f) => f (g a) -> g (f a)
+distributeRev m = reveal (\p -> p <$> m)
+```
+
+With `extractors`, we are able to do even better:
+
+``` haskell
+extractorsRev :: Revealable g => g (forall x. g x -> x)
+extractorsRev = reveal id
+-- reveal e = e <$> extractorsRev
+```
+
+`extractorsRev` and `extractors` hold the same extractors.
+`extractorsRev`, however, has the impredicative, more polymorphic type
+`distribute` can't give us. In partiuclar, the upgraded types make it
+impossible to implement a `extractorsRev` for `Select r`, which confirms
+we have indeed closed that loophole.
 
 As shown earlier, `extractors @Duo` contains the two polymorphic
 extractors for `Duo`, namely `fstDuo` and `sndDuo`, and only them. These
@@ -460,7 +738,7 @@ extractors can be specialised to concrete types in the usual manner, and
 similarly `extractors` can be further specialised on the element tyoe:
 
 ``` haskell
-ghci> :t fstDuo @Int
+ghci> :t fstDuo @Integer
 fstDuo @Integer :: Duo Integer -> Integer
 ghci> :t extractors @Duo @Integer
 extractors @Duo @Integer :: Duo (Duo Integer -> Integer)
@@ -478,15 +756,6 @@ freely probe the `a` values in some `u :: Duo a` value with whatever
 `Duo a -> b` we feel like writing, with the only bounds on what we can
 do being set by the structure of the data type. [^strictly-positive]
 
-[^strictly-positive]: The texts I know on the notion of strictly
-  positive functors are quite technical, and would arguably be too much
-  of a tangent for this discussion.  The discussion and examples in
-  Michael Snoyman's [*Covariance and Contravariance*](
-  https://www.fpcomplete.com/blog/2016/11/covariance-contravariance/)
-  might shed some additional light on the matter, even though the post
-  doesn't directly discuss strict positivity. In particular, the
-  `CallbackRunner` example in the "Positive and negative position"
-  section towards the end is a `Functor` that isn't strictly positive.
 
 ## Sections from the original attempt
 
