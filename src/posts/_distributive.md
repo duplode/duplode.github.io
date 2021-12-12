@@ -415,31 +415,41 @@ anything else the essence of `Distributive`:
 ``` haskell
 -- Law of extractors:
 ($ u) <$> distribute id = u
+-- Pointfully: (\p -> p u) <$> distribute id = u
 ```
 
 At the heart of this rather mind-bending statement we find `distribute
 id`.  That is a combinator worthy of a name of its own, so I will from
-now on call it `extractors`:
+now on call it `chart`:
 
 ``` haskell
-extractors :: Distributive g => g (g a -> a)
-extractors = distribute id
+chart :: Distributive g => g (g a -> a)
+chart = distribute id
 ```
 
-`extractors` is a distributive structure that holds a number of
-extractor functions of type `g a -> a`. The property says that if we
-pick any other `u :: g a` structure and use `fmap` to feed it to all the
-extractors (`($ u) = \p -> p u`), we end up reconstructing `u`.
+`chart` is a distributive structure that holds a number of extractor
+functions of type `g a -> a`. The property says that if we pick any
+other `u :: g a` structure and use `fmap` to feed it to all the
+extractors in `chart`, we end up reconstructing `u`. In a more colourful
+style, we might say the `chart` tells us how to navigate to any position
+in the structure. [^extractors-chart]
+
+[^extractors-chart]: An arguably better name for `chart` is simply
+  `extractors`. I have opted for the metaphor-laden alternative here
+  just so that I don't have to rely on formatting alone to distinguish
+  between the `Distributive g => g (g a -> a)` combinator we are
+  defining here and the plural of "extractor", which would have made
+  some passages of this text very awkward.
 
 Two major consequences follow directly from this law of extractors:
 
 - For every `u :: g a`, there is a function (namely, `($ u)`) which can
-  be used through `fmap` to change `extractors` into `u`. Considering
+  be used through `fmap` to change `chart` into `u`. Considering
   that `fmap` cannot change shapes, that is exactly what we would expect
   if all `g a` values had the same shape (more specifically, the shape
-  of `extractors`).
+  of `chart`).
 
-- `extractors` holds all possible `g a -> a` extractors polymorphic in
+- `chart` holds all possible `g a -> a` extractors polymorphic in
   `a`, with every extractor occupying the position it extracts from.
   That is what makes it possible for it to reconstruct any `u :: g a` by
   feeding it to the extractors.
@@ -448,31 +458,31 @@ Below is a tiny example with `Duo` which illustrates these two
 consequences:
 
 ``` haskell
-extractors @Duo
+chart @Duo
 distribute @Duo id
 Duo (fstDuo <$> id) (sndDuo <$> id)
 Dup fstDuo sndDuo
 
-($ Duo 1 2) <$> extractors @Duo
+($ Duo 1 2) <$> chart @Duo
 ($ Duo 1 2) <$> Duo fstDuo sndDuo
 Duo (($ Duo 1 2) fstDuo) (($ Duo 1 2) sndDuo)
 Duo 1 2
 ```
 
 To put it in another way: `distribute` encodes information about the
-shape of the distributive functor, and `extractors` makes that
-information explicit.
+shape of the distributive functor, and `chart` makes that information
+explicit.
 
 Though the law of extractors is ultimately equivalent to the identity
 law (with naturality taken as a background assumption), I believe that
 it is reasonable to call it a law, in recognition of how useful it is
 when trying to make sense of `Distributive`. To further underline how
-`extractors` and `distribute` are on the same footing, here is a
-definition of `distribute` in terms of extractors:
+`chart` and `distribute` are on the same footing, here is a
+definition of `distribute` in terms of `chart`:
 
 ``` haskell
-distribute m = (<$> m) <$> extractors
--- Pointfully: (\p -> p <$> m) <$> extractors
+distribute m = (<$> m) <$> chart
+-- Pointfully: (\p -> p <$> m) <$> chart
 ```
 
 The definition looks a lot like the law of extractors, except that,
@@ -484,8 +494,8 @@ to do it under the extra functorial layer by using `fmap`/`(<$>)`.
 You may have noticed that, when describing the consequences of the law
 of extractors, I have stopped just short of stating that it means
 distributive functors have a single shape. Similarly, saying that
-`extractors` "holds all" polymorphic extractors was a hedge to avoid the
-more straightforward claim that `extractors` *is* the collection of all
+`chart` "holds all" polymorphic extractors was a hedge to avoid the
+more straightforward claim that `chart` *is* the collection of all
 polymorphic extractors, arranged in a certain manner. I will justify
 my cautiousness with an example. Consider [`Select`](
 https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html):
@@ -517,22 +527,22 @@ strictly positive.  [^strictly-positive]
   section towards the end is a `Functor` that isn't strictly positive.
 
 We might try to cut through the befuddlement by pointing to the
-following combinator: [^extractorsSelect]
+following combinator: [^chartSelect]
 
-[^extractorsSelect]: I originally realised it exists thanks to [a Stack
+[^chartSelect]: I originally realised it exists thanks to [a Stack
   Overflow answer by Sergei Winitzki](
   https://stackoverflow.com/a/39736535/2751851).
 
 ``` haskell
-extractorsSelect :: Select r (Select r a -> a)
-extractorsSelect = Select $ \k -> \u -> u `runSelect` \a -> k (const a)
+chartSelect :: Select r (Select r a -> a)
+chartSelect = Select $ \k -> \u -> u `runSelect` \a -> k (const a)
 ```
 
-`extractorsSelect` not just has the type an hypothetical `extractors`
+`chartSelect` not just has the type an hypothetical `chart`
 for `Select r` would have: it turns out it actually follows the law of
-extractors!  Accordingly, `\m -> (<$> m) <$> extractorsSelect` follows
+extractors! Accordingly, `\m -> (<$> m) <$> chartSelect` follows
 the identity law of distributive functors. Given what we have said so
-far about `extractors`, this sounds like a pretty good argument in
+far about `chart`, this sounds like a pretty good argument in
 support of `Select r` indeed having a single shape, right?
 
 Things aren't so simple, though. If `Select r` has a single shape, the
@@ -543,24 +553,24 @@ a garden-variety function functor, we would say it holds an `a`
 result value for each possible `a -> r` function. The problem is that
 the number of `a -> r` functions depends on our choice of `a`, and so
 the shape, so to speak, adjusts itself when we specialise `Select r a`
-one way or another. In particular, a specialised `extractorsSelect`,
+one way or another. In particular, a specialised `chartSelect`,
 like this one...
 
 ``` haskell
-ghci> :t extractorsSelect @Bool @Integer
-extractorsSelect @Bool @Integer
+ghci> :t chartSelect @Bool @Integer
+chartSelect @Bool @Integer
   :: Select Bool (Select Bool Integer -> Integer)
 ```
 
 ... has, as possible results, *all* possible `Select Bool Integer ->
 Integer` extractors, and not just the ones we get by specialising the
 polymorphic extractors of type `Select Bool a -> a`.
-[^polymorphic-Select-extractors] `extractorsSelect`, therefore, is not
-fully determined by the polymorphic extractors of type `forall a. Select
-r a -> a`. Note this doesn't happen with strictly positive functors. If
-it did, specialising `extractors @Duo` to `Integer` would make things
-like `sum @Integer` appear alongside `fstDuo @Integer` and `sndDuo
-@Integer`, which would be quite outrageous.
+[^polymorphic-Select-extractors] `chartSelect`, therefore, is not fully
+determined by the polymorphic extractors of type `forall a. Select r a
+-> a`. Note this sort of thing doesn't happen with strictly positive
+functors. If it did, specialising `chart @Duo` to `Integer` would make
+things like `sum @Integer` appear alongside `fstDuo @Integer` and
+`sndDuo @Integer`, which would be quite outrageous.
 
 [^polymorphic-Select-extractors]: This latter bunch, by the way, is
   quite the exclusive club: if we insist on keeping `a` polymorphic, the
@@ -586,7 +596,7 @@ slightly different manner, which better suits our gameplan.
 
 Before we move on from `Select`, it should be mentioned, for
 avoidance of doubt, that `Select r` is not actually distributive. This
-is the would-be `distribute` we get out of `extractorsSelect`:
+is the would-be `distribute` we get out of `chartSelect`:
 
 ``` haskell
 nonDistribute :: Functor f => f (Select r a) -> Select r (f a)
@@ -603,20 +613,20 @@ ultimately leads to a violation of the composition law.
 By considering the quirkiness of `Select`, we discovered we don't
 actually want to deal with functors that aren't strictly positive, as
 they allow things that aren't polymorphic extractors to sneak into
-`extractors`. If the issue ultimately has to do with the individual
+`chart`. If the issue ultimately has to do with the individual
 extractors, though, we should be able to address it by being more
 specific about which extractors are acceptable. To see how we might
 do that, let's have another look at the law of extractors:
 
 ``` haskell
-($ u) <$> extractors = u
+($ u) <$> chart = u
 ```
 
-Written in this way, the law draws our eyes `extractors`.  We can
+Written in this way, the law draws our eyes to `chart`.  We can
 rearrange it so that the focus is shifted to what is being done to `u`:
 
 ``` haskell
-(\e -> e <$> extractors) . (\u -> ($ u)) = id
+(\e -> e <$> chart) . (\u -> ($ u)) = id
 ```
 
 This change of style brings to the foreground that `flip ($)`, taken as
@@ -630,7 +640,7 @@ a function *from* `g a`...
 *to* `g a`:
 
 ``` haskell
-(\e -> e <$> extractors) :: Distributive g => ((g a -> a) -> a) -> g a
+(\e -> e <$> chart) :: Distributive g => ((g a -> a) -> a) -> g a
 ```
 
 To put it in another way, we can convert some `g a` into a `(g a -> a)
@@ -644,7 +654,7 @@ isomorphism between `g a` and `(g a -> a) -> a`.
 And yet, there is a problem. Given the `(g a -> a) -> a` form is clearly
 meant to take an extractor and return a value, the type `flip ($)` gives
 us is too permissive. The functions it produce happily accept
-counterfeit extractors which rely on concrete element types:
+counterfeit extractors that rely on concrete element types:
 
 ``` haskell
 ghci> test = (\u -> ($ u)) (Duo 3 4)
@@ -718,43 +728,20 @@ distributeRev :: (Revealable g, Functor f) => f (g a) -> g (f a)
 distributeRev m = reveal (\p -> p <$> m)
 ```
 
-With `extractors`, we are able to do even better:
+With `chart`, we are able to do even better:
 
 ``` haskell
-extractorsRev :: Revealable g => g (forall x. g x -> x)
-extractorsRev = reveal id
--- reveal e = e <$> extractorsRev
+chartRev :: Revealable g => g (forall x. g x -> x)
+chartRev = reveal id
+-- reveal e = e <$> chartRev
 ```
 
-`extractorsRev` and `extractors` hold the same extractors.
-`extractorsRev`, however, has the impredicative, more polymorphic type
-`distribute` can't give us. In partiuclar, the upgraded types make it
-impossible to implement a `extractorsRev` for `Select r`, which confirms
-we have indeed closed that loophole.
+`chartRev` and `chart` hold the same extractors.  `chartRev`, however,
+has the impredicative, more polymorphic type `distribute` can't give us.
+In partiuclar, the upgraded types make it impossible to implement a
+`chartRev` for `Select r`, which confirms we have indeed closed that
+loophole.
 
-As shown earlier, `extractors @Duo` contains the two polymorphic
-extractors for `Duo`, namely `fstDuo` and `sndDuo`, and only them. These
-extractors can be specialised to concrete types in the usual manner, and
-similarly `extractors` can be further specialised on the element tyoe:
-
-``` haskell
-ghci> :t fstDuo @Integer
-fstDuo @Integer :: Duo Integer -> Integer
-ghci> :t extractors @Duo @Integer
-extractors @Duo @Integer :: Duo (Duo Integer -> Integer)
-```
-
-While there are functions of type `Duo Integer -> Integer` other than
-`fstDuo @Integer` and `sndDuo @Integer`, these functions can't possibly
-be in `extractors @Duo @Integer`. If the idea that specialising
-`extractors @Duo` might make something like `sum :: Duo Integer ->
-Integer` show up in it sounds preposterous, that is because `Duo` is a
-*strictly positive functor*: in the right-hand side of `data Duo a = Duo
-a a`, the argument `a` to the type constructor `Duo` never appears to
-the left of a function arrow. Since `Duo` is strictly positive, we can
-freely probe the `a` values in some `u :: Duo a` value with whatever
-`Duo a -> b` we feel like writing, with the only bounds on what we can
-do being set by the structure of the data type. [^strictly-positive]
 
 
 ## Sections from the original attempt
