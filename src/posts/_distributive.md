@@ -215,21 +215,21 @@ to `cotraverse`: [^cotraverse]
     (a -> f b) -> (g a -> f (g b))
     ```
 
-  That dualises to (as before, `-<` indicates an arrow in
-  **Hask**<sup>op</sup>):
+    That dualises to (as before, `-<` indicates an arrow in
+    **Hask**<sup>op</sup>):
 
     ``` haskell
     (a -< f b) -> (g a -< f (g b))
     ```
 
-   Or, rendered in **Hask**:
+     Or, rendered in **Hask**:
 
      ``` haskell
      (f b -> a) -> (f (g b) -> g a)
      ```
 
-  Accordingly, the traversable laws in terms of `traverse` dualise to
-  become distributive laws in terms of `cotraverse`:
+    Accordingly, the traversable laws in terms of `traverse` dualise to
+    become distributive laws in terms of `cotraverse`:
 
     ``` haskell
     cotraverse runIdentity = runIdentity
@@ -742,7 +742,18 @@ In partiuclar, the upgraded types make it impossible to implement a
 `chartRev` for `Select r`, which confirms we have indeed closed that
 loophole.
 
+### The vaunted isomorphism
 
+As far as laws for `Revealable` go, we already know we want `reveal` to
+be the left inverse of `elide`:
+
+``` haskell
+reveal . elide = id
+```
+
+Is it reasonable to also require `elide . reveal = id`, thus giving us
+an isomorphism?  If so, what are the implications for our understanding
+of `Distributive`?
 
 ## Sections from the original attempt
 
