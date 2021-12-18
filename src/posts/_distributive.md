@@ -400,22 +400,21 @@ transformation. That turns the naturality law into a much stronger
 claim.
 
 We can learn a lot about `Distributive` by taking advantage of
-parametricity by means such as the naturality law. To make the text
-easier to follow, in the remainder of this section I will present some
-noteworthy facts that can be established in this manner; proofs and
-justifications for the claims are included at the end of the post, in an
-appendix.
+parametricity by means such as the naturality law. This section will
+highlight some key results attainable in this way, results upon which
+the rest of the post will build upon. For the sake of readability,
+detailed justification of the claims here will be provided at the end of
+the post, in an appendix.
 
 ### The law of extractors
 
-Let's begin with the key result. I would say the property below, which
-follows from the naturality and identity laws, expresses better than
-anything else the essence of `Distributive`:
+Let's begin with the decisive result. I would say the property below,
+which follows from the naturality and identity laws, expresses better
+than anything else the essence of `Distributive`:
 
 ``` haskell
 -- Law of extractors:
-($ u) <$> distribute id = u
--- Pointfully: (\p -> p u) <$> distribute id = u
+(\p -> p u) <$> distribute id = u
 ```
 
 At the heart of this rather mind-bending statement we find `distribute
@@ -425,6 +424,7 @@ now on call it `chart`:
 ``` haskell
 chart :: Distributive g => g (g a -> a)
 chart = distribute id
+-- (\p -> p u) <$> chart = u
 ```
 
 `chart` is a distributive structure that holds a number of extractor
@@ -441,18 +441,25 @@ in the structure. [^extractors-chart]
   defining here and the plural of "extractor", which would have made
   some passages of this text very awkward.
 
-Two major consequences follow directly from this law of extractors:
+I will call this property the *law of extractors*. It can be seen as an
+alternative form of the identity law, as the two can be shown to be
+equivalent with the help of the naturality law. A major selling point
+for this alternative form is that it helps to make explicit two
+important consequences:
 
-- For every `u :: g a`, there is a function (namely, `($ u)`) which can
-  be used through `fmap` to change `chart` into `u`. Considering
-  that `fmap` cannot change shapes, that is exactly what we would expect
-  if all `g a` values had the same shape (more specifically, the shape
-  of `chart`).
+- For every `u :: g a`, there is a function (namely, `\p -> p u`, or `($
+  u)` for short) which can be used through `fmap` to change `chart` into
+  `u`. Considering that `fmap` cannot change shapes, that is exactly
+  what we would expect if all `g a` values had the same shape (more
+  specifically, the shape of `chart`).
 
-- `chart` holds all possible `g a -> a` extractors polymorphic in
-  `a`, with every extractor occupying the position it extracts from.
-  That is what makes it possible for it to reconstruct any `u :: g a` by
-  feeding it to the extractors.
+- `chart` holds all possible `g a -> a` extractors polymorphic in `a`,
+  with every extractor occupying the position it extracts. That is what
+  makes it possible for it to reconstruct any `u :: g a` by feeding it
+  to the extractors. By the way, it is worth noting that `forall a.  g a
+  -> a` extractors are essentially natural transformations from `g` to
+  `Identity`, which is ultimately why the naturality properties of
+  `distribute` matter so much here.
 
 Below is a tiny example with `Duo` which illustrates these two
 consequences:
@@ -473,37 +480,55 @@ To put it in another way: `distribute` encodes information about the
 shape of the distributive functor, and `chart` makes that information
 explicit.
 
-Though the law of extractors is ultimately equivalent to the identity
-law (with naturality taken as a background assumption), I believe that
-it is reasonable to call it a law, in recognition of how useful it is
-when trying to make sense of `Distributive`. To further underline how
-`chart` and `distribute` are on the same footing, here is a
-definition of `distribute` in terms of `chart`:
+To further underline how `chart`, `distribute` and their respective laws
+are on the same footing, here is a definition of `distribute` in terms
+of `chart`:
 
 ``` haskell
-distribute m = (<$> m) <$> chart
--- Pointfully: (\p -> p <$> m) <$> chart
+distribute m = (\p -> p <$> m) <$> chart
 ```
 
 The definition looks a lot like the law of extractors, except that,
 instead of directly applying each extractor to `m`, we have to do it
 to do it under the extra functorial layer by using `fmap`/`(<$>)`.
 
-### The Select loophole
+### Closing the Select loophole
 
-You may have noticed that, when describing the consequences of the law
-of extractors, I have stopped just short of stating that it means
-distributive functors have a single shape. Similarly, saying that
-`chart` "holds all" polymorphic extractors was a hedge to avoid the
-more straightforward claim that `chart` *is* the collection of all
-polymorphic extractors, arranged in a certain manner. I will justify
-my cautiousness with an example. Consider [`Select`](
-https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html):
+You may have noticed that my comments about those two important
+consequences of the law of extractors were a bit of a hedge:
+
+- I described `fmap ($ u)` changing `chart` into `u` for any `u` as
+  "exactly what we would expect if all `g a` values had the same shape",
+  rather than saying outright that they all do have the same shape.
+
+- I noted that `chart` "holds all" polymorphic extractors, rather than
+  claiming it *is* the collection of all such extractors, arranged in a
+  certain manner.
+
+Strenghtening those claims in the way suggested above is not just a
+matter of having a simpler, more aesthetically pleasing description of
+distributive functors. In particular, making sure that `chart` only
+holds polymorphic extractors is an important step on the way to
+`Representable`, as we will discuss in a little while. Fortunately, if
+we assume both the identity and composition laws hold, and employ a
+bootload of naturality properties, we can conclude that all `chart`
+extractors amount to natural transformations to `Identity`, which is
+what we need to make the stronger claims. (The detailed argument on that
+can be found in the appendix.)
+
+Since this is a quite subtle point (after all, it is not obvious how
+something with the type of `distribute id` could somehow produce
+extractors that aren't fully polymorphic), I will allow myself a
+digression to justify my cautiousness and illustrate what is at stake
+here. Let's have a look at [`Select`](
+https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html),
+the selection monad:
 
 ``` haskell
 -- A paraphrased, non-transformer version of Select.
--- A Select r a value can be thought of as a way to choose an `a` value
--- based on some `a -> r` criterion.
+-- A `Select r a` value can be thought of as a way to choose an `a`
+-- value based on some chosen criterion, expressed as an `a -> r`
+-- function.
 newtype Select r a = Select { runSelect :: (a -> r) -> a }
 ```
 
@@ -513,10 +538,11 @@ If we try to settle the matter by counting shapes, as in those four
 examples from a while ago, things get confusing very quickly. The
 strangeness comes from how `a`, the argument to the type constructor,
 shows up to the left of a function arrow, which makes it hard to picture
-what even is the shape apart from the contents. Functors with no such
-occurrences, like our earlier examples, are known as *strictly positive
-functors*; `Select r`, then, is an example of a functor which is *not*
-strictly positive.  [^strictly-positive]
+what even is the shape, as something that can be considered apart from
+the contents. Functors with no such occurrences, like our earlier
+examples, are known as *strictly positive functors*. `Select r`, then,
+is an example of a functor which is *not* strictly positive.
+[^strictly-positive]
 
 [^polarity]: Though it doesn't explicitly mention strict positivity,
   Michael Snoyman's [*Covariance and Contravariance*](
@@ -529,21 +555,22 @@ strictly positive.  [^strictly-positive]
 We might try to cut through the befuddlement by pointing to the
 following combinator: [^chartSelect]
 
-[^chartSelect]: I originally realised it exists thanks to [a Stack
+[^chartSelect]: I originally realised it exists by looking into [a Stack
   Overflow answer by Sergei Winitzki](
-  https://stackoverflow.com/a/39736535/2751851).
+  https://stackoverflow.com/a/39736535/2751851). I thank him for this
+  post seeing the light of day: without considering `Select` as a
+  counterexample, I don't think I would have managed to put the pieces
+  together.
 
 ``` haskell
 chartSelect :: Select r (Select r a -> a)
 chartSelect = Select $ \k -> \u -> u `runSelect` \a -> k (const a)
 ```
 
-`chartSelect` not just has the type an hypothetical `chart`
-for `Select r` would have: it turns out it actually follows the law of
-extractors! Accordingly, `\m -> (<$> m) <$> chartSelect` follows
-the identity law of distributive functors. Given what we have said so
-far about `chart`, this sounds like a pretty good argument in
-support of `Select r` indeed having a single shape, right?
+`chartSelect` has the type an hypothetical `chart` for `Select r` would
+have, and it turns out it actually follows the law of extractors.  Given
+what we have said so far about `chart`, this sounds like a pretty good
+argument in support of `Select r` indeed having a single shape, right?
 
 Things aren't so simple, though. If `Select r` has a single shape, the
 shape [is bigger on the inside](
@@ -562,41 +589,44 @@ chartSelect @Bool @Integer
   :: Select Bool (Select Bool Integer -> Integer)
 ```
 
-... has, as possible results, *all* possible `Select Bool Integer ->
-Integer` extractors, and not just the ones we get by specialising the
-polymorphic extractors of type `Select Bool a -> a`.
-[^polymorphic-Select-extractors] `chartSelect`, therefore, is not fully
-determined by the polymorphic extractors of type `forall a. Select r a
--> a`. Note this sort of thing doesn't happen with strictly positive
-functors. If it did, specialising `chart @Duo` to `Integer` would make
-things like `sum @Integer` appear alongside `fstDuo @Integer` and
-`sndDuo @Integer`, which would be quite outrageous.
+... has, as possible results, *all* `Select Bool Integer -> Integer`
+extractors, and not just the ones we get by specialising the polymorphic
+extractors of type `Select Bool a -> a`.
+[^polymorphic-Select-extractors] Note this sort of thing doesn't happen
+with strictly positive functors. If it did, specialising `chart @Duo` to
+`Integer` would make things like `sum @Integer` appear alongside `fstDuo
+@Integer` and `sndDuo @Integer`, which would be quite outrageous.
 
-[^polymorphic-Select-extractors]: This latter bunch, by the way, is
-  quite the exclusive club: if we insist on keeping `a` polymorphic, the
-  only possible extractors are of the form `\u -> u `runSelect` \_ ->
-  b`, corresponding to constant functions `Integer -> Bool` which ignore
-  the `Integer` that is ostensibly being tested.
+[^polymorphic-Select-extractors]: If we insist on keeping `a`
+  polymorphic, the only possible extractors are of the form `\u -> u
+  `runSelect` \_ -> b`, with the role of `Integer ->  Bool` criteria
+  being played by constant functions which ignore the `Integer` that is
+  ostensibly being tested.
 
-`Select`, thus, demonstrates a loophole in our current understanding of
-distributive functors, which puts us in the uncomfortable position of
-applying our tools to functors for which we aren't even sure of there
-being a reasonable notion of shape. A simple way to close the loophole
-is to exclude from consideration functors that aren't strictly positive,
-which is precisely what the theory of containers does from the start
-[^containers]. In the next section, we will address this issue in a
-slightly different manner, which better suits our gameplan.
+    Looking at the matter from a different angle, the trick with `k` and
+    `const a` in the definition of `chartSelect` is ultimately a way to
+    make sure that, for any choice of `f :: a -> r`, ``(`runSelect` f)
+    :: Select r a -> a`` shows up as a possible result. ``(`runSelect`
+    f)``, in turn, generally isn't a natural transformation.
 
-[^containers]: See, for instance, the first few paragraphs of Abbott et.
-  al., [*Containers: Constructing strictly positive types*](
+Given the way we have framed the discussion in terms of shapes and
+polymorphic extractors, `Select` puts us in the uncomfortable position
+of stretching those notions to the point where they might no longer be
+reasonably applied. One way to keep things simple and intelligible might
+be to, from the outset, only consider strictly positive functors.
+[^containers] Given what we have learned so far about distributive
+functors, though, we don't actually need additional restrictions. If
+`extractSelect` makes non-polymorphic extractors available, we'd expect,
+by the argument mentioned just before this digression, that the
+`distribute` candidate we get from it...
+
+[^containers]: In particular, that is how the theory of containers
+  avoids this problem. See, for instance, the first few paragraphs of
+  Abbott et. al., [*Containers: Constructing strictly positive types*](
   https://www.sciencedirect.com/science/article/pii/S0304397505003373).
-  Do note that is a very theory-heavy article, and arguably too wild a
-  digression to jump into right now, as far as our immediate purposes in
-  this post are concerned.
-
-Before we move on from `Select`, it should be mentioned, for
-avoidance of doubt, that `Select r` is not actually distributive. This
-is the would-be `distribute` we get out of `chartSelect`:
+  Do note that is a very theory-heavy article, and that there is no need
+  at all to jump into it now in order to follow the discussion in this
+  post.
 
 ``` haskell
 nonDistribute :: Functor f => f (Select r a) -> Select r (f a)
@@ -604,36 +634,31 @@ nonDistribute m = Select $
     \k -> (\u -> u `runSelect` \a -> a <$ m) <$> m
 ```
 
-`nonDistribute` borrows the shape of `m` so that it can turn the
-supplied criterion `k :: f a -> r` into an `a -> r` function. That
-ultimately leads to a violation of the composition law.
+... to be unlawful, and that is the case indeed. `nonDistribute` borrows
+the shape of `m` so that it can turn the supplied criterion `k :: f a ->
+r` into an `a -> r` function. That ultimately leads to a violation of
+the composition law.
 
 ## It's all about the extractors
 
-By considering the quirkiness of `Select`, we discovered we don't
-actually want to deal with functors that aren't strictly positive, as
-they allow things that aren't polymorphic extractors to sneak into
-`chart`. If the issue ultimately has to do with the individual
-extractors, though, we should be able to address it by being more
-specific about which extractors are acceptable. To see how we might
-do that, let's have another look at the law of extractors:
+Let's now have a second look at the law of extractors:
 
 ``` haskell
-($ u) <$> chart = u
+(\p -> p u) <$> chart = u
 ```
 
 Written in this way, the law draws our eyes to `chart`.  We can
 rearrange it so that the focus is shifted to what is being done to `u`:
 
 ``` haskell
-(\e -> e <$> chart) . (\u -> ($ u)) = id
+(\e -> e <$> chart) . (\u p -> p u) = id
 ```
 
-This change of style brings to the foreground that `flip ($)`, taken as
-a function *from* `g a`...
+This change of style brings to the foreground that `\u p -> p u`, also
+known as `flip ($)`, when taken as a function *from* `g a`...
 
 ``` haskell
-(\u -> ($ u)) :: g a -> (g a -> a) -> a
+(\u p -> p u) :: g a -> (g a -> a) -> a
 ```
 
 ... has, if `g` is `Distributive`, a left inverse, namely, this function
@@ -651,30 +676,31 @@ the inverses above are actually full inverses, which would give us a
 powerful characterisation of distributive functors through an
 isomorphism between `g a` and `(g a -> a) -> a`.
 
-And yet, there is a problem. Given the `(g a -> a) -> a` form is clearly
-meant to take an extractor and return a value, the type `flip ($)` gives
-us is too permissive. The functions it produce happily accept
-counterfeit extractors that rely on concrete element types:
+There is, however, a complication to deal with. Given the `(g a -> a) ->
+a` here is clearly meant to take an extractor and return a value, the
+type `flip ($)` gives us is too permissive. The functions it produce
+happily accept counterfeit extractors that rely on concrete element
+types:
 
 ``` haskell
-ghci> test = (\u -> ($ u)) (Duo 3 4)
+ghci> test = flip ($) (Duo 3 4)
 ghci> test sum
 7
 ```
 
-With the `Select` example, we have already seen how that spells trouble.
-Besides that, using a larger type than we need is bound to complicate
-things if we are looking for an isomorphism (isomorphic types, after
-all, must have the same amount of possible values).
+Using a larger type than we need is bound to make things difficult if we
+are looking for an isomorphism (isomorphic types, after all, must have
+the same amount of possible values).
 
 ### A revamp
 
-The good news, though, is that writing the law in terms of the two
-inverses brings to light  where we can intervene to avoid such
-difficulties. If we replace `(g a -> a) -> a` with the higher-rank type
-`(forall x. g x -> x) -> a`, the inverses will only deal with proper,
-polymorphic extractors. For that, however, we need to soup up our
-toolkit:
+The good news, though, is that we have already established that, if `g`
+is a lawful distributive functor, only the proper (polymorphic, natural)
+extractors matter, as only those are made available by `chart`. That
+being so, it makes sense to ensure the extractors are polymorphic by
+replacing `(g a -> a) -> a` with the higher-rank type `(forall x. g x ->
+x) -> a`, the inverses will only deal with proper, polymorphic
+extractors. For that, however, we need to soup up our toolkit:
 
 ``` haskell
 elide :: g a -> (forall x. g x -> x) -> a
@@ -736,11 +762,10 @@ chartRev = reveal id
 -- reveal e = e <$> chartRev
 ```
 
-`chartRev` and `chart` hold the same extractors.  `chartRev`, however,
-has the impredicative, more polymorphic type `distribute` can't give us.
-In partiuclar, the upgraded types make it impossible to implement a
-`chartRev` for `Select r`, which confirms we have indeed closed that
-loophole.
+`chartRev` and `chart` hold the same extractors. `chartRev`, however,
+has the more restrictive type `distribute` can't give us. In particular,
+the upgraded types make it impossible to implement a `chartRev` for
+`Select r`, which confirms we have indeed closed that loophole.
 
 ### The vaunted isomorphism
 
@@ -752,92 +777,40 @@ reveal . elide = id
 ```
 
 Is it reasonable to also require `elide . reveal = id`, thus giving us
-an isomorphism?  If so, what are the implications for our understanding
-of `Distributive`?
+an isomorphism?
+
+Assuming `reveal` is the left inverse of `elide`, we know that `elide`
+is injective (that is, it takes different arguments to different
+results), and that `reveal` is surjective (that is, it can produce every
+possible value in its result type). That being so, showing `reveal` is
+injective suffices to prve it is also the right inverse of `elide`.
+Happily, given all we have found so far, we can show that `reveal` will
+be injective for any lawful distributive. Conversely, it can also be
+shown that `reveal` and `elide` being full inverses suffices to give
+rise to a lawful `distribute`. All in all, the isomorphism the
+witness...
+
+``` haskell
+reveal . elide = id
+elide . reveal = id
+```
+
+... is enough to characterise `Distributive`.
+
+It is worth emphasising that `g a` being isomorphic to `(forall x. g x
+-> x) -> a` directly tells us `g` is single-shaped: if all information
+specific to some `g a` value can be obtained through the `forall x. g x
+-> x` extractors, then the `g` shape must be fixed.
+
+inverse of `elide`, it suffices to show that `reve` is surjective.
+Let's have another look at its definition:
+
+### Instances we know and love
+
+### Through the looking glass
+
 
 ## Sections from the original attempt
-
-## Single-shapedness
-
-One of the points in our discussion of `distribute` in the first section
-is that it only made sense for functors with a single shape. That being
-the case, though, it looks reasonable to try reconstructing
-`Distributive` starting from single-shapedness. Let's see where such a
-bet will take us: hopefully, it will help us teasing out some of the
-connections between distributive functors and other concepts.
-
-The first thing we need for the task at hand is pinning down the notion
-of single-shapedness. Here is one possible approach: approach: if we
-know that a functor `g` has only one possible shape, all there remains
-to learn about some `u :: g a` value is which `a` values can be found in
-each position of the shape. To discover that, we can use `forall x. g x
--> x` extractor functions, however many there might be.  That, however,
-means there is an isomorphism between `g a` and the following type:
-
-``` haskell
--- For Distributive g, isomorphic to g a:
-(forall x. g x -> x) -> a
-```
-
-If every extractor function gives us a value, we can obtain all values
-and reconstruct the distributive structure.
-
-For the sake of convenience, I will introduce a type synonym:
-[^impredicativetypes]
-
-[^impredicativetypes]: As written, these examples are meant for GHC 9.2
-  or above, with `ImpredicativeTypes` turned on. For earlier GHC
-  versions, you'd probably want to use `newtype` instead of `type` in
-  order to avoid needing that extension.
-
-``` haskell
--- A Pos g extracts a value from some position:
-type Pos g = forall x. g x -> x
-```
-
-One direction of the isomorphism is just (flipped) function application,
-and doesn't impose any constraints on `g`:
-
-``` haskell
-evert :: g a -> Pos g -> a
-evert u = \p -> p u
-```
-
-That being so, it should be possible to define `Distributive` in terms
-of the other direction of the isomorphism. Let's give it a go:
-
-``` haskell
-class Functor g => Distributive g where
-    revert :: (Pos g -> a) -> g a
-```
-
-The laws, then, would merely state that `evert` and `revert` are halves
-of an isomorphism:
-
-``` haskell
-revert . evert = id  -- "Resident" direction: from g a and back
-evert . revert = id  -- "Visitor" direction: to g a and back
-```
-
-`Duo` can be made an instance of this `Distributive` class:
-
-``` haskell
-instance Distributive Duo where
-    revert e = Duo (e fstDuo) (e sndDuo)
-```
-
-Functions are one especially important instance of `Distributive`. With
-respect to our tentative formulation, we might note that `Pos ((->) r) ~
-forall x. (r -> x) -> x` is isomorphic to `r`, and so `Pos r -> a` must
-be isomorphic to `r -> a`:
-
-``` haskell
-instance Distributive ((->) r) where
-    revert e = \r -> e (\f -> f r)
-```
-
-We still have, of course, to check whether this newfangled
-`Distributive` class actually corresponds to the traditional one.
 
 ## Putting the distribute in Distributive
 
