@@ -810,6 +810,301 @@ Let's have another look at its definition:
 ### Through the looking glass
 
 
+## Appendix: proofs and justifications
+
+In what follows, we will take the signature of `distribute` to be...
+
+``` haskell
+distribute :: (Distributive g, Functor f) => f (g a) -> g (f a)
+```
+
+... so that, unless stated otherwise, `g` refers to the relevant
+distributive functor, and `f` to the other functor involved in
+`distribute`.
+
+We will often rely on the identity and composition laws for
+`distribute`, restated below for the sake of reference:
+
+``` haskell
+-- Identity
+fmap runIdentity . distribute = runIdentity
+
+-- Composition
+fmap getCompose . distribute = distribute . fmap distribute . getCompose
+```
+
+Some fundamental `Distribute` instances:
+
+``` haskell
+instance Distribute Identity where
+    distribute = Identity . fmap runIdentity
+
+instance (Distributive g, Distributive h) => Distributive (Compose g h) where
+    distribute = Compose . fmap distribute . distribute . fmap getCompose
+
+flap :: Functor f => f (r -> a) -> r -> f a
+flap m r = (\f -> f r) <$> m
+
+instance Distributive ((->) r) where
+    distribute = flap
+```
+
+### Essential naturality properties
+
+First of all, there is the *naturality law*:
+
+``` haskell
+-- Functor h; t :: forall x. f x -> h x
+fmap t . distribute = distribute . t
+```
+
+It works for any naural transformation `t`. `distribute` only demands
+`Functor` of `f`, and so it has no means of doing anything to the `f`
+functorial layer. That being so, any natural transformation affecting
+`t` must be preserved by `distribute`. This is a free law, in the sense
+that, thanks to parametricity, it holds for anything with the type of
+`distribute`.
+
+By similar reasoning, we can obtain what I will call the *second
+naturality law*, which states that a lawful `distribute` preserves
+natural transformations on the distributive functor:
+
+``` haskell
+-- Distributive h; t :: forall x. g x -> h x
+t . distribute = distribute . fmap t
+```
+
+The obliviousness of `distribute` to the `f` functorial layer also means
+that whether the property above holds cannot depened on what `f` is.
+That being so, it suffices to consider what happens at, say, `f ~
+Identity`. By the identity law, we know that:
+
+``` haskell
+distribute @_ @Identity = fmap Identity . runIdentity
+```
+
+Therefore:
+
+``` haskell
+-- Goal
+t . distribute @_ @Identity = distribute @_ @Identity . fmap t
+-- LHS
+t . distribute @_ @Identity
+-- g is lawful
+t . fmap Identity . runIdentity
+-- t is natural
+fmap Identity . t . runIdentity
+fmap Identity . runIdentity . fmap t
+-- RHS
+distribute @_ @Identity . fmap t
+-- h is lawful
+fmap Identity . runIdentity . fmap t  -- LHS = RHS
+```
+
+This property can be contrasted with the corresponding one for
+`Traversable`:
+
+``` haskell
+-- Traversable h; t :: forall x. g x -> h x
+-- toList . t = toList
+fmap t . sequenceA = sequenceA . t
+```
+
+There, the `Applicative` constraint on the other functorial layer leads
+to the precondition that `t` has to preserve `toList`, and requires a
+significantly trickier proof.
+
+Along the same lines, parametricity can be used to establish the
+*uniqueness of `distribute`*. `distribute` cannot affect `f` nor `a`, so
+any difference between implementations of `distribute` must only show up
+in the distributive layer `g`, and do so regardless of what `f` and `a`
+are. The identity law, however, ensures a lawful `distribute` cannot
+affect the `g` layer either. That being so, any two functions with the
+type of `distribute` that follow the identity law must agree on their
+results.
+
+### chart and the law of extractors
+
+Consider some function `f :: r -> g a` for a `Distributive g`. By the
+naturality law, we have:
+
+``` haskell
+-- Functor h; t :: forall x. (r -> x) -> h x
+t <$> distribute f = distribute (t f)
+```
+
+In particular, given the following definition...
+
+``` haskell
+apply :: r -> (r -> a) -> Identity a
+apply r f = Identity (f r)
+```
+
+... and some `u :: r`, `apply u` is a natural transformation from `((->)
+r)` to `Identity`, and so we can substitute it into the naturality law:
+
+``` haskell
+apply u <$> distribute f = distribute (apply u f)
+```
+
+The `distribute` on the right-hand side has `Identity` as the other
+functor. That being so, the identity law makes further simplifications
+possible:
+
+``` haskell
+apply u <$> distribute f = distribute (apply u r)
+-- Identity law
+apply u <$> distribute f = fmap Identity (runIdentity (apply u f))
+-- Applying fmap runIdentity on both sides
+runIdentity . apply u <$> distribute f = runIdentity (apply u f)
+-- Using the definition of apply
+(\p -> p u) <$> distribute f = f u
+```
+
+In particular, if `f` is `id :: g a -> g a`:
+
+``` haskell
+-- Law of extractors
+(\p -> p u) <$> distribute id = u
+```
+
+We define:
+
+``` haskell
+chart :: Distributive g => g (g a -> a)
+chart = distribute id
+```
+
+And so:
+
+``` haskell
+(\p -> p u) <$> chart = u
+```
+
+We have obtained the law of extractors from the identity law. It is also
+possible to go the other way, showing the naturality properties make the
+laws equivalent:
+
+``` haskell
+(\p -> p u) <$> chart = u
+(\p -> p u) <$> distribute id = u
+Identity . (\p -> p u) <$> distribute id = Identity <$> u
+-- apply defined as above
+apply u <$> distribute id = Identity <$> u
+-- Naturality law
+distribute (apply u id) = Identity <$> u
+distribute (Identity (id u)) = Identity <$> u
+distribute (Identity u) = Identity <$> u
+-- Applying fmap runIdentity to both sides
+runIdentity <$> distribute (Identity u) = u
+-- let m = Identity u
+runIdentity <$> distribute m = runIdentity m  -- The identity law
+```
+
+`distribute` can be defined in terms of `chart`:
+
+``` haskell
+distribute m = (\p -> p <$> m) <$> chart
+```
+
+Given the uniqueness of `distribute`, all we need to confirm this is
+indeed `distribute` is verifying the identity law holds:
+
+``` haskell
+distribute @Identity m
+-- Assuming the proposed definition
+(\p -> p <$> m) <$> chart
+-- let u = runIdentity m
+(\p -> p <$> Identity u) <$> chart
+(\p -> Identity (p u)) <$> chart
+Identity . (\p -> p u) <$> chart
+-- Law of extractors
+Identity <$> u
+Identity <$> runIdentity m  -- As specified by the identity law
+```
+
+### Polymorphic extractors are natural
+
+The derivation of the law of extractors illustrates how a polymorphic
+extractors `p :: forall x. h x -> x` is, in essence, a natural
+transformation from `h` to `Identity`. Using the naturality laws with
+such a function would, in principle, require expressing it as `Identity
+. p`. If we assume the identity law holds, though, we can get away
+without actually mentioning `Identity`. Three examples:
+
+``` haskell
+-- p :: forall x. f x -> x; f :: a -> b
+
+-- Identity . p is a natural transformation
+Identity . p . fmap f = fmap f . Identity . p
+Identity . p . fmap f =  Identity . f . p
+-- Post-composing runIdentity on both sides
+p . fmap f = f . p
+```
+
+``` haskell
+-- p :: forall x. f x -> x
+
+-- (First) naturality law:
+fmap (Identity . p) . distribute = distribute . Identity . p
+-- Identity law
+fmap (Identity . p) . distribute
+  = fmap Identity . runIdentity . Identity . p
+fmap (Identity . p) . distribute = fmap Identity . p
+-- Post-composing fmap runIdentity on both sides
+fmap p . distribute = p
+```
+
+``` haskell
+-- p :: forall x. g x -> x
+
+-- Second naturality law:
+Identity . p . distribute = distribute . fmap (Identity . p)
+-- distribute @Identity
+Identity . p . distribute
+  = Identity . fmap runIdentity . fmap (Identity . p)
+Identity . p . distribute = Identity . fmap p
+-- Post-composing runIdentity on both sides
+p . distribute = fmap p
+```
+
+In what follows, we will use such simplifications liberally to avoid
+extra boilerplate.
+
+### chart holds all polymorphic extractors
+
+Another important property of `chart` is that it holds all polymorphic
+extractors. A more precise way of stating that is:
+
+``` haskell
+-- p :: forall x. g x -> x
+p chart = p
+```
+
+That is, any polymorphic extractor can extract itself from `chart`. This
+property can be proved by applying the law of extractors to `chart`:
+
+``` haskell
+-- Law of extractors:
+(\p -> p u) <$> chart = u
+-- let u = chart
+(\p -> p chart) <$> chart = chart
+-- Apply p :: forall x. g x -> x to both sides
+p ((\p -> p chart) <$> chart) = p chart
+-- p is natural
+(\p -> p chart) (p chart) = p chart
+(p chart) chart = p chart
+-- v :: g a; apply (\p -> p v) to both sides
+(\p -> p v) ((p chart) chart) = (\p -> p v) (p chart)
+-- (\p -> p v) is natural
+(p chart) ((\p -> p v) <$> chart) = (\p -> p v) (p chart)
+(p chart) ((\p -> p v) <$> chart) = p ((\p -> p v) <$> chart)
+-- Law of extractors
+(p chart) v = p v
+-- v is arbitrary
+p chart = p
+```
+
 ## Sections from the original attempt
 
 ## Putting the distribute in Distributive
@@ -1031,7 +1326,7 @@ the functor we are working with. [^select]
 
 
 
-## Appendix: proofs
+## Proofs from the original attempt
 
 TODO: Double-checking.
 
