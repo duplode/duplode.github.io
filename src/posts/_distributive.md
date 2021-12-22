@@ -492,153 +492,6 @@ The definition looks a lot like the law of extractors, except that,
 instead of directly applying each extractor to `m`, we have to do it
 to do it under the extra functorial layer by using `fmap`/`(<$>)`.
 
-### Closing the Select loophole
-
-You may have noticed that my comments about those two important
-consequences of the law of extractors were a bit of a hedge:
-
-- I described `fmap ($ u)` changing `chart` into `u` for any `u` as
-  "exactly what we would expect if all `g a` values had the same shape",
-  rather than saying outright that they all do have the same shape.
-
-- I noted that `chart` "holds all" polymorphic extractors, rather than
-  claiming it *is* the collection of all such extractors, arranged in a
-  certain manner.
-
-Strenghtening those claims in the way suggested above is not just a
-matter of having a simpler, more aesthetically pleasing description of
-distributive functors. In particular, making sure that `chart` only
-holds polymorphic extractors is an important step on the way to
-`Representable`, as we will discuss in a little while. Fortunately, if
-we assume both the identity and composition laws hold, and employ a
-bootload of naturality properties, we can conclude that all `chart`
-extractors amount to natural transformations to `Identity`, which is
-what we need to make the stronger claims. (The detailed argument on that
-can be found in the appendix.)
-
-Since this is a quite subtle point (after all, it is not obvious how
-something with the type of `distribute id` could somehow produce
-extractors that aren't fully polymorphic), I will allow myself a
-digression to justify my cautiousness and illustrate what is at stake
-here. Let's have a look at [`Select`](
-https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html),
-the selection monad:
-
-``` haskell
--- A paraphrased, non-transformer version of Select.
--- A `Select r a` value can be thought of as a way to choose an `a`
--- value based on some chosen criterion, expressed as an `a -> r`
--- function.
-newtype Select r a = Select { runSelect :: (a -> r) -> a }
-```
-
-Does `Select r` have a single shape?
-
-If we try to settle the matter by counting shapes, as in those four
-examples from a while ago, things get confusing very quickly. The
-strangeness comes from how `a`, the argument to the type constructor,
-shows up to the left of a function arrow, which makes it hard to picture
-what even is the shape, as something that can be considered apart from
-the contents. Functors with no such occurrences, like our earlier
-examples, are known as *strictly positive functors*. `Select r`, then,
-is an example of a functor which is *not* strictly positive.
-[^strictly-positive]
-
-[^polarity]: Though it doesn't explicitly mention strict positivity,
-  Michael Snoyman's [*Covariance and Contravariance*](
-  https://www.fpcomplete.com/blog/2016/11/covariance-contravariance/)
-  might be useful as an accessible explanation of why the side of the
-  arrow on which type variables appear matters.  In particular, the
-  `CallbackRunner` example in the "Positive and negative position"
-  section towards the end is a `Functor` that isn't strictly positive.
-
-We might try to cut through the befuddlement by pointing to the
-following combinator: [^chartSelect]
-
-[^chartSelect]: I originally realised it exists by looking into [a Stack
-  Overflow answer by Sergei Winitzki](
-  https://stackoverflow.com/a/39736535/2751851). I thank him for this
-  post seeing the light of day: without considering `Select` as a
-  counterexample, I don't think I would have managed to put the pieces
-  together.
-
-``` haskell
-chartSelect :: Select r (Select r a -> a)
-chartSelect = Select $ \k -> \u -> u `runSelect` \a -> k (const a)
-```
-
-`chartSelect` has the type an hypothetical `chart` for `Select r` would
-have, and it turns out it actually follows the law of extractors.  Given
-what we have said so far about `chart`, this sounds like a pretty good
-argument in support of `Select r` indeed having a single shape, right?
-
-Things aren't so simple, though. If `Select r` has a single shape, the
-shape [is bigger on the inside](
-https://tvtropes.org/pmwiki/pmwiki.php/Main/BiggerOnTheInside). If we
-were to think of the shape of `Select r ~ (a -> r) -> a` as if it were
-a garden-variety function functor, we would say it holds an `a`
-result value for each possible `a -> r` function. The problem is that
-the number of `a -> r` functions depends on our choice of `a`, and so
-the shape, so to speak, adjusts itself when we specialise `Select r a`
-one way or another. In particular, a specialised `chartSelect`,
-like this one...
-
-``` haskell
-ghci> :t chartSelect @Bool @Integer
-chartSelect @Bool @Integer
-  :: Select Bool (Select Bool Integer -> Integer)
-```
-
-... has, as possible results, *all* `Select Bool Integer -> Integer`
-extractors, and not just the ones we get by specialising the polymorphic
-extractors of type `Select Bool a -> a`.
-[^polymorphic-Select-extractors] Note this sort of thing doesn't happen
-with strictly positive functors. If it did, specialising `chart @Duo` to
-`Integer` would make things like `sum @Integer` appear alongside `fstDuo
-@Integer` and `sndDuo @Integer`, which would be quite outrageous.
-
-[^polymorphic-Select-extractors]: If we insist on keeping `a`
-  polymorphic, the only possible extractors are of the form `\u -> u
-  `runSelect` \_ -> b`, with the role of `Integer ->  Bool` criteria
-  being played by constant functions which ignore the `Integer` that is
-  ostensibly being tested.
-
-    Looking at the matter from a different angle, the trick with `k` and
-    `const a` in the definition of `chartSelect` is ultimately a way to
-    make sure that, for any choice of `f :: a -> r`, ``(`runSelect` f)
-    :: Select r a -> a`` shows up as a possible result. ``(`runSelect`
-    f)``, in turn, generally isn't a natural transformation.
-
-Given the way we have framed the discussion in terms of shapes and
-polymorphic extractors, `Select` puts us in the uncomfortable position
-of stretching those notions to the point where they might no longer be
-reasonably applied. One way to keep things simple and intelligible might
-be to, from the outset, only consider strictly positive functors.
-[^containers] Given what we have learned so far about distributive
-functors, though, we don't actually need additional restrictions. If
-`extractSelect` makes non-polymorphic extractors available, we'd expect,
-by the argument mentioned just before this digression, that the
-`distribute` candidate we get from it...
-
-[^containers]: In particular, that is how the theory of containers
-  avoids this problem. See, for instance, the first few paragraphs of
-  Abbott et. al., [*Containers: Constructing strictly positive types*](
-  https://www.sciencedirect.com/science/article/pii/S0304397505003373).
-  Do note that is a very theory-heavy article, and that there is no need
-  at all to jump into it now in order to follow the discussion in this
-  post.
-
-``` haskell
-nonDistribute :: Functor f => f (Select r a) -> Select r (f a)
-nonDistribute m = Select $
-    \k -> (\u -> u `runSelect` \a -> a <$ m) <$> m
-```
-
-... to be unlawful, and that is the case indeed. `nonDistribute` borrows
-the shape of `m` so that it can turn the supplied criterion `k :: f a ->
-r` into an `a -> r` function. That ultimately leads to a violation of
-the composition law.
-
 ## It's all about the extractors
 
 Let's now have a second look at the law of extractors:
@@ -647,40 +500,41 @@ Let's now have a second look at the law of extractors:
 (\p -> p u) <$> chart = u
 ```
 
-Written in this way, the law draws our eyes to `chart`.  We can
+Written in this way, the law draws our eyes towards `chart`.  We can
 rearrange it so that the focus is shifted to what is being done to `u`:
 
 ``` haskell
 (\e -> e <$> chart) . (\u p -> p u) = id
 ```
 
-This change of style brings to the foreground that `\u p -> p u`, also
-known as `flip ($)`, when taken as a function *from* `g a`...
+This change of style brings to the foreground how, given `Distributive
+g`, `\u p -> p u`, also known as `flip ($)`, when taken as a function
+*from* `g a`...
 
 ``` haskell
 (\u p -> p u) :: g a -> (g a -> a) -> a
 ```
 
-... has, if `g` is `Distributive`, a left inverse, namely, this function
-*to* `g a`:
+... has a left inverse, namely, this function *to* `g a`:
 
 ``` haskell
 (\e -> e <$> chart) :: Distributive g => ((g a -> a) -> a) -> g a
 ```
 
-To put it in another way, we can convert some `g a` into a `(g a -> a)
--> a` function and, given `Distributive g`, undo that recover the `g a`
-from which the function was made. That is particularly interesting
-because it suggests that, if we are lucky, there will be a way to show
-the inverses above are actually full inverses, which would give us a
-powerful characterisation of distributive functors through an
-isomorphism between `g a` and `(g a -> a) -> a`.
+To put it in another way: this pair of functions can turn some `g a`
+into a `(g a -> a) -> a` function, which takes extractors and produces
+`a` values, and convert that function back to the original `g a`. That
+is interesting because it suggests that, if we are lucky, there will be
+a way to show those inverses are actually full inverses, giving us a
+presentation of distributive functors through an isomorphism between `g
+a` and `(g a -> a) -> a`.
 
-There is, however, a complication to deal with. Given the `(g a -> a) ->
-a` here is clearly meant to take an extractor and return a value, the
-type `flip ($)` gives us is too permissive. The functions it produce
-happily accept counterfeit extractors that rely on concrete element
-types:
+There is a problem, however: `(g a -> a) -> a` is too permissive a type.
+type. In the previous section, we set the stage for characterising
+distributive functors in terms of polymorphic extractors, which are what
+we expect `chart :: Distributive g => g (g a -> a)` to make available.
+The functions `flip ($)` produces, however, happily accept counterfeit
+extractors that rely on concrete element types:
 
 ``` haskell
 ghci> test = flip ($) (Duo 3 4)
@@ -689,23 +543,210 @@ ghci> test sum
 ```
 
 Using a larger type than we need is bound to make things difficult if we
-are looking for an isomorphism (isomorphic types, after all, must have
-the same amount of possible values).
+are looking for an isomorphism (isomorphic types must have the same
+amount of possible values). Ideally, we would tidy things up by the
+means of a higher-rank type that ensures `p` in `\u p -> p u` is a
+polymorphic extractor:
+
+``` haskell
+(\u p -> p u) :: g a -> (forall x. g x -> x) -> a
+```
+
+``` haskell
+ghci> test2 = ((\u p -> p u) :: g a -> (forall x. g x -> x) -> a) (Duo 3 4)
+ghci> test2 fstDuo
+3
+ghci> test2 sum
+
+<interactive>:177:7-9: error:
+    • Could not deduce (Num x) arising from a use of ‘sum’
+      from the context: Num a
+        bound by the inferred type of it :: Num a => a
+        at <interactive>:177:1-9
+      Possible fix:
+        add (Num x) to the context of
+          a type expected by the context:
+            forall x. Duo x -> x
+    • In the first argument of ‘test2’, namely ‘sum’
+      In the expression: test2 sum
+      In an equation for ‘it’: it = ...
+```
+
+This strenghtened type, however, is no longer compatible with that of
+`chart`. There is no way for `distribute` to give us the `Distributive g
+=> g (forall x. g x -> x)` type that `chart` would need to have.
+
+``` haskell
+ghci> test2 <$> chart
+
+<interactive>:178:1-5: error:
+    • Couldn't match type: forall x. Duo x -> x
+                     with: f a0 -> a0
+      Expected: (f a0 -> a0) -> b
+        Actual: (forall x. Duo x -> x) -> b
+    • In the first argument of ‘(<$>)’, namely ‘test2’
+      In the expression: test2 <$> chart
+      In an equation for ‘it’: it = ...
+    • Relevant bindings include
+        it :: f b (bound at <interactive>:178:1)
+```
+
+### The Select loophole
+
+It is tempting to blame the type system for `chart` not being granted
+the stronger type it should rightfully have. After all, in the
+definition of `chart`...
+
+``` haskell
+chart :: Distributive g => g (g a -> a)
+chart = distribute id
+```
+
+.. neither `distribute` nor `id` have any information about the element
+type `a`. That being so, how could the `g a -> a` extractors of `chart`
+be anything but polymorphic? The story doesn't quite end there, though.
+To have a better grasp on the difficulty we are dealing with, let's
+allow for a brief digression, in which we will look at an example of how
+things might go off the rails.
+
+Consider [`Select`](
+https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html):
+
+``` haskell
+-- A paraphrased, non-transformer version of Select.
+newtype Select r a = Select { runSelect :: (a -> r) -> a }
+
+instance Functor (Select r) where
+    fmap f u = Select $ \k -> f (u `runSelect` \a -> k (f a))
+```
+
+A `Select r a` value can be thought of as a way to choose an `a` value
+based on some user-specified criterion, expressed as an `a -> r`
+function.
+
+At a glance `Select r` doesn't look much like a distributive functor.
+Nonetheless, we can implement a nontrivial combinator with the type of
+`chart` for it: [^chartSelect]
+
+[^chartSelect]: I originally realised it is possible through [a Stack
+  Overflow answer by Sergei Winitzki](
+  https://stackoverflow.com/a/39736535/2751851). I thank him for helping
+  to drive this post to completion: thinking about `Select` was
+  instrumental in putting the pieces together.
+
+``` haskell
+chartSelect :: Select r (Select r a -> a)
+chartSelect = Select $ \k -> \u -> u `runSelect` \a -> k (const a)
+```
+
+Perhaps surprisingly, `chartSelect` actually follows the law of
+extractors. What are the extractors like, though?
+
+If we try to write polymorphic extractors for `Select r`, with type
+`forall x. Select r x -> x`, we will find that, as we don't know
+anything about the result type, the only possibility is `\u -> u
+`runSelect` const r` for somr `r :: r`. Such extractors, however, are
+not enough to fully describe a `Select r a` value, which can handle
+arbitrary `a -> r` functions as criteria, and not just constant ones.
+If the law of extractors holds, there must be more to `chartSelect`
+than the polymorphic extractors (and indeed, in the definition of
+`chartSelect` there is nothing to limit `k` to constant `(Select r a ->
+a) -> r` functions).
+
+That the polymorphic extractors are not enough to make up `chartSelect`
+ultimately has to do with how `Select r`, unlike all our previous
+examples, is *not* a strictly positive functor.  By *strictly positive*,
+we mean a functor defined in whose definition the element type variable
+never appears to the left of a function arrow.  In the case of `Select
+r`, the first `a` in `(a -> r) -> a` is on the left of a function arrow.
+If some `f` is a strictly positive functor, `f a` must hold, or produce,
+`a` values. If `f` isn't strictly positive, though, it can *consume
+consumers* of `a` values, just like a `Select r a`  value does with `a
+-> r` functions. That helps making sense of `chartSelect`: while it,
+being polymorphic in `a`, knows nothing about specific result types, it
+is nonetheless able to consume arbitrary `(Select r a -> a) -> r`
+criteria once specialised, including ones that rely on information about
+the concrete choice of `a`. [^polarity]
+
+[^polarity]: Though it doesn't explicitly mention strict positivity,
+  Michael Snoyman's [*Covariance and Contravariance*](
+  https://www.fpcomplete.com/blog/2016/11/covariance-contravariance/) is
+  an useful primer on polarity, production and consumption in functors.
+  In particular, the `CallbackRunner` example in the "Positive and
+  negative position" section towards the end is a `Functor` that isn't
+  strictly positive.
+
+`Select r`, then, has a potential implementation of `chart` that follows
+the law of extractors, and yet it can't be fully described by
+polymorphic extractors. Our intuition about shapes also breaks down when
+we apply it to `Select r`. While the existence of `chartSelect` suggests
+`Select r` is single-shaped, the lack of strict positivity makes it hard
+to tell what the shape even is, as something that can be considered
+apart from the contents. [^shape-of-Select]
+
+[^shape-of-Select]: Trying to think of `Select r a ~ (a -> r) -> a` as a
+  garden-variety function type, we might say that there is one `a`
+  result for every possible `a -> r` criterion. However, the number of
+  possible `a -> r` functions also depends on the choice of `a`. As a
+  result, the number of inhabitants (that is, distinct possible values)
+  of `Select r a` grows much faster than linearly with the number of
+  inhabitants of `a`. Were we to say `Select r` is a single-shaped
+  functor, we would have to concede the shape is [is bigger on the
+  inside](
+  https://tvtropes.org/pmwiki/pmwiki.php/Main/BiggerOnTheInside).
+
+As puzzling as this example might be, we can recover some peace of mind
+by noting `Select r` is not actually distributive. Here is the
+`distribute` candidate we get out of `chartSelect`:
+
+``` haskell
+nonDistribute :: Functor f => f (Select r a) -> Select r (f a)
+nonDistribute m = Select $
+    \k -> (\u -> u `runSelect` \a -> k (a <$ m)) <$> m
+```
+
+`nonDistribute` borrows the shape of `m` so that it can turn the
+supplied criterion `k :: f a -> r` into an `a -> r` function. That trick
+ultimately leads it to break the composition law. In the end, we get
+bitten by the lack of strict positivity, which, so to say, introduces a
+backdoor through which the shape of `m` can be inspected.
+
+Ideally, it should be possible to show that a functor must be strictly
+positive, or at least have a `chart` fully characterised by polymorphic
+extractors, for it to follow the distributive laws (I have tried to work
+out a proof, but didn't succeed yet). In the meantime, while that
+remains a (highly plausible) conjecture, we can avoid trouble by
+narrowing the scope of our investigation. We might:
+
+- From the outset, only work with strictly positive functors. That is
+  the approach of the *theory of containers*, a broader type theoretical
+  framework for dealing with strictly positive functors. While delving
+  into how it handles distributive functors is out of scope for this post,
+  which is pretty long already as it is, a few pointers towards that
+  will be sprinkled along the way.
+
+- Add an extra law to `Distributive` which somehow rules out problematic
+  functors in an indirect way. We will consider this approach from a
+  different vantage point once we achieve our main goal of reaching
+  `Representable`.
+
+- Reformulate `Distributive` so that it becomes impossible to write
+  problematic instances. That is what we will be up to now.
 
 ### A revamp
 
-The good news, though, is that we have already established that, if `g`
-is a lawful distributive functor, only the proper (polymorphic, natural)
-extractors matter, as only those are made available by `chart`. That
-being so, it makes sense to ensure the extractors are polymorphic by
-replacing `(g a -> a) -> a` with the higher-rank type `(forall x. g x ->
-x) -> a`, the inverses will only deal with proper, polymorphic
-extractors. For that, however, we need to soup up our toolkit:
+Getting back with the program: we wanted `\u p -> p u` to only accept
+polymorphic extractors, so let's enforce that:
 
 ``` haskell
 elide :: g a -> (forall x. g x -> x) -> a
 elide u = \p -> p u
+```
 
+Since `distribute` and `chart` aren't able to handle the higher-rank
+type we have introduced, we will also need a souped-up class:
+
+``` haskell
 class Distributive g => Revealable g where
     reveal :: ((forall x. g x -> x) -> a) -> g a
 ```
@@ -723,16 +764,15 @@ I'd better justify the choice of names:
 - If `g` is distributive, though, knowing the values at all positions is
   enough to reconstruct the structure, as there is only one possible
   shape. That being so, it becomes possible to implement `reveal`, a
-  left inverse for `elide`. A class separate from `Distributive` is
-  needed because there is no way to squeeze the needed higher-rank type
-  out of `distribute`. [^impredicative-types] Here are a couple
-  instances of it:
+  left inverse for `elide`.
 
-[^impredicative-types]: The definitions here are meant to be used with
-  the `ImpredicativeTypes` GHC extension. If you want to try them on GHC
-  9.0 or older, it is probably better to adapt them to use a `newtype`
-  wrapper around `(forall x. g x -> x) -> a` like the one below, so that
-  `ImpredicativeTypes` is not needed:
+Here are a couple instances `Revealable`: [^impredicative-types]
+
+[^impredicative-types]: By the way, the definitions here are meant to be
+  used with the `ImpredicativeTypes` GHC extension. If you want to try
+  them on GHC 9.0 or older, it is probably better to adapt them for
+  usage with a `newtype` wrapper around `(forall x. g x -> x) -> a` like
+  the one below, so that `ImpredicativeTypes` is not needed:
 
     ``` haskell
     newtype Elide g a = Elide { runElide :: (forall x. g x -> x) -> a }
@@ -747,7 +787,7 @@ instance Revealable ((->) r) where
     reveal e = \r -> e ($ r)
 ```
 
-We should be able to recover `distribute` from `reveal`:
+We can recover `distribute` from `reveal`:
 
 ``` haskell
 distributeRev :: (Revealable g, Functor f) => f (g a) -> g (f a)
@@ -764,10 +804,13 @@ chartRev = reveal id
 
 `chartRev` and `chart` hold the same extractors. `chartRev`, however,
 has the more restrictive type `distribute` can't give us. In particular,
-the upgraded types make it impossible to implement a `chartRev` for
-`Select r`, which confirms we have indeed closed that loophole.
+the upgraded types make it impossible to implement `reveal` or
+`chartRev` for `Select r`, which confirms we have indeed closed that
+loophole.
 
 ### The vaunted isomorphism
+
+*TODO: Rework from here*
 
 As far as laws for `Revealable` go, we already know we want `reveal` to
 be the left inverse of `elide`:
