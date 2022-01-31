@@ -766,7 +766,7 @@ I'd better justify the choice of names:
   shape. That being so, it becomes possible to implement `reveal`, a
   left inverse for `elide`.
 
-Here are a couple instances `Revealable`: [^impredicative-types]
+Here are a couple instances of `Revealable`: [^impredicative-types]
 
 [^impredicative-types]: By the way, the definitions here are meant to be
   used with the `ImpredicativeTypes` GHC extension. If you want to try
@@ -810,8 +810,6 @@ loophole.
 
 ### The vaunted isomorphism
 
-*TODO: Rework from here*
-
 As far as laws for `Revealable` go, we already know we want `reveal` to
 be the left inverse of `elide`:
 
@@ -827,31 +825,145 @@ is injective (that is, it takes different arguments to different
 results), and that `reveal` is surjective (that is, it can produce every
 possible value in its result type). That being so, showing `reveal` is
 injective suffices to prve it is also the right inverse of `elide`.
-Happily, given all we have found so far, we can show that `reveal` will
-be injective for any lawful distributive. Conversely, it can also be
-shown that `reveal` and `elide` being full inverses suffices to give
-rise to a lawful `distribute`. All in all, the isomorphism the
-witness...
-
-``` haskell
-reveal . elide = id
-elide . reveal = id
-```
-
-... is enough to characterise `Distributive`.
+Happily, it can be shown that `reveal . elide = id` also leads to
+`reveal` being injective and, therefore, an isomorphism. Moreover, not
+only `reveal . elide = id` amounts to the identity law, but also the
+composition law follows from `elide . reveal = id`. That being so,
+`reveal . elide = id` also ensures we have a lawful distributive.
 
 It is worth emphasising that `g a` being isomorphic to `(forall x. g x
 -> x) -> a` directly tells us `g` is single-shaped: if all information
 specific to some `g a` value can be obtained through the `forall x. g x
 -> x` extractors, then the `g` shape must be fixed.
 
-inverse of `elide`, it suffices to show that `reve` is surjective.
-Let's have another look at its definition:
-
 ### Instances we know and love
+
+The `distributeRev` implementation we have seen above illustrates a
+general pattern for using `reveal`. Schematically:
+
+``` haskell
+reveal (\p -> _)
+```
+
+By filling the blank (that is, the body of the `(forall x. g x -> x) ->
+a` function supplied to `reveal`), we specify the value at each position
+of the result structure. For doing so, we have access to the extractor
+for the position, `p`, which can be used to draw values from matching
+positions in other `g`-shaped distributive structures. A number of
+combinators for distributive functors can be defined in this fashion.
+Here are some examples:
+
+``` haskell
+-- Apply a function to the value at each position.
+fmapRev :: Revealable g => (a -> b) -> g a -> g b
+fmapRev f u = reveal (\p -> f (p u))
+
+-- Use the same value for every position.
+pureRev :: Revealable g => a -> g a
+pureRev a = reveal (\_ -> a)
+
+-- Pick a function and a value from matching positions, and apply one
+-- to the other.
+apRev :: Revealable g => g (a -> b) -> g a -> g b
+apRev u v = reveal (\p -> p u (p v))
+
+-- Take the diagonal by choosing the same position twice.
+joinRev :: Revealable g => g (g a) -> g a
+joinRev u = reveal (\p -> p (p u))
+
+-- Pick values from matching positions and combine them.
+mappendRev :: (Distributive g, Semigroup m) => g a -> g a -> g a
+mappendRev u v = reveal (\p -> p u <> p v)
+
+-- Under the f layer, draw the value at the matching position.
+distributeRev :: (Revealable g, Functor f) => f (g a) -> g (f a)
+distributeRev m = reveal (\p -> p <$> m)
+```
+
+While these combinators can also be defined in terms of plain
+`Distributive`, the availability of `reveal` makes some of their
+implementations much easier on the eye. For instance, if we try to adapt
+the definition of `apRev` to use only `distribute` or plain `chart`, the
+lack of a `reveal` with a higher-rank type will stop us from
+instantating the extractor `p` at different types; the need to work
+around that limitation makes the combinator pretty awkward to write.
 
 ### Through the looking glass
 
+Given a `reveal` isomorphism, there is an alternative, highly
+suggestive, way of defining `distribute`:
+
+``` haskell
+distribute = reveal . flap . fmap elide
+```
+
+`distribute`, then, amounts to:
+
+- Changing `g` into `(->) (forall x. g x -> x)` through `fmap elide`;
+
+- Distribute `f` over it, as a function, with `flap`; and
+
+- Restoring the `g` layer on the outside with `reveal`.
+
+Now, remember the informal description of `sequenceA` from the beginning
+of the post? We can state it in a very similar fashion:
+
+- Extract, in a specific order, the `f a` contents of a `t (f a)`;
+
+- Following that order, sequence the `f a` contents, combining the
+  applicative effects; and
+
+- Restore the original `t` shape under the combined `f` layer.
+
+There are a few ways to make an actual implementation of `sequenceA` out
+of that description. For the sake of simplicity, let's stick to the one
+which extracts the contents into lists. Though a bit rough around the
+edges, it suits our purposes just fine:
+
+``` haskell
+-- A hollowed-out shape, paired with a list of contents.
+data Decomp t a = Decomp (t ()) [a]
+
+detach :: (Functor t, Foldable t) => t a -> Decomp t a
+detach u = Decomp (() <$ u) (toList u)
+
+-- Given a compatible detach, implementing fill is enough to set up a
+-- Traversable instance. Merely for the sake of illustration, below is
+-- a definition in the other direction, in terms of the usual
+-- Traversable class.
+fill :: Traversable t => Decomp t a -> t a
+fill (Decomp sh as) = snd (mapAccumL (\(a : as) _ -> (as, a)) as sh)
+
+-- fill (detach u) = u
+-- Precondition: length sh = length as
+-- detach (fill (Decomp sh as)) = Decomp sh as
+
+-- The familiar sequenceA for lists.
+sequenceList :: Applicative f => [f a] -> f [a]
+sequenceList = foldr (liftA2 (:)) (pure [])
+
+-- sequenceList, adapted to Decomp.
+sequenceDecomp :: Applicative f => Decomp t (f a) -> f (Decomp t a)
+sequenceDecomp (Decomp sh ms) = Decomp sh <$> sequenceList ms
+
+-- sequenceA, in terms of detach and fill.
+sequenceFill :: (Traversable t, Applicative f) => t (f a) -> f (t a)
+sequenceFill = fmap fill . sequenceDecomp . detach
+```
+
+Here's the kicker, though: this definition of `sequenceA` perfectly
+mirrors the pointfree definition of `distribute` we saw above! Here, we
+have used an isomorphism to get a list, which is straightforward to
+sequence, out of the traversable structure; there, we have used an
+isomorphism to get a function, which is straightforward to be
+distributed over, out of the distributive structure. Fittingly, proving
+the `reveal`-based `distribute` is lawful can be done in a very similar
+way to how the lawfulness of the `fill`-based `sequenceA` is proven.
+[^shape-and-contents]
+
+[^shape-and-contents]: For a detailed account of the shape-and-contents
+  presentation of `Traversable`, see [this Stack Overflow answer I wrote
+  a while ago](https://stackoverflow.com/a/61199603/2751851).
 
 ## Appendix: proofs and justifications
 
@@ -1149,154 +1261,6 @@ p chart = p
 ```
 
 ## Sections from the original attempt
-
-## Putting the distribute in Distributive
-
-There is something of a general strategy to make use of `revert`.
-Schematically:
-
-``` haskell
-revert (\p -> _)
-```
-
-By filling the blank (that is, the body of the `Pos g -> a` function
-supplied to `revert`), we specify the value at each position of the
-result structure. For doing so, we have access to the extractor for the
-position, `p`, which can be used to draw values from matching positions
-in other `g`-shaped distributive structures.  The upshot is that many of
-combinators for distributive functors can be written using `revert` in a
-way that is very easy on the eyes.  Here are some examples:
-
-``` haskell
--- Apply a function to the value at each position.
-fmapD :: Distributive g => (a -> b) -> g a -> g b
-fmapD f u = revert (\p -> f (p u))
-
--- Use the same value for every position.
-pureD :: Distributive g => a -> g a
-pureD a = revert (\_ -> a)
-
--- Pick a function and a value from matching positions, and apply one
--- to the other.
-apD :: Distributive g => g (a -> b) -> g a -> g b
-apD u v = revert (\p -> p u (p v))
-
--- Take the diagonal by choosing the same position twice.
-joinD :: Distributive g => g (g a) -> g a
-joinD u = revert (\p -> p (p u))
-
--- Pick values from matching positions and combine them.
-mappendD :: (Distributive g, Semigroup m) => g a -> g a -> g a
-mappendD u v = revert (\p -> p u <> p v)
-```
-
-Crucially, we can also obtain `distribute` in this manner:
-
-``` haskell
--- Under the f layer, draw the value at the matching position.
-distribute :: (Distributive g, Functor f) => f (g a) -> g (f a)
-distribute m = revert (\p -> p <$> m)
-```
-
-Is this `distribute` lawful, though? Happily, the answer is yes: if
-`distribute` is defined in this manner, `revert . evert = id` is
-equivalent to the identity law, while the composition law follows from
-`evert . revert = id`. A proof of this result can be found in the
-appendix to this post.
-
-### Through the looking glass
-
-The definition of `distribute` in terms of `revert` given just above can
-be tweaked into the following pointfree form:
-
-``` haskell
--- See the appendix for a proof.
-distribute = revert . flap . fmap evert
-```
-
-Here, `flap` is a [reasonably familiar](
-https://hackage.haskell.org/package/relude-1.0.0.1/docs/Relude-Functor-Fmap.html#v:flap),
-combinator, [also known as `(??)`](
-https://hackage.haskell.org/package/lens-5.1/docs/Control-Lens-Lens.html#v:-63--63-),
-which turns `f (r -> a)` into `a -> f r` by supplying a common argument
-to all the functions. The name is a play on it being a generalisation of
-`flip`:
-
-``` haskell
-flap :: Functor f => f (r -> a) -> r -> f a
-flap m r = (\f -> f r) <$> m
-```
-
-It turns out that `flap` is `distribute` for functions. That being so,
-the implementation of `distribute` offered here amounts to:
-
-- Changing `g` into `(->) (Pos g)` through `fmap evert`;
-
-- Distributing it, as a function, with `flap`; and
-
-- Restoring the `g` layer on the outside with `revert`.
-
-Now, remember the informal description of `sequenceA` from the beginning
-of the post? We can state it in a very similar fashion:
-
-- Extract, in a specific order, the `f a` contents of a `t (f a)`;
-
-- Following that order, sequence the `f a` contents, combining the
-  applicative effects; and
-
-- Restore the original `t` shape under the combined `f` layer.
-
-There are a few ways to make an actual implementation of `sequenceA` out
-of that description. For the sake of simplicity, let's stick to the one
-which extracts the contents into lists. Though a bit rough around the
-edges, it suits our purposes just fine:
-
-``` haskell
--- A hollowed-out shape, paired with a list of contents.
-data Decomp t a = Decomp (t ()) [a]
-
-detach :: (Functor t, Foldable t) => t a -> Decomp t a
-detach u = Decomp (() <$ u) (toList u)
-
--- Given a compatible detach, implementing fill is enough to set up a
--- Traversable instance. Merely for the sake of illustration, below is
--- a definition in the other direction, in terms of the usual
--- Traversable class.
-fill :: Traversable t => Decomp t a -> t a
-fill (Decomp sh as) = snd (mapAccumL (\(a : as) _ -> (as, a)) as sh)
-
--- "Resident" direction of the isomorphism:
--- fill (detach u) = u
--- "Visitor" direction of the isomorphism:
--- Precondition: length sh = length as
--- detach (fill (Decomp sh as)) = Decomp sh as
-
--- The familiar sequenceA for lists.
-sequenceList :: Applicative f => [f a] -> f [a]
-sequenceList = foldr (liftA2 (:)) (pure [])
-
--- sequenceList, adapted to Decomp.
-sequenceDecomp :: Applicative f => Decomp t (f a) -> f (Decomp t a)
-sequenceDecomp (Decomp sh ms) = Decomp sh <$> sequenceList ms
-
--- sequenceA, in terms of detach and fill.
-sequenceFill :: (Traversable t, Applicative f) => t (f a) -> f (t a)
-sequenceFill = fmap fill . sequenceDecomp . detach
-```
-
-Here's the kicker, though: this definition of `sequenceA` perfectly
-mirrors the pointfree definition of `distributive` we saw above! Here,
-we have used an isomorphism to get a list, which is straightforward to
-sequence, out of the traversable structure; there, we have used an
-isomorphism to get a function, which is straightforward to distribute,
-out of the distributive structure. Fittingly, proving the `revert`-based
-`distribute` is lawful, as done in the appendix, can be done in a very
-similar way to how the lawfulness of the `fill`-based `sequenceA` is
-proven. [^shape-and-contents]
-
-[^shape-and-contents]: For a detailed account of the shape-and-contents
-  presentation of `Traversable`, see [this Stack Overflow answer I wrote
-  a while ago](https://stackoverflow.com/a/61199603/2751851).
 
 ### The other way around
 
