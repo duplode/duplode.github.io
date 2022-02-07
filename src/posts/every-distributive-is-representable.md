@@ -1,9 +1,9 @@
 ---
 title: "Every Distributive is Representable"
 license: CC-BY-SA
-published: 2022-02-07T22:00:00-03:00
+published: 2022-02-07T22:16:50-03:00
 gh-issue: 17
-twitter-card-descr: "Shedding light on the hidden link"
+twitter-card-descr: "Casting light on the hidden link"
 toc: true
 ---
 
@@ -1011,7 +1011,7 @@ non-naturality and the composition law being broken. [^shape-of-Select]
   shape is [is bigger on the inside](
   https://tvtropes.org/pmwiki/pmwiki.php/Main/BiggerOnTheInside).
 
-## Further reading and adjacent themes
+## Further reading
 
 There are other interesting ways of approaching `Distributive` and
 `Representable` that I haven't covered here to avoid making this post
@@ -1040,7 +1040,8 @@ reading:
 
 On a final note, there is a [reworking of `Representable`](
 https://github.com/ekmett/distributive/blob/117377d7ba38efc5b115169b565dfb80de8ad407/src/Data/Rep/Internal.hs)
-being developed as part of a future release of the *distributive*
-package.  When it lands, will unify all the presentations of the concept
-we have seen here into a single, more versatile class. I plan to write a
-follow-up post on how that will happen.
+being developed which is meant to be the core of a future release of the
+*distributive* package. It aims at unifing all the presentations of
+distributive functors we have seen here into a single class that fits equally
+well the various use cases. I plan to write a follow-up post on how that is to
+happen.
