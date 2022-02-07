@@ -7,7 +7,7 @@
         <description><![CDATA[Haskell amusements]]></description>
         <atom:link href="https://duplode.github.io/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Tue, 08 Feb 2022 01:16:50 UT</lastBuildDate>
+        <lastBuildDate>Mon, 07 Feb 2022 19:55:00 UT</lastBuildDate>
         <item>
     <title>Every Distributive is Representable</title>
     <link>https://duplode.github.io/posts/every-distributive-is-representable.html</link>
@@ -452,7 +452,7 @@
 
 </div>
 ]]></description>
-    <pubDate>2022-02-07T22:16:50-03:00</pubDate>
+    <pubDate>2022-02-07T16:55:00-03:00</pubDate>
     <guid>https://duplode.github.io/posts/every-distributive-is-representable.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
