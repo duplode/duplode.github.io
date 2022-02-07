@@ -1,7 +1,7 @@
 ---
 title: "Every Distributive is Representable"
 license: CC-BY-SA
-published: 2022-02-07T22:16:50-03:00
+published: 2022-02-07T16:55:00-03:00
 gh-issue: 17
 twitter-card-descr: "Casting light on the hidden link"
 toc: true
