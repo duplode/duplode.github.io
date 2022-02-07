@@ -107,9 +107,8 @@ createTheIssue auth title ident = G.github auth $ G.createIssueR
         { G.newIssueBody = Just . fromString $
             "Comment thread for ["
             ++ title ++ "]("
-            ++ relativizeUrlsWith
-                "https://duplode.github.io/"
-                (toFilePath ident -<.> "html")
+            ++ "https://duplode.github.io/"
+            ++ (toFilePath ident -<.> "html")
             ++ ")."
         , G.newIssueLabels = Just $
             Ex.fromList [G.N "comment-thread"]
