@@ -137,7 +137,7 @@ It changes a `f (r -> a)` functorial value into a `r -> f a` function,
 which feeds its argument to all of the available `r -> a` functions.
 `flap` is a lawful implementation of `distribute`:
 
-```
+``` haskell
 instance Distributive ((->) r) where
     distribute = flap
 ```
