@@ -3,14 +3,462 @@
     xmlns:dc="http://purl.org/dc/elements/1.1/">
     <channel>
         <title>The Life Monadic</title>
-        <link>http://duplode.github.io</link>
+        <link>https://duplode.github.io</link>
         <description><![CDATA[Haskell amusements]]></description>
-        <atom:link href="http://duplode.github.io/rss.xml" rel="self"
+        <atom:link href="https://duplode.github.io/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Fri, 12 Nov 2021 02:50:00 UT</lastBuildDate>
+        <lastBuildDate>Tue, 08 Feb 2022 01:16:50 UT</lastBuildDate>
         <item>
+    <title>Every Distributive is Representable</title>
+    <link>https://duplode.github.io/posts/every-distributive-is-representable.html</link>
+    <description><![CDATA[
+<p>“Every <code>Distributive</code> <code>Functor</code> is actually <code>Representable</code>”, as the documentation for <a href="https://hackage.haskell.org/package/adjunctions-4.4/docs/Data-Functor-Rep.html"><code>Representable</code></a> tells us straight away, and yet it is far from obvious why that should be the case. At first glance, <a href="https://hackage.haskell.org/package/distributive-0.6.2.1/docs/Data-Distributive.html"><code>Distributive</code></a>, the dual to <code>Traversable</code>, appears to have little if anything to do with <code>Representable</code>, the class for functors isomorphic to functions. The goal of this post is making this connection explicit. In the process, we will tease out a fair amount of information about the two classes, and also contemplate what makes it tricky to fully bridge the gap to <code>Representable</code>.</p>
+<div>
+
+</div>
+<!--more-->
+<h2 id="the-basic-facts">The basic facts</h2>
+<p>Over the course of this post, the focus will alternate between <code>Distributive</code> and <code>Representable</code>. In this first section, we will review the basic definitions and laws upon which we will build. Following that, we will work on both ends, aiming at making the classes meet in the middle.</p>
+<h3 id="distributive">Distributive</h3>
+<p>Let’s begin by jotting down a few basic facts about <code>Distributive</code>. Here is a minimalistic definition of the class:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Functor</span> g <span class="ot">=&gt;</span> <span class="dt">Distributive</span> g <span class="kw">where</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ot">    distribute ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> f (g a) <span class="ot">-&gt;</span> g (f a)</span></code></pre></div>
+<p>(In what follows, when used as a placeholder name for a functor, <code>g</code> will always stand for a distributive or representable functor, while <code>f</code> will typically stand for the other functor involved in <code>distribute</code>.)</p>
+<p><code>distribute</code> is dual to <code>sequenceA</code>; accordingly, we will adopt the duals of <a href="https://hackage.haskell.org/package/base-4.16.0.0/docs/Data-Traversable.html#g:20">the <code>Traversable</code> laws</a>: <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<ul>
+<li><p>Identity:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> runIdentity <span class="op">.</span> distribute <span class="ot">=</span> runIdentity</span></code></pre></div></li>
+<li><p>Composition:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> getCompose <span class="op">.</span> distribute</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> distribute <span class="op">.</span> <span class="fu">fmap</span> distribute <span class="op">.</span> getCompose</span></code></pre></div></li>
+<li><p>Naturality (ensured by parametricity):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- For any natural transformation t</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- t :: (Functor f1, Functor f2) =&gt; forall x. f1 x -&gt; f2 x</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> t <span class="op">.</span> distribute <span class="ot">=</span> distribute <span class="op">.</span> t</span></code></pre></div>
+<p>This naturality law is stronger than its <code>Traversable</code> counterpart. The <code>Applicative</code> constraint in <code>sequenceA</code> means only natural transformations between applicative functors that preserve <code>pure</code> and <code>(&lt;*&gt;)</code> are preserved by <code>distribute</code>. In contrast, <code>distribute</code> is oblivious to any specifics of <code>f1</code> and <code>f2</code> functor, and so any natural transformation will do.</p></li>
+</ul>
+<p>Homogeneous pairs are one example of a distributive functor:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Duo</span> a <span class="ot">=</span> <span class="dt">Duo</span> a a</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Ord</span>, <span class="dt">Show</span>, <span class="dt">Functor</span>, <span class="dt">Foldable</span>, <span class="dt">Traversable</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>fstDuo,<span class="ot"> sndDuo ::</span> <span class="dt">Duo</span> a <span class="ot">-&gt;</span> a</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>fstDuo (<span class="dt">Duo</span> x _) <span class="ot">=</span> x</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>sndDuo (<span class="dt">Duo</span> _ y) <span class="ot">=</span> y</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Distributive</span> <span class="dt">Duo</span> <span class="kw">where</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    distribute m <span class="ot">=</span> <span class="dt">Duo</span> (fstDuo <span class="op">&lt;$&gt;</span> m) (sndDuo <span class="op">&lt;$&gt;</span> m)</span></code></pre></div>
+<p><code>Duo</code> will be used in this post as a running example whenever a concrete illustration of <code>Distributive</code> and adjacent classes is called for. For the moment, here is a simple demonstration of <code>distribute @Duo</code> in action. It illustrates the zip-like flavour of <code>distribute</code>, which is shared by the closely related <code>collect</code> and <code>cotraverse</code> from <code>Data.Distributive</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">names ::</span> [<span class="dt">Duo</span> <span class="dt">String</span>]</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>names <span class="ot">=</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    [ <span class="dt">Duo</span> <span class="st">&quot;Alex&quot;</span> <span class="st">&quot;Lifeson&quot;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    , <span class="dt">Duo</span> <span class="st">&quot;Geddy&quot;</span> <span class="st">&quot;Lee&quot;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    , <span class="dt">Duo</span> <span class="st">&quot;Neil&quot;</span> <span class="st">&quot;Peart&quot;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    ]</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ghci<span class="op">&gt;</span> distribute names</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Duo</span> [<span class="st">&quot;Alex&quot;</span>,<span class="st">&quot;Geddy&quot;</span>,<span class="st">&quot;Neil&quot;</span>] [<span class="st">&quot;Lifeson&quot;</span>,<span class="st">&quot;Lee&quot;</span>,<span class="st">&quot;Peart&quot;</span>]</span></code></pre></div>
+<p>The function functor is a very important example of <code>Distributive</code>. Consider the following combinator:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">flap ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> f (r <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> f a</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>flap m <span class="ot">=</span> \r <span class="ot">-&gt;</span> (\f <span class="ot">-&gt;</span> f r) <span class="op">&lt;$&gt;</span> m</span></code></pre></div>
+<p>It changes a <code>f (r -&gt; a)</code> functorial value into a <code>r -&gt; f a</code> function, which feeds its argument to all of the available <code>r -&gt; a</code> functions. <code>flap</code> is a lawful implementation of <code>distribute</code>:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Distributive</span> ((<span class="ot">-&gt;</span>) r) <span class="kw">where</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    distribute <span class="ot">=</span> flap</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>ghci<span class="op">&gt;</span> distribute [(<span class="op">*</span><span class="dv">3</span>), (<span class="op">+</span><span class="dv">7</span>), (<span class="op">^</span><span class="dv">2</span>)] <span class="dv">8</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>[<span class="dv">24</span>,<span class="dv">15</span>,<span class="dv">64</span>]</span></code></pre></div>
+<p><code>flap</code> will be used in this post as a synonym for <code>distribute @((-&gt;) _)</code> whenever convenient, or necessary to avoid circularity. <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
+<h3 id="representable">Representable</h3>
+<p>As for <code>Representable</code>, for our immediate purposes it suffices to characterise it as a class for functors isomorphic to functions:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Functor</span> g <span class="ot">=&gt;</span> <span class="dt">Representable</span> g <span class="kw">where</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">type</span> <span class="dt">Rep</span> g</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ot">    tabulate ::</span> (<span class="dt">Rep</span> g <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> g a</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="ot">    index ::</span> g a <span class="ot">-&gt;</span> <span class="dt">Rep</span> g <span class="ot">-&gt;</span> a</span></code></pre></div>
+<p>Here, <code>Rep g</code> is some concrete type such that <code>tabulate</code> and <code>index</code> witness an isomorphism between <code>Rep g -&gt; a</code> and <code>g a</code>. Accordingly, the laws are:</p>
+<ul>
+<li><p>Home direction (from <code>g a</code> and back):</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> <span class="fu">index</span> <span class="ot">=</span> <span class="fu">id</span></span></code></pre></div></li>
+<li><p>Away direction (to <code>g a</code> and back):</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">index</span> <span class="op">.</span> tabulate <span class="ot">=</span> <span class="fu">id</span></span></code></pre></div></li>
+</ul>
+<p><code>Duo</code> can be given a <code>Representable</code> instance: pick <code>Bool</code> (or any other type with two inhabitants) as <code>Rep g</code>, and associate each possible value with a component of the pair:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Representable</span> <span class="dt">Duo</span> <span class="kw">where</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">type</span> <span class="dt">Rep</span> <span class="dt">Duo</span> <span class="ot">=</span> <span class="dt">Bool</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    tabulate f <span class="ot">=</span> <span class="dt">Duo</span> (f <span class="dt">False</span>) (f <span class="dt">True</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">index</span> (<span class="dt">Duo</span> x y) <span class="ot">=</span> \<span class="kw">case</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">False</span> <span class="ot">-&gt;</span> x</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">True</span> <span class="ot">-&gt;</span> y</span></code></pre></div>
+<p>In order to treat the two classes in an even-handed way, I have opted to leave out the <code>Distributive g =&gt; Representable g</code> relationship that exists in the <code>Data.Functor.Rep</code> version of <code>Representable</code> . In any case, every representable is indeed distributive, with a default definition of <code>distribute</code> which uses the isomorphism to delegate to <code>flap</code> (that is, <code>distribute</code> for functions):</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ot">distributeRep ::</span> (<span class="dt">Representable</span> g, <span class="dt">Functor</span> f) <span class="ot">=&gt;</span> f (g a) <span class="ot">-&gt;</span> g (f a)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>distributeRep <span class="ot">=</span> tabulate <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> <span class="fu">index</span></span></code></pre></div>
+<p>The lawfulness of <code>distributeRep</code> follows from the lawfulness of <code>flap</code>. <a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
+<p>Our ultimate aim here is to go the other way around, from <code>Distributive</code> to <code>Representable</code>.</p>
+<h2 id="no-need-to-choose">No need to choose</h2>
+<p>If we are to start from <code>Distributive</code>, though, there is a pretty fundamental difficulty: setting up a <code>Representable g</code> instance requires picking a suitable <code>Rep g</code>, and there is nothing in <code>Distributive</code> that could possibly correspond to such a choice. That being so, we will spend some more time contemplating <code>Representable</code>, looking for a way to somehow obviate the need for specifying <code>Rep g</code>.</p>
+<h3 id="askrep">askRep</h3>
+<p>Let’s have another look at the type of <code>tabulate</code>:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ot">tabulate ::</span> <span class="dt">Representable</span> g <span class="ot">=&gt;</span> (<span class="dt">Rep</span> g <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> g a</span></code></pre></div>
+<p><code>tabulate</code> is a natural transformation from the function functor <code>((-&gt;) (Rep g)</code> to <code>g</code>. Now, all natural transformations from a function functor have the form: <a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- For some type R, functor G, and any</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ot">t ::</span> <span class="kw">forall</span> x<span class="op">.</span> (<span class="dt">R</span> <span class="ot">-&gt;</span> x) <span class="ot">-&gt;</span> <span class="dt">G</span> x</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- There is a</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="ot">w ::</span> <span class="dt">G</span> <span class="dt">R</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Such that</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>t f <span class="ot">=</span> f <span class="op">&lt;$&gt;</span> w</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>w <span class="ot">=</span> t <span class="fu">id</span></span></code></pre></div>
+<p>In words, the natural transformation must amount to mapping the function over some functorial value. In our case, <code>t</code> is <code>tabulate</code>; as for <code>w</code>, we will call it <code>askRep</code>, which is <a href="https://hackage.haskell.org/package/adjunctions-4.4/docs/src/Data-Functor-Rep.html#askRep">the name it goes by in <code>Data.Functor.Rep</code></a>. <a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>. That being so, we have:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ot">askRep ::</span> <span class="dt">Representable</span> g <span class="ot">=&gt;</span> g (<span class="dt">Rep</span> g)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>askRep <span class="ot">=</span> tabulate <span class="fu">id</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>tabulate f <span class="ot">=</span> f <span class="op">&lt;$&gt;</span> askRep</span></code></pre></div>
+<p>The <code>Representable</code> laws can be recast in terms of <code>askRep</code> and <code>index</code>. Here is the home direction of the isomorphism:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> <span class="fu">index</span> <span class="ot">=</span> <span class="fu">id</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>tabulate (<span class="fu">index</span> u) <span class="ot">=</span> u</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">index</span> u <span class="op">&lt;$&gt;</span> askRep <span class="ot">=</span> u</span></code></pre></div>
+<p>That is, we can reconstruct any <code>u :: g a</code> by taking <code>askRep</code> and replacing every <code>Rep g</code> provided by it with the <code>a</code> value that applying <code>index u</code> on it gives us.</p>
+<p>It is worth noting that <code>index u &lt;$&gt; askRep = u</code> also tells us that for any <code>u :: g a</code> there is a function (namely, <code>index u</code>) which will change <code>askRep</code> into <code>u</code> through <code>fmap</code>. That largely corresponds to the intuition that a representable functor must have a single shape.</p>
+<p>The away direction of the isomorphism becomes:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">index</span> <span class="op">.</span> tabulate <span class="ot">=</span> <span class="fu">id</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">index</span> (f <span class="op">&lt;$&gt;</span> askRep) <span class="ot">=</span> f</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- index is a natural transformation</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>f <span class="op">&lt;$&gt;</span> <span class="fu">index</span> askRep <span class="ot">=</span> f</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- fmap @((-&gt;) _) = (.)</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>f <span class="op">.</span> <span class="fu">index</span> askRep <span class="ot">=</span> f</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="co">-- In particular, suppose f = id</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- (note that this step is reversible)</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="fu">index</span> askRep <span class="ot">=</span> <span class="fu">id</span></span></code></pre></div>
+<p>Intuitively, if we think of <code>Rep g</code> values as corresponding to positions in the <code>g</code> shape that can be queried through <code>index</code>, <code>index askRep = id</code> tells us that each and every <code>Rep g</code> will be found in <code>askRep</code> occupying the position it corresponds to. For example, with the <code>Representable</code> instance from the previous section, <code>askRep @Duo</code> looks like this:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>ghci<span class="op">&gt;</span> askRep <span class="op">@</span><span class="dt">Duo</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Duo</span> <span class="dt">False</span> <span class="dt">True</span></span></code></pre></div>
+<p>Lastly, we can also express <code>distributeRep</code> in terms of <code>askRep</code>:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>distributeRep m</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>tabulate (flap (<span class="fu">index</span> <span class="op">&lt;$&gt;</span> m))</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>flap (<span class="fu">index</span> <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> askRep</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>(\r <span class="ot">-&gt;</span> (\f <span class="ot">-&gt;</span> f r) <span class="op">&lt;$&gt;</span> (<span class="fu">index</span> <span class="op">&lt;$&gt;</span> m)) <span class="op">&lt;$&gt;</span> askRep</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>(\r <span class="ot">-&gt;</span> (\u <span class="ot">-&gt;</span> <span class="fu">index</span> u r) <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> askRep</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>distributeRep m <span class="ot">=</span> (\r <span class="ot">-&gt;</span> (\u <span class="ot">-&gt;</span> <span class="fu">index</span> u r) <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> askRep</span></code></pre></div>
+<p>That is, replace every <code>Rep g</code> in <code>askRep</code> with the result of using it to <code>index</code> every <code>g a</code> in <code>m</code>.</p>
+<h3 id="extracting-and-revealing">Extracting and revealing</h3>
+<p>Now let’s direct our attention to <code>index</code>:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">index</span><span class="ot"> ::</span> <span class="dt">Representable</span> g <span class="ot">=&gt;</span> g a <span class="ot">-&gt;</span> <span class="dt">Rep</span> g <span class="ot">-&gt;</span> a</span></code></pre></div>
+<p>Flipping <code>index</code> gives us:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ot">fromRep ::</span> <span class="dt">Representable</span> g <span class="ot">=&gt;</span> <span class="dt">Rep</span> g <span class="ot">-&gt;</span> g a <span class="ot">-&gt;</span> a</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>fromRep r <span class="ot">=</span> \u <span class="ot">-&gt;</span> <span class="fu">index</span> u r</span></code></pre></div>
+<p><code>fromRep</code> converts a <code>Rep g</code> into what I will call a <em>polymorphic extractor</em>, of type <code>forall a. g a -&gt; a</code>, which gives us <code>a</code> out of <code>g a</code>. The existence of <code>fromRep</code> is quite suggestive. Since <code>forall a. g a -&gt; a</code> doesn’t use <code>Rep g</code>, finding an inverse to <code>fromRep</code>, and thus showing those two types are isomorphic, might give us a way to work with <code>Representable</code> without relying on <code>Rep g</code>.</p>
+<p>How might we go about converting a polymorphic extractor into a <code>Rep g</code> value? To do it in a non-trivial way , we will need a <code>g (Rep g)</code> source of <code>Rep g</code> on which we can use the extractor. Considering the discussion in the previous subsection, <code>askRep</code> looks like a reasonable option:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ot">toRep ::</span> <span class="dt">Representable</span> g <span class="ot">=&gt;</span> (<span class="kw">forall</span> x<span class="op">.</span> g x <span class="ot">-&gt;</span> x) <span class="ot">-&gt;</span> <span class="dt">Rep</span> g</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>toRep p <span class="ot">=</span> p askRep</span></code></pre></div>
+<p>Now let’s check if <code>fromRep</code> and <code>toRep</code> are indeed inverses, beginning with the <code>toRep . fromRep</code> direction:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>toRep <span class="op">.</span> fromRep</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p askRep) <span class="op">.</span> (\r <span class="ot">-&gt;</span> \u <span class="ot">-&gt;</span> <span class="fu">index</span> u r)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>\r <span class="ot">-&gt;</span> (\u <span class="ot">-&gt;</span> <span class="fu">index</span> u r) askRep</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>\r <span class="ot">-&gt;</span> <span class="fu">index</span> askRep r</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- index askRep = id</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">id</span></span></code></pre></div>
+<p>We can proceed similarly with <code>fromRep . toRep</code>:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>fromRep <span class="op">.</span> toRep</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>(\r <span class="ot">-&gt;</span> \u <span class="ot">-&gt;</span> <span class="fu">index</span> u r) <span class="op">.</span> (\p <span class="ot">-&gt;</span> p askRep)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>\p <span class="ot">-&gt;</span> \u <span class="ot">-&gt;</span> <span class="fu">index</span> u (p askRep)</span></code></pre></div>
+<p>To simplify this further, we can note that a polymorphic extractor <code>forall x. g x -&gt; x</code> amounts to natural transformation from <code>g</code> to <code>Identity</code>. That being so, we have, for any extractor <code>p</code> and any <code>f</code>:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>f <span class="op">.</span> p <span class="ot">=</span> p <span class="op">.</span> <span class="fu">fmap</span> f</span></code></pre></div>
+<p>The above is the usual naturality property, <code>fmap f . p = p . fmap f</code>, except that, to account for the omission of the <code>Identity</code> newtype boilerplate, <code>fmap @Identity</code> has been replaced on the left-hand side by plain function application. We can now carry on:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>\p <span class="ot">-&gt;</span> \u <span class="ot">-&gt;</span> <span class="fu">index</span> u (p askRep)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>\p <span class="ot">-&gt;</span> \u <span class="ot">-&gt;</span> p (<span class="fu">index</span> u <span class="op">&lt;$&gt;</span> askRep)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- index u &lt;$&gt; askRep = u</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>\p <span class="ot">-&gt;</span> \u <span class="ot">-&gt;</span> p u</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="fu">id</span></span></code></pre></div>
+<p>And there it is: for any <code>Representable</code>, <code>Rep g</code> must be isomorphic to <code>forall x. g x -&gt; x</code>. That being so, we can use <code>forall x. g x -&gt; x</code> as a default <code>Rep g</code> that can be specified in terms of <code>g</code> alone. The change of perspective can be made clearer by setting up an alternative class:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Pos</span> g <span class="ot">=</span> <span class="kw">forall</span> x<span class="op">.</span> g x <span class="ot">-&gt;</span> x</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="ot">elide ::</span> g a <span class="ot">-&gt;</span> <span class="dt">Pos</span> g <span class="ot">-&gt;</span> a</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>elide u <span class="ot">=</span> \p <span class="ot">-&gt;</span> p u</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Functor</span> g <span class="ot">=&gt;</span> <span class="dt">Revealable</span> g <span class="kw">where</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="ot">    reveal ::</span> (<span class="dt">Pos</span> g <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> g a</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="ot">    chart ::</span> g (<span class="dt">Pos</span> g)</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    reveal e <span class="ot">=</span> e <span class="op">&lt;$&gt;</span> chart</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>    chart <span class="ot">=</span> reveal <span class="fu">id</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    <span class="ot">{-# MINIMAL reveal | chart #-}</span></span></code></pre></div>
+<p>Both the arrangement of those definitions and my idiosyncratic choice of names call for some explanation:</p>
+<ul>
+<li><p><code>Pos g</code> is a synonym for the type of polymorphic extractors. The name <code>Pos</code> is short for “position”, and is meant to allude to the intuition that an extractor picks a value from some specific position in a <code>g</code>-shaped structure.</p></li>
+<li><p><code>elide</code> corresponds to <code>index</code>, defined in such a way that <code>fromRep =   id</code>. Since all it does is applying a <code>Pos g</code> extractor, on its own it doesn’t require any constraints on <code>g</code>. The choice of name is motivated by how <code>elide</code> hides the <code>g</code> shape, in that that the only information about <code>u :: g a</code> that can be recovered from <code>elide u</code> are the <code>a</code> values that a <code>Pos g</code> extractor can reach.</p></li>
+<li><p><code>reveal</code>, in turn, corresponds to <code>tabulate</code>, and is the inverse of <code>elide</code>. If <code>g</code> is <code>Representable</code>, the <code>g</code> shape can be reconstituted with no additional information, and so it is possible to undo the hiding performed by <code>elide</code>.</p></li>
+<li><p><code>chart</code> corresponds to <code>askRep</code>, with it and <code>reveal</code> being interdefinable. In particular, <code>chart</code> can be used to reveal the <code>g   a</code> that corresponds to a <code>Pos g -&gt; a</code> function by providing the means to reach every position in the <code>g</code> shape. <a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p></li>
+</ul>
+<p>Here is the <code>Duo</code> instance of <code>Revealable</code>. Note how each position in <code>chart</code> holds its own extractor:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Revealable</span> <span class="dt">Duo</span> <span class="kw">where</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    reveal e <span class="ot">=</span> <span class="dt">Duo</span> (e fstDuo) (e sndDuo)</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    chart <span class="ot">=</span> <span class="dt">Duo</span> fstDuo sndDuo</span></code></pre></div>
+<p><code>distribute</code> can be implemented for <code>Revealable</code> in a way completely analogous to how it was done for <code>Representable</code>:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ot">distributeRev ::</span> (<span class="dt">Revealable</span> g, <span class="dt">Functor</span> f) <span class="ot">=&gt;</span> f (g a) <span class="ot">-&gt;</span> g (f a)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>distributeRev <span class="ot">=</span> reveal <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> elide</span></code></pre></div>
+<p>Or, in terms of <code>chart</code>:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>distributeRev m <span class="ot">=</span> (\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> chart</span></code></pre></div>
+<p>That is, <code>distributeRev m</code> amounts to mapping every extractor in <code>chart</code> over <code>m</code>.</p>
+<p>As for the laws, just like we were able to choose between expressing the <code>Representable</code> isomorphism directly, via <code>tabulate</code>, or indirectly via <code>askRep</code>, here we can use either <code>reveal</code> or <code>chart</code>:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>reveal <span class="op">.</span> elide <span class="ot">=</span> <span class="fu">id</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Or, equivalently</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>elide u <span class="op">&lt;$&gt;</span> chart <span class="ot">=</span> u</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>elide <span class="op">.</span> reveal <span class="ot">=</span> <span class="fu">id</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="co">-- Or, equivalently</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>p chart <span class="ot">=</span> p</span></code></pre></div>
+<p>With <code>Revealable</code>, though, we can streamline things by showing <code>p chart = p</code> follows from <code>elide u &lt;$&gt; chart = u</code>. The proof relies on the naturality of the polymorphic extractors:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>elide u <span class="op">&lt;$&gt;</span> chart <span class="ot">=</span> u</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Apply some p :: Pos g to both sides</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>p (elide u <span class="op">&lt;$&gt;</span> chart) <span class="ot">=</span> p u</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- p is natural</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>elide u (p chart) <span class="ot">=</span> p u</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="co">-- elide u p = p u</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>(p chart) u <span class="ot">=</span> p u</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- u is arbitrary</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>p chart <span class="ot">=</span> p</span></code></pre></div>
+<p>That being so, <code>elide u &lt;$&gt; chart = u</code> is the only law we need to characterise <code>Revealable</code>. Since <code>elide</code> does not depend on the <code>Revealable</code> instance, we might as well inline its definition, which leaves us with:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chart <span class="ot">=</span> u</span></code></pre></div>
+<p>I suggest calling it the <em>law of extractors</em>: it tells us that the extractors provided by <code>chart</code> suffice to reconstitute an arbitrary <code>g a</code> value.</p>
+<h2 id="revisiting-distributive">Revisiting Distributive</h2>
+<p>In <code>Revealable</code>, we have a class equivalent to <code>Representable</code> which doesn’t rely on the <code>Rep</code> type family. That makes it feasible to continue our investigation by attempting to show that every <code>Distributive</code> functor is <code>Revealable</code>.</p>
+<h3 id="natural-wonders">Natural wonders</h3>
+<p>Naturality laws and parametricity properties not infrequently have interesting consequences that seem to us as hidden in plain sight. Considering the increased strength of <code>Distributive</code>’s naturality law relative to its <code>Traversable</code> counterpart and the important role naturality properties had in setting up <code>Revealable</code>, resuming our work on <code>Distributive</code> from the naturality law sounds like a reasonable bet:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- For any natural transformation t</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- t :: (Functor f1, Functor f2) =&gt; forall x. f1 x -&gt; f2 x</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> t <span class="op">.</span> distribute <span class="ot">=</span> distribute <span class="op">.</span> t</span></code></pre></div>
+<p>In particular, suppose <code>f1</code> is a function functor:</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- t :: Functor f =&gt; forall x. (r -&gt; x) -&gt; f x</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>t <span class="op">&lt;$&gt;</span> distribute f <span class="ot">=</span> distribute (t f)</span></code></pre></div>
+<p>Now, by the same argument used back when we defined <code>askRep</code>, <code>t</code> must have the form:</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- m :: f r</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>t f <span class="ot">=</span> f <span class="op">&lt;$&gt;</span> m</span></code></pre></div>
+<p>Therefore:</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> distribute f <span class="ot">=</span> distribute (f <span class="op">&lt;$&gt;</span> m)</span></code></pre></div>
+<p>In particular, suppose <code>f = id</code>. We then end up with an specification of <code>distribute</code> in terms of <code>distribute id</code>:</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> distribute <span class="fu">id</span> <span class="ot">=</span> distribute m</span></code></pre></div>
+<p><code>distribute id</code> has the following type:</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>ghci<span class="op">&gt;</span> <span class="op">:</span>t distribute <span class="fu">id</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>distribute<span class="ot"> id ::</span> <span class="dt">Distributive</span> g <span class="ot">=&gt;</span> g (g a <span class="ot">-&gt;</span> a)</span></code></pre></div>
+<p>This looks a lot like something that holds extractors, and the specification itself mirrors the definition of <code>distributeRev</code> in terms of <code>chart</code>. As a preliminary check, <code>distribute @Duo id</code> holds <code>fstDuo</code> and <code>sndDuo</code> on their respective positions, exactly like <code>chart @Duo</code>:</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>distribute <span class="op">@</span><span class="dt">Duo</span> <span class="fu">id</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Duo</span> (<span class="fu">id</span> <span class="op">&lt;$&gt;</span> fstDuo) (<span class="fu">id</span> <span class="op">&lt;$&gt;</span> sndDuo)</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="dt">Duo</span> fstDuo sndDuo</span></code></pre></div>
+<p>Given the clear resemblance, I will optimistically refer to <code>distribute id</code> as <code>chartDist</code>:</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="ot">chartDist ::</span> <span class="dt">Distributive</span> g <span class="ot">=&gt;</span> g (g a <span class="ot">-&gt;</span> a)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>chartDist <span class="ot">=</span> distribute <span class="fu">id</span></span></code></pre></div>
+<p>We therefore have:</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>distribute m <span class="ot">=</span> (\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> chartDist</span></code></pre></div>
+<p>Now suppose <code>m = Identity u</code> for some <code>u :: g a</code>, and invoke the identity law:</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>distribute (<span class="dt">Identity</span> u) <span class="ot">=</span> (\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> <span class="dt">Identity</span> u) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>distribute (<span class="dt">Identity</span> u) <span class="ot">=</span> (\p <span class="ot">-&gt;</span> <span class="dt">Identity</span> (p u)) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>runIdentity <span class="op">&lt;$&gt;</span> distribute (<span class="dt">Identity</span> u)</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> runIdentity <span class="op">&lt;$&gt;</span> ((\p <span class="ot">-&gt;</span><span class="dt">Identity</span> (p u)) <span class="op">&lt;$&gt;</span> chartDist)</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>runIdentity <span class="op">&lt;$&gt;</span> distribute (<span class="dt">Identity</span> u)</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> (\p <span class="ot">-&gt;</span> runIdentity (<span class="dt">Identity</span> (p u))) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>runIdentity <span class="op">&lt;$&gt;</span> distribute (<span class="dt">Identity</span> u)</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> (\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a><span class="co">-- By the identity law</span></span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>runIdentity (<span class="dt">Identity</span> u) <span class="ot">=</span> (\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>u <span class="ot">=</span> (\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartDist</span></code></pre></div>
+<p>We therefore have a <code>Distributive</code> version of the law of extractors, with <code>chartDist</code> playing the role of <code>chart</code>. It is also possible to turn things around and obtain the identity law from this law of extractors:</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartDist <span class="ot">=</span> u</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>runIdentity <span class="op">.</span> <span class="dt">Identity</span> <span class="op">.</span> (\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartDist <span class="ot">=</span> u</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>runIdentity <span class="op">.</span> (\p <span class="ot">-&gt;</span> <span class="dt">Identity</span> (p u)) <span class="op">&lt;$&gt;</span> chartDist <span class="ot">=</span> u</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>runIdentity <span class="op">.</span> (\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> <span class="dt">Identity</span> u) <span class="op">&lt;$&gt;</span> chartDist <span class="ot">=</span> u</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- distribute m = (\p -&gt; p &lt;$&gt; m) &lt;$&gt; chartDist</span></span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>runIdentity <span class="op">&lt;$&gt;</span> distribute (<span class="dt">Identity</span> u) <span class="ot">=</span> u</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>runIdentity <span class="op">&lt;$&gt;</span> distribute (<span class="dt">Identity</span> u) <span class="ot">=</span> runIdentity (<span class="dt">Identity</span> u)</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> runIdentity <span class="op">.</span> distribute <span class="ot">=</span> runIdentity</span></code></pre></div>
+<p>These are auspicious results. Given that the law of extractors is enough to establish an implementation of <code>chart</code> as lawful, and that there can’t be multiple distinct lawful implementations of <code>distribute</code> <a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a>, all we need to do is to identify <code>chartDist</code> with <code>chart</code>.</p>
+<h3 id="the-roadblock-and-a-detour">The roadblock, and a detour</h3>
+<p>Identifying <code>chartDist</code> with <code>chart</code>, however, is not trivial. As similar as <code>chart</code> and <code>chartDist</code> might feel like, their types differ in an insurmountable way:</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>chart <span class="op">@</span><span class="dt">G</span><span class="ot">     ::</span> <span class="dt">G</span> (<span class="kw">forall</span> a<span class="op">.</span> <span class="dt">G</span> a <span class="ot">-&gt;</span> a)  <span class="co">-- G (Pos G)</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>chartDist <span class="op">@</span><span class="dt">G</span><span class="ot"> ::</span> <span class="kw">forall</span> a<span class="op">.</span> <span class="dt">G</span> (<span class="dt">G</span> a <span class="ot">-&gt;</span> a)</span></code></pre></div>
+<p>In particular:</p>
+<ul>
+<li><p>The <code>a</code> in <code>forall a. G (G a -&gt; a)</code> can be directly specialised to a concrete choice of <code>a</code>, and, as far as the specialised type <code>G (G A -&gt; A)</code> is concerned, it is conceivable that the involved <code>G A -&gt; A</code> functions might not be natural in <code>A</code>.</p></li>
+<li><p>Accordingly, a rank-2 function that takes a <code>Pos G</code>, such as the argument to <code>reveal</code>, can be mapped over <code>chart</code>, but not <code>chartDist</code>.</p></li>
+<li><p>There is no way to obtain the impredicative type of <code>chart</code>, or the rank-3 type of <code>reveal</code>, through <code>distribute</code>.</p></li>
+</ul>
+<p>To put it in another way, <code>chartDist</code> doesn’t have a type strong enough to, on its own, ensure that it provides natural, polymorphic extractors, and <code>Distributive</code> is not enough to implement a <code>chart</code> which provides such guarantees.</p>
+<p>Still, not all is lost. If there is a way to use the laws of <code>Distributive</code> to show that the extractors of <code>chartDist</code> are natural, we should be able to claim <code>chart</code> and <code>chartDist</code> are morally the same, providing the same extractors with subtly different types.</p>
+<p>(Meta note: while I believe the following argument suffices for the task at hand, it is not as crystalline as the derivations elsewhere in this post. Upgrading it to a proper proof will probably require some tricky parametricity maneuver which I haven’t managed to fully figure out yet.)</p>
+<p>Let’s turn to the composition law, the one we haven’t touched so far:</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> getCompose <span class="op">.</span> distribute <span class="ot">=</span> distribute <span class="op">.</span> <span class="fu">fmap</span> distribute <span class="op">.</span> getCompose</span></code></pre></div>
+<p>That is, given some <code>m :: Compose fo fi (g a)</code> (“o” is for outer, and “i” for inner):</p>
+<div class="sourceCode" id="cb51"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>getCompose <span class="op">&lt;$&gt;</span> distribute m <span class="ot">=</span> distribute (distribute <span class="op">&lt;$&gt;</span> getCompose m)</span></code></pre></div>
+<p>Let’s use <code>distribute m = (\p -&gt; p &lt;$&gt; m) &lt;$&gt; chartDist</code> on the left-hand side, and on the outer <code>distribute</code> on the right-hand side:</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>getCompose <span class="op">&lt;$&gt;</span> ((\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> chartDist)</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> (\q <span class="ot">-&gt;</span> q <span class="op">&lt;$&gt;</span> (distribute <span class="op">&lt;$&gt;</span> getCompose m)) <span class="op">&lt;$&gt;</span> chartDist</span></code></pre></div>
+<p>Note that the left-hand side <code>chartDist</code> has type <code>g (g a -&gt; a)</code>, while the right-hand side one has type <code>g (g (fi a) -&gt; fi a)</code>. Since we can’t take for granted that the extractors provided by them (which are bound to <code>p</code> and <code>q</code>, respectively) are natural, it is important to keep track of this difference.</p>
+<p>Tidying the equation a little further, we get:</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>getCompose <span class="op">&lt;$&gt;</span> ((\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> chartDist)</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> (\q <span class="ot">-&gt;</span> q <span class="op">&lt;$&gt;</span> (distribute <span class="op">&lt;$&gt;</span> getCompose m)) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> getCompose (p <span class="op">&lt;$&gt;</span> m)) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> (\q <span class="ot">-&gt;</span> q <span class="op">.</span> distribute <span class="op">&lt;$&gt;</span> getCompose m) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> <span class="fu">fmap</span> p <span class="op">&lt;$&gt;</span> getCompose m) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> (\q <span class="ot">-&gt;</span> q <span class="op">.</span> distribute <span class="op">&lt;$&gt;</span> getCompose m) <span class="op">&lt;$&gt;</span> chartDist</span></code></pre></div>
+<p>On either side of the equation, we have <code>fmap</code> being used to obtain a <code>g (fo (fi a))</code> result. That being so, any <code>fo (fi a)</code> value that, thanks to <code>fmap</code>, shows up in the left-hand side must also show up in the right-hand side. More precisely, given any <code>p :: g a -&gt; a</code> drawn from <code>chartDist</code> on the left-hand side, there must be some <code>q :: g (fi a) -&gt; fi a</code> drawn from the <code>chartDist</code> on the right hand side such that…</p>
+<div class="sourceCode" id="cb54"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> p <span class="op">&lt;$&gt;</span> getCompose m <span class="ot">=</span> q <span class="op">.</span> distribute <span class="op">&lt;$&gt;</span> getCompose m</span></code></pre></div>
+<p>… and vice versa. That allows us to reason about <code>p</code> and <code>q</code>, which amount to the extractors drawn from <code>chartDist</code> we are interested in.</p>
+<p>As neither <code>p</code> nor <code>q</code> involve <code>fo</code>, and the equation must hold for all choices of <code>fo</code>, we can freely consider the case in which it is <code>Identity</code>, or anything else that has an injective <code>fmap</code>. If <code>fmap</code> is injective, the equation further simplifies to:</p>
+<div class="sourceCode" id="cb55"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> p <span class="ot">=</span> q <span class="op">.</span> distribute</span></code></pre></div>
+<p>Now, <code>fmap p :: fi (g a) -&gt; fi a</code> cannot affect the <code>fi</code> shape; therefore, the same holds for <code>q . distribute :: fi (g a) -&gt;  fi a</code>. <code>distribute :: fi (g a) -&gt; g (fi a)</code> is natural in <code>fi</code>, and so it, too, can’t affect the <code>fi</code> shape. It follows that <code>q :: g (fi a) -&gt; fi a</code> is also unable to affect the <code>fi</code> shape.</p>
+<p>Zooming back out, we have just established that, if the composition law holds, <code>chartDist :: g (g (fi a) -&gt; fi a)</code> only provides extractors that preserve the <code>fi</code> shape. <code>chartDist</code>, however, is defined as <code>distribute id :: forall b. g (g b -&gt; b)</code>, which is fully polymorphic on the element type <code>b</code>. That being so, if there is a way for <code>distribute id</code> to somehow produce non-natural extractors, it cannot possibly rely in any way about the specifics of <code>b</code>. That, in particular, rules out any means of, given <code>b ~ fi a</code> for some functor <code>fi</code>, producing just non-natural extractors that preserve the <code>fi</code> shape: such a distinction cannot be expressed. We must conclude, therefore, that if the composition law holds <code>chartDist</code> can only provide natural extractors, as we hoped to show.</p>
+<p>The converse of this conclusion, by the way, also holds: assuming the identity law holds, if all <code>q</code> drawn from <code>chartDist</code> are natural, the composition law must hold. To show that, we can use the fact that, for a natural <code>q :: forall x. g x -&gt; x</code>, <code>q chartDist = q</code> holds, just like it does for <code>chart</code>:</p>
+<div class="sourceCode" id="cb56"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartDist <span class="ot">=</span> u</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>q ((\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartDist)) <span class="ot">=</span> q u</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- Since q is natural, q . fmap f = f . q</span></span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p u) (q chartDist) <span class="ot">=</span> q u</span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>(q chartDist) u <span class="ot">=</span> q u</span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>q chartDist <span class="ot">=</span> q</span></code></pre></div>
+<p>As a consequence, <code>q . distribute = fmap q</code>:</p>
+<div class="sourceCode" id="cb57"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>q (distribute m)</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>q ((\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) <span class="op">&lt;$&gt;</span> chartDist)</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- q is natural</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) (q chartDist)</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p <span class="op">&lt;$&gt;</span> m) q</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>q <span class="op">&lt;$&gt;</span> m</span></code></pre></div>
+<p>We can now return to the rearranged version of the composition law we were dealing with in the preceding argument, this time without taking it for granted:</p>
+<div class="sourceCode" id="cb58"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> <span class="fu">fmap</span> p <span class="op">&lt;$&gt;</span> getCompose m) <span class="op">&lt;$&gt;</span> chartDist</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> (\q <span class="ot">-&gt;</span> q <span class="op">.</span> distribute <span class="op">&lt;$&gt;</span> getCompose m) <span class="op">&lt;$&gt;</span> chartDist</span></code></pre></div>
+<p>By the above, however, if <code>q</code> is natural the right-hand side amounts to…</p>
+<div class="sourceCode" id="cb59"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>(\q <span class="ot">-&gt;</span> <span class="fu">fmap</span> q <span class="op">&lt;$&gt;</span> getCompose m) <span class="op">&lt;$&gt;</span> chartDist</span></code></pre></div>
+<p>… which is the same as the left-hand side.</p>
+<h3 id="in-summary">In summary</h3>
+<p>After quite a long ride, we have managed to shed some light on the connection between <code>Distributive</code> and <code>Representable</code>:</p>
+<ul>
+<li><p>Every <code>Distributive</code> is indeed <code>Representable</code>, even though, as expected, <code>Representable</code> cannot be implemented in terms of <code>distribute</code>.</p></li>
+<li><p>The connection is mediated by choosing <code>forall x. g x -&gt; x</code>, the type of polymorphic extractors, as a default representation, encoded here as the <code>Revealable</code> class. It can then be shown that this representation is mirrored in <code>Distributive</code> by <code>chartDist =   distribute id :: Distributive g =&gt; g (g a -&gt; a)</code>, which gives a corresponding characterisation of <code>Distributive</code> in terms of extractors.</p></li>
+<li><p>The single-shapedness characteristic of both distributive and representable functors follows from the identity law of <code>Distributive</code>.</p></li>
+<li><p>The composition law plays an important, if unobvious, role in the connection, as it ensures the naturality of the extractors provided by <code>chartDist</code>, a property that can’t be established on the basis of the involved types.</p></li>
+</ul>
+<h2 id="the-select-loophole">The Select loophole</h2>
+<p>There is one aspect of our investigation that is worth a closer look. All the concern with establishing that <code>chartDist</code> can only provide natural extractors, which kept us busy for a good chunk of the previous section, might have felt surprising. <code>chartDist</code>, after all…</p>
+<div class="sourceCode" id="cb60"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="ot">chartDist ::</span> <span class="kw">forall</span> g a<span class="op">.</span> <span class="dt">Distributive</span> g <span class="ot">=&gt;</span> g (g a <span class="ot">-&gt;</span> a)</span></code></pre></div>
+<p>… is fully polymorphic in <code>a</code>, and therefore its definition cannot rely on anything specific about <code>a</code>. That being so, it may seem outlandish to suppose that specialising <code>chartDist</code> to, say, <code>g (g Integer -&gt; Integer)</code> might somehow bring forth non-natural <code>g Integer -&gt; Integer</code> extractors that perform <code>Integer</code>-specific operations.</p>
+<p>To illustrate why the naturality of extractors is, in fact, a relevant issue, let’s consider the curious case of <a href="https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html"><code>Select</code></a>:</p>
+<div class="sourceCode" id="cb61"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- A paraphrased, non-transformer version of Select.</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Select</span> r a <span class="ot">=</span> <span class="dt">Select</span> {<span class="ot"> runSelect ::</span> (a <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> a }</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Select</span> r) <span class="kw">where</span></span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmap</span> f u <span class="ot">=</span> <span class="dt">Select</span> <span class="op">$</span> \k <span class="ot">-&gt;</span> f (u <span class="ot">`runSelect`</span> \a <span class="ot">-&gt;</span> k (f a))</span></code></pre></div>
+<p>(A <code>Select r a</code> value can be thought of as a way to choose an <code>a</code> value based on some user-specified criterion, expressed as an <code>a -&gt; r</code> function.)</p>
+<p>Corner cases such as <code>r ~ ()</code> aside, <code>Select r</code> cannot be <code>Representable</code>, as that would require it to be isomorphic to a function functor; that being so, it should be similarly ill-suited for <code>Distributive</code>. In spite of that, there is a nontrivial implementation of a <code>Select r</code> combinator with the type <code>chartDist</code> would have: <a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a></p>
+<div class="sourceCode" id="cb62"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="ot">chartSelect ::</span> <span class="dt">Select</span> r (<span class="dt">Select</span> r a <span class="ot">-&gt;</span> a)</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>chartSelect <span class="ot">=</span> <span class="dt">Select</span> <span class="op">$</span> \k <span class="ot">-&gt;</span> \u <span class="ot">-&gt;</span> u <span class="ot">`runSelect`</span> \a <span class="ot">-&gt;</span> k (<span class="fu">const</span> a)</span></code></pre></div>
+<p>What’s more, <code>chartSelect</code> follows the law of extractors:</p>
+<div class="sourceCode" id="cb63"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Goal:</span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartSelect <span class="ot">=</span> u</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- LHS</span></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> chartSelect</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>(\p <span class="ot">-&gt;</span> p u) <span class="op">&lt;$&gt;</span> <span class="dt">Select</span> <span class="op">$</span> \k <span class="ot">-&gt;</span> \u <span class="ot">-&gt;</span> u <span class="ot">`runSelect`</span> \a <span class="ot">-&gt;</span> k (<span class="fu">const</span> a)</span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a><span class="dt">Select</span> <span class="op">$</span> \k' <span class="ot">-&gt;</span></span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>    (\p <span class="ot">-&gt;</span> p u) (\u <span class="ot">-&gt;</span> u <span class="ot">`runSelect`</span> \a <span class="ot">-&gt;</span> k' ((\p <span class="ot">-&gt;</span> p u) (<span class="fu">const</span> a)))</span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a><span class="dt">Select</span> <span class="op">$</span> \k' <span class="ot">-&gt;</span> u <span class="ot">`runSelect`</span> \a <span class="ot">-&gt;</span> k' ((\p <span class="ot">-&gt;</span> p u) (<span class="fu">const</span> a))</span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a><span class="dt">Select</span> <span class="op">$</span> \k' <span class="ot">-&gt;</span> u <span class="ot">`runSelect`</span> \a <span class="ot">-&gt;</span> k' (<span class="fu">const</span> a u)</span>
+<span id="cb63-10"><a href="#cb63-10" aria-hidden="true" tabindex="-1"></a><span class="dt">Select</span> <span class="op">$</span> \k' <span class="ot">-&gt;</span> u <span class="ot">`runSelect`</span> \a <span class="ot">-&gt;</span> k' a</span>
+<span id="cb63-11"><a href="#cb63-11" aria-hidden="true" tabindex="-1"></a>u  <span class="co">-- LHS = RHS</span></span></code></pre></div>
+<p>That means the <code>distribute</code> candidate we get out of <code>chartSelect</code>…</p>
+<div class="sourceCode" id="cb64"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="ot">nonDistribute ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> f (<span class="dt">Select</span> r a) <span class="ot">-&gt;</span> <span class="dt">Select</span> r (f a)</span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>nonDistribute m <span class="ot">=</span> <span class="dt">Select</span> <span class="op">$</span></span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>    \k <span class="ot">-&gt;</span> (\u <span class="ot">-&gt;</span> u <span class="ot">`runSelect`</span> \a <span class="ot">-&gt;</span> k (a <span class="op">&lt;$</span> m)) <span class="op">&lt;$&gt;</span> m</span></code></pre></div>
+<p>… follows the identity law. As <code>Select r</code> is not supposed to be <code>Distributive</code>, we expect <code>nonDistribute</code> to break the composition law, and that is indeed what happens. <a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a></p>
+<p>Now, by the earlier arguments about the naturality of extractors, if a candidate implementation of <code>chartDist</code> follows the extractors law and only provides natural extractors, the corresponding <code>distribute</code> must follow the composition law. Since <code>chartSelect</code> follows the extractors law but doesn’t give rise to a lawful <code>distribute</code>, we must conclude that it provides non-natural extractors. How does that come to pass?</p>
+<p>Every criterion function <code>k :: a -&gt; r</code> gives rise to a non-natural extractor for <code>Select r a</code>, namely <code>\u -&gt; u</code>runSelect<code>k :: Select a r -&gt; a</code>. <code>chartSelect</code> indirectly makes all these non-natural extractors available through its own criterion argument, the <code>k</code> that shows up in its definition. (How the encoding works can be seen in the verification above of the law of extractors: note how performing the <code>fmap</code> between the third and fourth lines of the proof requires replacing <code>k :: (Select r a -&gt; a) -&gt; r</code> with <code>k' :: a -&gt; r</code>.)</p>
+<p>Non-naturality sneaking into <code>chartSelect</code> has to do with <code>Select r</code> not being a strictly positive functor; that is, it has an occurrence of the element type variable, <code>a</code>, to the left of a function arrow. <a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a> The lack of strict positivity creates a loophole, through which things can be incorporated to a <code>Select r a</code> value without being specified. It is a plausible conjecture that the composition law of <code>Distributive</code> is a way of ruling out functors that aren’t strictly positive, with lack of strict positivity being the only possible source of non-naturality in <code>chartDist</code>, and any non-trivial lack of strict positivity leading to non-naturality and the composition law being broken. <a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a></p>
+<h2 id="further-reading">Further reading</h2>
+<p>There are other interesting ways of approaching <code>Distributive</code> and <code>Representable</code> that I haven’t covered here to avoid making this post longer than it already is. Here are a few suggestions for further reading:</p>
+<ul>
+<li><p>Chris Penner’s <a href="https://chrispenner.ca/posts/adjunction-battleship"><em>Adjunctions and Battleship</em></a> post is a fine introduction to <a href="https://hackage.haskell.org/package/adjunctions-4.4/docs/Data-Functor-Adjunction.html"><code>Adjunction</code></a>, the class for <strong>Hask</strong>-<strong>Hask</strong> adjunctions, which provides an alternative encoding of <code>Representable</code>.</p></li>
+<li><p>The following Stack Overflow answers by Conor McBride on <em>Naperian functors</em>, “Naperian” here being an alternative name for <code>Representable</code>:</p>
+<ul>
+<li><p><a href="https://stackoverflow.com/a/46502280/2751851"><em>Which Haskell Functors are equivalent to the Reader functor</em></a>, which introduces Naperian functors in a style reminiscent of the <code>askRep</code>-centric formuation of <code>Representable</code> discussed here.</p></li>
+<li><p><a href="https://stackoverflow.com/a/13100857/2751851"><em>Writing cojoin or cobind for n-dimensional grid type</em></a>, which includes an outline of how Naperian functors are handled by container theory.</p></li>
+</ul></li>
+</ul>
+<p>On a final note, there is a <a href="https://github.com/ekmett/distributive/blob/117377d7ba38efc5b115169b565dfb80de8ad407/src/Data/Rep/Internal.hs">reworking of <code>Representable</code></a> being developed which is meant to be the core of a future release of the <em>distributive</em> package. It aims at unifing all the presentations of distributive functors we have seen here into a single class that fits equally well the various use cases. I plan to write a follow-up post on how that is to happen.</p>
+<section class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>The <code>Data.Distributive</code> documentation, as of the version 0.6.2.1 of the <em>distributive</em> package, mentions a different set of properties in lieu of these laws, the crucial one being <code>distribute . distribute = id</code>. Though that is a viable approach, I feel that in the context of what this post aims at such a formulation raises more questions than they answer. (For instance, regarding <code>distribute .  distribute = id</code>: Are there two <code>Distributive</code> instances involved? If so, how are we supposed to check that an individual instance is lawful? Does that law correspond to anything from <code>Traversable</code>?) That being so, I have chosen to take a step back and regard the “dual to <code>Traversable</code>” formulation as the starting point.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>The name <code>flap</code>, which I have borrowed from <a href="https://hackage.haskell.org/package/relude-1.0.0.1/docs/Relude-Functor-Fmap.html#v:flap"><em>relude</em></a>, is a play on how <code>distribute @((-&gt;) _) @((-&gt;) _)</code> turns out to be <code>flip</code>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>Here is a proof of its lawfulness:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Goal (identity law):</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> runIdentity <span class="op">.</span> distributeRep <span class="ot">=</span> runIdentity</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> runIdentity <span class="op">.</span> distributeRep  <span class="co">-- LHS</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> runIdentity <span class="op">.</span> tabulate <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> <span class="fu">index</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- tabulate is natural</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> <span class="fu">fmap</span> runIdentity <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> <span class="fu">index</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co">-- flap follows the identity law</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> runIdentity <span class="op">.</span> <span class="fu">fmap</span> <span class="fu">index</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> <span class="fu">index</span> <span class="op">.</span> runIdentity</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- tabulate . index = id</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>runIdentity  <span class="co">-- LHS = RHS</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- Goal (composition law):</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> getCompose <span class="op">.</span> distributeRep</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> distributeRep <span class="op">.</span> <span class="fu">fmap</span> distributeRep <span class="op">.</span> getCompose</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>distributeRep <span class="op">.</span> <span class="fu">fmap</span> distributeRep <span class="op">.</span> getCompose   <span class="co">-- RHS</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> <span class="fu">index</span> <span class="op">.</span> <span class="fu">fmap</span> tabulate</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span> <span class="fu">fmap</span> flap <span class="op">.</span> <span class="fu">fmap</span> (<span class="fu">fmap</span> <span class="fu">index</span>) <span class="op">.</span> getCompose</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="co">-- index . tabulate = id</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> flap <span class="op">.</span> <span class="fu">fmap</span> (<span class="fu">fmap</span> <span class="fu">index</span>) <span class="op">.</span> getCompose</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> flap <span class="op">.</span> getCompose <span class="op">.</span> <span class="fu">fmap</span> <span class="fu">index</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="co">-- flap follows the composition law</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>tabulate <span class="op">.</span> <span class="fu">fmap</span> getCompose <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> <span class="fu">index</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a><span class="co">-- tabulate is natural</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> getCompose <span class="op">.</span> tabulate <span class="op">.</span> flap <span class="op">.</span> <span class="fu">fmap</span> <span class="fu">index</span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> getCompose <span class="op">.</span> distributeRep  <span class="co">-- RHS = LHS</span></span></code></pre></div>
+<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></li>
+<li id="fn4" role="doc-endnote"><p>That is a manifestation of the Yoneda lemma. For a Haskell-oriented introduction to it, see Dan Piponi’s <a href="http://blog.sigfpe.com/2006/11/yoneda-lemma.html"><em>Reverse Engineering Machines with the Yoneda Lemma</em></a>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" role="doc-endnote"><p><code>askRep</code> is indeed <code>ask</code> for <code>MonadReader (Rep g) g</code>; accordingly, <code>tabulate</code> is <code>asks</code>/<code>reader</code>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" role="doc-endnote"><p>On a technical note, given that the type of <code>chart</code> amounts to <code>g (forall x. g x -&gt; x)</code> using these definitions as written requires the <code>ImpredicativeTypes</code> extension and, ideally, GHC 9.2 or above. Doing it without <code>ImpredicativeTypes</code> would require making <code>Pos g</code> a <code>newtype</code> instead of a mere synonym.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" role="doc-endnote"><p>In brief: two implementations of <code>distribute :: f (g a) -&gt; g (f a)</code> might differ by what they do to the <code>a</code> values, <code>f</code> shapes, or <code>g</code> shapes. Naturality means <code>a</code> and <code>f</code> can’t be affected by <code>distribute</code>, and so any difference would have to arise from what is done to <code>g</code>. However, the identity law means the <code>g</code> shape can’t be affected either. Therefore, implementations which follow the identity law can’t differ.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8" role="doc-endnote"><p>I originally realised it is possible through <a href="https://stackoverflow.com/a/39736535/2751851">a Stack Overflow answer by Sergei Winitzki</a>. I thank him for helping to drive this post to completion, as thinking about <code>Select</code> was instrumental in putting the pieces together.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9" role="doc-endnote"><p>Sparing the very messy full proof, the gist of it has to do with the <code>(&lt;$)</code> trick <code>nonDistribute</code> uses to borrow the shape of <code>m</code> in order to have something to feed the <code>k :: f a -&gt;   r</code> criterion. In the left-hand side of the composition law, <code>fmap   getCompose . distribute</code>, the trick is applied once, at the outermost level, while in the right-hand side, <code>distribute . fmap distribute.   getCompose</code>, thanks to the <code>fmap distribute</code> it is also done inside of the outer layer. That being so, there is no way the two sides might be equal.<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10" role="doc-endnote"><p>Though it doesn’t explicitly mention strict positivity, Michael Snoyman’s <a href="https://www.fpcomplete.com/blog/2016/11/covariance-contravariance/"><em>Covariance and Contravariance</em></a> is an useful primer on polarity, production and consumption in functors. In particular, the <code>CallbackRunner</code> example in the “Positive and negative position” section towards the end is a <code>Functor</code> that isn’t strictly positive.<a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn11" role="doc-endnote"><p>On a tangential note, the lack of strict positivity also breaks down the intuitive notion of the shape, as something that can be distinguished from the <code>a</code> values contained or produced by some functorial value <code>f a</code>. While <code>chartSelect</code> abiding by the law of extractors suggests that we should think of <code>Select r</code> as single-shaped, it is hard to even tell what a shape is supposed to be in this case. If <code>Select r a</code> were a garden-variety function type, we might say that there is one <code>a</code> result for every possible <code>a -&gt; r</code> criterion. However, the number of possible <code>a -&gt; r</code> functions also depends on the choice of <code>a</code>. As a result, the number of inhabitants (that is, distinct possible values) of <code>Select r a</code> grows much faster than linearly with the number of inhabitants of <code>a</code>. Were we to say <code>Select r</code> is a single-shaped functor, we would have to concede the shape is <a href="https://tvtropes.org/pmwiki/pmwiki.php/Main/BiggerOnTheInside">is bigger on the inside</a>.<a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+
+<div id="comment-nav" class="pure-g-r no-print">
+  <div class="pure-u-1-4">
+    <a id="gh-comments-button" class="pure-button" href="https://github.com/duplode/duplode.github.io/issues/17">Comment on GitHub</a>
+
+    
+  </div>
+  <div class="pure-u-1-4">
+    
+    
+  </div>
+  <div class="pure-u-1-4">
+    
+  </div>
+  <div class="pure-u-1-4">
+  </div>
+</div>
+
+<div><div class="license">
+  <p>
+    <span class="inline-centered">
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <img alt="Creative Commons License" style="border-width:0" src="//i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>
+    </span>
+    <span class="inline-centered">
+      Post licensed under a
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+    </span>
+  </p>
+</div>
+
+</div>
+]]></description>
+    <pubDate>2022-02-07T22:16:50-03:00</pubDate>
+    <guid>https://duplode.github.io/posts/every-distributive-is-representable.html</guid>
+    <dc:creator>Daniel Mlot</dc:creator>
+</item>
+<item>
     <title>Divisible and the Monoidal Quartet</title>
-    <link>http://duplode.github.io/posts/divisible-and-the-monoidal-quartet.html</link>
+    <link>https://duplode.github.io/posts/divisible-and-the-monoidal-quartet.html</link>
     <description><![CDATA[
 <p>A recent blog post by Gabriella Gonzalez, <a href="https://www.haskellforall.com/2021/10/co-applicative-programming-style.html"><em>Co-Applicative programming style</em></a>, has sparked discussion on ergonomic ways to make use of <a href="https://hackage.haskell.org/package/contravariant-1.5.5">the <code>Divisible</code> type class</a>. The conversation pointed to an interesting rabbit hole, and jumping into it resulted in these notes, in which I attempt to get a clearer view of picture of the constellation of monoidal functor classes that <code>Divisible</code> belongs to. The gist of it is that “<code>Divisible</code> is a contravariant <code>Applicative</code>, and <code>Decidable</code> is a contravariant <code>Alternative</code>” is not a full picture of the relationships between the classes, as there are a few extra connections that aren’t obvious to the naked eye.</p>
 <div>
@@ -383,12 +831,12 @@
 </div>
 ]]></description>
     <pubDate>2021-11-11T23:50:00-03:00</pubDate>
-    <guid>http://duplode.github.io/posts/divisible-and-the-monoidal-quartet.html</guid>
+    <guid>https://duplode.github.io/posts/divisible-and-the-monoidal-quartet.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>Idempotent Applicatives, Parametricity, and a Puzzle</title>
-    <link>http://duplode.github.io/posts/idempotent-applicatives-parametricity-and-a-puzzle.html</link>
+    <link>https://duplode.github.io/posts/idempotent-applicatives-parametricity-and-a-puzzle.html</link>
     <description><![CDATA[
 <p>Some applicative functors are idempotent, in the sense that repeating an effect is the same as having it just once. An example and a counterexample are <code>Maybe</code> and <code>IO</code>, respectively (contrast <code>Just 3 *&gt; Just 3</code> with <code>print 3 *&gt; print 3</code>). More precisely, idempotency means that <code>f &lt;$&gt; u &lt;*&gt; u = (\x -&gt; f x x) &lt;$&gt; u</code>. Given the informal description I began with, though, one might wonder whether the simpler property <code>u *&gt; u = u</code>, which seems to capture the intuition about repeated effects, is equivalent to the usual idempotency property. In this post, I will tell how I went about exploring this conjecture, as well as a few things I learnt about parametricity along the way.</p>
 <div>
@@ -706,12 +1154,12 @@
 </div>
 ]]></description>
     <pubDate>2019-04-01T02:30:00-03:00</pubDate>
-    <guid>http://duplode.github.io/posts/idempotent-applicatives-parametricity-and-a-puzzle.html</guid>
+    <guid>https://duplode.github.io/posts/idempotent-applicatives-parametricity-and-a-puzzle.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>Traversable: A Remix</title>
-    <link>http://duplode.github.io/posts/traversable-a-remix.html</link>
+    <link>https://duplode.github.io/posts/traversable-a-remix.html</link>
     <description><![CDATA[
 <p><code>Traversable</code> is a fun type class. It lies at a crossroad, where many basic Haskell concepts meet, and it can be presented in multiple ways that provide complementary intuitions. In this post, <code>Traversable</code> will be described from a slightly unusual point of view, or at least one that is not put into foreground all that often. We will suspend for a moment the picture of walking across a container while using an effectful function, and instead start by considering what can be done with effectful functions.</p>
 <div>
@@ -914,12 +1362,12 @@
 </div>
 ]]></description>
     <pubDate>2017-05-19T07:30:00Z</pubDate>
-    <guid>http://duplode.github.io/posts/traversable-a-remix.html</guid>
+    <guid>https://duplode.github.io/posts/traversable-a-remix.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>What's in a Fold: The Basic Catamorphism in recursion-schemes</title>
-    <link>http://duplode.github.io/posts/whats-in-a-fold.html</link>
+    <link>https://duplode.github.io/posts/whats-in-a-fold.html</link>
     <description><![CDATA[
 <p>This article is meant as an accessible introduction to the most basic recursion scheme, the catamorphism. It won’t engage in deep dives into theory, or survey practical motives for using recursion schemes – that will be covered by the further reading suggestions at the end. Rather, its main goal is simply offering a concrete presentation of how folds can be generalised. This presentation will be done in terms of the types and combinators used by the <a href="https://hackage.haskell.org/package/recursion-schemes-5.0.1"><em>recursion-schemes</em></a> library, so that the article doubles as an introduction to some of its key conventions.</p>
 <div>
@@ -1231,12 +1679,12 @@
 </div>
 ]]></description>
     <pubDate>2017-03-10T06:00:00Z</pubDate>
-    <guid>http://duplode.github.io/posts/whats-in-a-fold.html</guid>
+    <guid>https://duplode.github.io/posts/whats-in-a-fold.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>Casual Hacking With stack, Reloaded</title>
-    <link>http://duplode.github.io/posts/casual-hacking-with-stack-reloaded.html</link>
+    <link>https://duplode.github.io/posts/casual-hacking-with-stack-reloaded.html</link>
     <description><![CDATA[<p>It has been quite a while since I <a href="../posts/casual-hacking-with-stack.html">wrote</a> about how to use stack for casual play outside of the context of a conventional Haskell project. In the meantime, stack has gained a feature called the <em>global project</em> which in many cases makes it possible to do quick experiments with essentially no setup, while still taking advantage of the infrastructure provided through stack.</p>
 <div>
 
@@ -1355,12 +1803,12 @@
 </div>
 ]]></description>
     <pubDate>2017-02-26T10:00:00Z</pubDate>
-    <guid>http://duplode.github.io/posts/casual-hacking-with-stack-reloaded.html</guid>
+    <guid>https://duplode.github.io/posts/casual-hacking-with-stack-reloaded.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>Migrating a Project to stack</title>
-    <link>http://duplode.github.io/posts/migrating-a-project-to-stack.html</link>
+    <link>https://duplode.github.io/posts/migrating-a-project-to-stack.html</link>
     <description><![CDATA[<p>This post consists of notes on how I converted one of my Haskell projects to stack. It provides a small illustration of how flexible stack can be in accomodating project organisation quirks on the way towards predictable builds.<!--more--> If you want to see the complete results, here are links to the <a href="https://bitbucket.org/duplode/stunts-cartography">Bitbucket repository</a> of Stunts Cartography, the example project I am using, and specifically to the <a href="https://bitbucket.org/duplode/stunts-cartography/src/3eb07c44f6e2eed19591f765b14fc5fbe2b8f946">source tree immediately after the migration</a>.</p>
 <p>The first decision to make when migrating a project is which Stackage snapshot to pick. It had been a while since I last updated my project, and building it with the latest versions of all its dependencies would require a few adjustments. That being so, I chose to migrate to stack before any further patches. Since one of the main dependencies was <code>diagrams</code> 1.2, I went for <a href="https://www.stackage.org/lts-2.19"><code>lts-2.19</code></a>, the most recent LTS snapshot with that version of <code>diagrams</code> <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
 <pre><code>$ stack init --resolver lts-2.19</code></pre>
@@ -1496,12 +1944,12 @@ Listening on http://127.0.0.1:10000/
 </div>
 ]]></description>
     <pubDate>2015-07-27T03:00:00-03:00</pubDate>
-    <guid>http://duplode.github.io/posts/migrating-a-project-to-stack.html</guid>
+    <guid>https://duplode.github.io/posts/migrating-a-project-to-stack.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>Casual Hacking With stack</title>
-    <link>http://duplode.github.io/posts/casual-hacking-with-stack.html</link>
+    <link>https://duplode.github.io/posts/casual-hacking-with-stack.html</link>
     <description><![CDATA[<p><em>2017 update: This post was written shortly after the initial release of stack. While the workflow suggested here remains potentially useful, later versions of stack offer more immediate support for working outside the boundaries of a conventional Haskell project. For more on that, see <a href="../posts/casual-hacking-with-stack-reloaded.html">Casual Hacking With stack, Reloaded</a>.</em></p>
 <p>Sandboxes are exceptionally helpful not just for working in long-term Haskell projects, but also for casual experiments. While playing around, we tend to install all sorts of packages in a carefree way, which increases a lot the risk of entering cabal hell. While vanilla cabal-install sandboxes prevent such a disaster, using them systematically for experiments mean that, unless you are meticulous, you will end up either with dozens of .hs files in a single sandbox or with dozens of copies of the libraries strewn across your home directory. And no one likes to be meticulous while playing around. In that context, stack, the recently released alternative to cabal-install, can prevent trouble with installing packages in a way more manageable than through ad-hoc sandboxes. In this post, I will suggest a few ways of using stack that may be convenient for experiments. I have been using stack for only a few days, therefore suggestions are most welcome!</p>
 <div>
@@ -1646,12 +2094,12 @@ extra-deps:
 </div>
 ]]></description>
     <pubDate>2015-07-22T23:30:00-03:00</pubDate>
-    <guid>http://duplode.github.io/posts/casual-hacking-with-stack.html</guid>
+    <guid>https://duplode.github.io/posts/casual-hacking-with-stack.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>Applicative Archery</title>
-    <link>http://duplode.github.io/posts/applicative-archery.html</link>
+    <link>https://duplode.github.io/posts/applicative-archery.html</link>
     <description><![CDATA[<p>It is widely agreed that the laws of the <code>Applicative</code> class are not pretty to look at.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pure</span> <span class="fu">id</span> <span class="op">&lt;*&gt;</span> v <span class="ot">=</span> v                            <span class="co">-- identity</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">pure</span> f <span class="op">&lt;*&gt;</span> <span class="fu">pure</span> x <span class="ot">=</span> <span class="fu">pure</span> (f x)               <span class="co">-- homomorphism</span></span>
@@ -1784,12 +2232,12 @@ extra-deps:
 </div>
 ]]></description>
     <pubDate>2015-07-06T17:00:00-03:00</pubDate>
-    <guid>http://duplode.github.io/posts/applicative-archery.html</guid>
+    <guid>https://duplode.github.io/posts/applicative-archery.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>What Does fmap Preserve?</title>
-    <link>http://duplode.github.io/posts/what-does-fmap-preserve.html</link>
+    <link>https://duplode.github.io/posts/what-does-fmap-preserve.html</link>
     <description><![CDATA[
 <p>A common way of introducing <code>fmap</code> is saying that it only changes the values in a container, and not its structure. Leaving behind the the functors-as-containers metaphor, we can convey the same idea by saying that <code>fmap</code> leaves the context of the values in a <code>Functor</code> unchanged. But what, exactly, is the “context” or “structure” being preserved? “It depends on the functor”, though correct, is not an entirely satisfactory answer. The functor laws, after all, are highly abstract, and make no mention of anything a programmer would be inclined to call “structure” (say, the skeleton of a list); and yet the preservation we alluded to follows from them. After struggling a bit with this question, I realised that the incompatibility is only apparent. This post shows how the tension can be resolved through the mediation of <em>parametricity</em> and <em>naturality</em>, two concepts from different domains that are intertwined in Haskell.</p>
 <div>
@@ -1927,12 +2375,12 @@ extra-deps:
 </div>
 ]]></description>
     <pubDate>2014-06-02T06:00:00Z</pubDate>
-    <guid>http://duplode.github.io/posts/what-does-fmap-preserve.html</guid>
+    <guid>https://duplode.github.io/posts/what-does-fmap-preserve.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 <item>
     <title>Lenses You Can Make at Home</title>
-    <link>http://duplode.github.io/posts/lenses-you-can-make-at-home.html</link>
+    <link>https://duplode.github.io/posts/lenses-you-can-make-at-home.html</link>
     <description><![CDATA[
 <p>The most striking traits of the <code>lens</code> library are its astonishing breadth and generality. And yet, the whole edifice is built around van Laarhoven lenses, which are a simple and elegant concept. In this hands-on exposition, I will show how the <code>Lens</code> type can be understood without prerequisites other than a passing acquaintance with Haskell functors. Encouraging sound intuition in an accessible manner can go a long way towards making <code>lens</code> and lenses less intimidating.</p>
 <div>
@@ -2138,7 +2586,7 @@ extra-deps:
 </div>
 ]]></description>
     <pubDate>2014-04-26T12:00:00Z</pubDate>
-    <guid>http://duplode.github.io/posts/lenses-you-can-make-at-home.html</guid>
+    <guid>https://duplode.github.io/posts/lenses-you-can-make-at-home.html</guid>
     <dc:creator>Daniel Mlot</dc:creator>
 </item>
 
