@@ -3,6 +3,7 @@ title: "Every Distributive is Representable"
 license: CC-BY-SA
 published: 2022-02-07T22:00:00-03:00
 gh-issue: 17
+twitter-card-descr: "Shedding light on the hidden link"
 toc: true
 ---
 
@@ -10,14 +11,14 @@ toc: true
 documentation for [`Representable`](
 https://hackage.haskell.org/package/adjunctions-4.4/docs/Data-Functor-Rep.html)
 tells us straight away, and yet it is far from obvious why that should
-be the case.  At first glance, [`Distributive`](
+be the case. At first glance, [`Distributive`](
 https://hackage.haskell.org/package/distributive-0.6.2.1/docs/Data-Distributive.html),
 the dual to `Traversable`, appears to have little if anything to do with
 `Representable`, the class for functors isomorphic to functions. The
 goal of this post is making this connection explicit. In the process, we
-will tease out a fair amount of information from `Distributive`, and
-also consider the curious question of what exactly makes it tricky to
-fully bridge the gap to `Representable`.
+will tease out a fair amount of information about the two classes, and
+also contemplate what makes it tricky to fully bridge the gap to
+`Representable`.
 
 <!-- more -->
 
@@ -714,11 +715,10 @@ Still, not all is lost. If there is a way to use the laws of
 we should be able to claim `chart` and `chartDist` are morally the same,
 providing the same extractors with subtly different types.
 
-(On a meta note, while I believe the following argument suffices for the
-task at hand, it is not as crystalline as the derivations elsewhere in
-this post. Upgrading it to a proper proof will probably require a
-difficult parametricity maneuver or a clever categorial trick, and I
-haven't managed to divine either of them yet.)
+(Meta note: while I believe the following argument suffices for the task
+at hand, it is not as crystalline as the derivations elsewhere in this
+post.  Upgrading it to a proper proof will probably require some tricky
+parametricity maneuver which I haven't managed to fully figure out yet.)
 
 Let's turn to the composition law, the one we haven't touched so far:
 
@@ -872,22 +872,22 @@ connection between `Distributive` and `Representable`:
 
 ## The Select loophole
 
-There is one additional aspect of our investigation that is well worth a
-closer look. All the concern with establishing that `chartDist` can only
-provide natural extractors, which kept us busy for a good chunk of the
-previous section, might have felt surprising. `chartDist`, after all...
+There is one aspect of our investigation that is worth a closer look. All the
+concern with establishing that `chartDist` can only provide natural extractors,
+which kept us busy for a good chunk of the previous section, might have felt
+surprising. `chartDist`, after all...
 
 ``` haskell
 chartDist :: forall g a. Distributive g => g (g a -> a)
 ```
 
-... is fully polymorphic in `a`, and therefore its definition cannot
-rely on anything specific about `a`. At first glance, it seems
-preposterous to suppose that specialising `chartDist` to, say, `g (g
-Integer -> Integer)` might somehow bring forth non-natural `g Integer ->
-Integer` extractors that perform `Integer`-specific operations.
+... is fully polymorphic in `a`, and therefore its definition cannot rely on
+anything specific about `a`. That being so, it may seem outlandish to suppose
+that specialising `chartDist` to, say, `g (g Integer -> Integer)` might somehow
+bring forth non-natural `g Integer -> Integer` extractors that perform
+`Integer`-specific operations.
 
-To illustrate why the naturality of extractors does, in fact, matter,
+To illustrate why the naturality of extractors is, in fact, a relevant issue,
 let's consider the curious case of [`Select`](
 https://hackage.haskell.org/package/transformers-0.6.0.2/docs/Control-Monad-Trans-Select.html):
 
