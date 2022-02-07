@@ -20,7 +20,7 @@ will tease out a fair amount of information about the two classes, and
 also contemplate what makes it tricky to fully bridge the gap to
 `Representable`.
 
-<!-- more -->
+<div></div><!--more-->
 
 ## The basic facts
 
@@ -71,7 +71,8 @@ https://hackage.haskell.org/package/base-4.16.0.0/docs/Data-Traversable.html#g:2
 * Composition:
 
   ``` haskell
-  fmap getCompose . distribute = distribute . fmap distribute . getCompose
+  fmap getCompose . distribute
+      = distribute . fmap distribute . getCompose
   ```
 
 * Naturality (ensured by parametricity):
@@ -513,7 +514,7 @@ As for the laws, just like we were able to choose between expressing the
 `Representable` isomorphism directly, via `tabulate`, or indirectly via
 `askRep`, here we can use either `reveal` or `chart`:
 
-```
+``` haskell
 reveal . elide = id
 -- Or, equivalently
 elide u <$> chart = u
@@ -623,21 +624,21 @@ Duo fstDuo sndDuo
 Given the clear resemblance, I will optimistically refer to `distribute
 id` as `chartDist`:
 
-```
+``` haskell
 chartDist :: Distributive g => g (g a -> a)
 chartDist = distribute id
 ```
 
 We therefore have:
 
-```
+``` haskell
 distribute m = (\p -> p <$> m) <$> chartDist
 ```
 
 Now suppose `m = Identity u` for some `u :: g a`, and invoke the
 identity law:
 
-```
+``` haskell
 distribute (Identity u) = (\p -> p <$> Identity u) <$> chartDist
 distribute (Identity u) = (\p -> Identity (p u)) <$> chartDist
 runIdentity <$> distribute (Identity u)
