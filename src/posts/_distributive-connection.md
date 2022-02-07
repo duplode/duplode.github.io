@@ -231,7 +231,7 @@ The lawfulness of `distributeRep` follows from the lawfulness of `flap`.
         = distributeRep . fmap distributeRep . getCompose
     distributeRep . fmap distributeRep . getCompose   -- RHS
     tabulate . flap . fmap index . fmap tabulate
-            . fmap flap . fmap (fmap index) . getCompose
+        . fmap flap . fmap (fmap index) . getCompose
     -- index . tabulate = id
     tabulate . flap . fmap flap . fmap (fmap index) . getCompose
     tabulate . flap . fmap flap . getCompose . fmap index
@@ -984,7 +984,7 @@ is a plausible conjecture that the composition law of `Distributive` is
 a way of ruling out functors that aren't strictly positive,  with lack
 of strict positivity being the only possible source of non-naturality in
 `chartDist`, and any non-trivial lack of strict positivity leading to
-non-naturality and the composition law being broken. [^shapes-of-Select]
+non-naturality and the composition law being broken. [^shape-of-Select]
 
 [^polarity]: Though it doesn't explicitly mention strict positivity,
   Michael Snoyman's [*Covariance and Contravariance*](
