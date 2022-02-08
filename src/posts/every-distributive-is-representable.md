@@ -1040,8 +1040,7 @@ reading:
 
 On a final note, there is a [reworking of `Representable`](
 https://github.com/ekmett/distributive/blob/117377d7ba38efc5b115169b565dfb80de8ad407/src/Data/Rep/Internal.hs)
-being developed which is meant to be the core of a future release of the
-*distributive* package. It aims at unifing all the presentations of
-distributive functors we have seen here into a single class that fits equally
-well the various use cases. I plan to write a follow-up post on how that is to
-happen.
+being developed as part of a potential future release of the *distributive*
+package. It aims at unifying the presentations of distributive into a single
+class that fits equally well the various use cases. An overview of how this
+new formulation could be a nice topic for a future, follow-up post.
