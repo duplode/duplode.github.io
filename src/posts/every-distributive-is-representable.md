@@ -969,8 +969,8 @@ law but doesn't give rise to a lawful `distribute`, we must conclude
 that it provides non-natural extractors. How does that come to pass?
 
 Every criterion function `k :: a -> r` gives rise to a non-natural
-extractor for `Select r a`, namely `\u -> u `runSelect` k :: Select a r
--> a`.  `chartSelect` indirectly makes all these non-natural extractors
+extractor for `Select r a`, namely ``\u -> u `runSelect` k :: Select a r
+-> a``.  `chartSelect` indirectly makes all these non-natural extractors
 available through its own criterion argument, the `k` that shows up in
 its definition. (How the encoding works can be seen in the verification
 above of the law of extractors: note how performing the `fmap` between
